@@ -1,0 +1,28 @@
+[project]
+name = "jump_dti_labels"
+version = "0.0.3"
+description = "Find drug target interaction annotations for JUMP compounds"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = ["jump-dataset", "DTI"]
+authors = [
+  {name = "John Arevalo", email = "johnarevalo@gmail.com" }
+]
+dependencies = [
+  "pandas",
+  "tqdm",
+  "requests"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/jump-cellpainting/jump_dti_labels"
+"Bug Reports" = "https://github.com/jump-cellpainting/jump_dti_labels/issues"
+"Source" = "https://github.com/jump-cellpainting/jump_dti_labels"
+
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"] 
