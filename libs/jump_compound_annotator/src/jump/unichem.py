@@ -8,6 +8,7 @@ import requests
 from tqdm.contrib.concurrent import thread_map
 from tqdm.auto import tqdm
 
+logger = logging.getLogger(__name__)
 SOURCE_IDS = pd.read_csv('https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/table_dumps/source.tsv.gz', sep='\t').set_index('SRC_ID')['NAME']
 JUMP_INCHIKEYS = pd.read_csv('https://github.com/jump-cellpainting/datasets/raw/main/metadata/compound.csv.gz').Metadata_InChIKey.dropna().drop_duplicates()
 
@@ -37,7 +38,7 @@ def ids_to_dframes(ids, errors, output_path: Path):
         (output_path / 'errors').mkdir(parents=True, exist_ok=True)
         errors.to_csv(f'{output_path}/errors/errors_{ts_string}.csv', index=False)
 
-def map_inchikeys(output_path: Path, batch_size:int = 1000):
+def pull(output_path: Path, batch_size:int = 1000):
     known_ids = list(map(pd.read_csv, output_path.glob('ids/ids_*.csv')))
     inchikeys = JUMP_INCHIKEYS
     if known_ids:
@@ -58,11 +59,33 @@ def map_inchikeys(output_path: Path, batch_size:int = 1000):
                 ids.append(df)
         ids_to_dframes(ids, errors, output_path)
 
+
+def collate(output_path: Path):
+    ids = list(map(pd.read_csv, output_path.glob('ids/ids_*.csv')))
+    if not ids:
+        raise ValueError('IDs files not found')
+    ids = pd.concat(ids)
+    ids = ids.sort_values(['inchikey', 'src_name','src_compound_id'])
+    total = len(ids)
+    ids.drop_duplicates(['inchikey', 'src_name'], inplace=True)
+    dups = total - len(ids)
+    if dups > 0:
+        logger.warning(f'{dups} duplicates removed.')
+    ids = ids.pivot(index='inchikey', columns='src_name', values='src_compound_id')
+    ids.fillna('', inplace=True)
+    ids.to_csv(output_path / 'pointers.csv')
+
+
 def main():
     parser = argparse.ArgumentParser(description='Create maps between compounds and unique IDs.')
+    parser.add_argument('action', choices=['pull', 'collate'])
     parser.add_argument('output_path')
     args = parser.parse_args()
-    map_inchikeys(Path(args.output_path))
+    if args.action == 'pull':
+        pull(Path(args.output_path))
+    elif args.action == 'collate':
+        collate(Path(args.output_path))
+
 
 if __name__=='__main__':
     main()
