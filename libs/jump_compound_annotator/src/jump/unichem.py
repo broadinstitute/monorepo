@@ -9,8 +9,13 @@ from tqdm.contrib.concurrent import thread_map
 from tqdm.auto import tqdm
 
 logger = logging.getLogger(__name__)
-SOURCE_IDS = pd.read_csv('https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/table_dumps/source.tsv.gz', sep='\t').set_index('SRC_ID')['NAME']
-JUMP_INCHIKEYS = pd.read_csv('https://github.com/jump-cellpainting/datasets/raw/main/metadata/compound.csv.gz').Metadata_InChIKey.dropna().drop_duplicates()
+SOURCE_IDS = pd.read_csv(
+    'https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/table_dumps/source.tsv.gz',
+    sep='\t').set_index('SRC_ID')['NAME']
+JUMP_INCHIKEYS = pd.read_csv(
+    'https://github.com/jump-cellpainting/datasets/raw/main/metadata/compound.csv.gz'
+).Metadata_InChIKey.dropna().drop_duplicates()
+
 
 def get_unichem_id(inchikey):
     url = "https://www.ebi.ac.uk/unichem/rest/inchikey/{}".format(inchikey)
@@ -36,16 +41,18 @@ def ids_to_dframes(ids, errors, output_path: Path):
     if errors:
         errors = pd.DataFrame(errors, columns=['inchikey', 'message'])
         (output_path / 'errors').mkdir(parents=True, exist_ok=True)
-        errors.to_csv(f'{output_path}/errors/errors_{ts_string}.csv', index=False)
+        errors.to_csv(f'{output_path}/errors/errors_{ts_string}.csv',
+                      index=False)
 
-def pull(output_path: Path, batch_size:int = 1000):
+
+def pull(output_path: Path, batch_size: int = 1000):
     known_ids = list(map(pd.read_csv, output_path.glob('ids/ids_*.csv')))
     inchikeys = JUMP_INCHIKEYS
     if known_ids:
         known_ids = pd.concat(known_ids).inchikey
         inchikeys = inchikeys[~inchikeys.isin(known_ids)]
     for i in tqdm(range(0, len(inchikeys), batch_size)):
-        batch = inchikeys[i:i+batch_size]
+        batch = inchikeys[i:i + batch_size]
         output = thread_map(get_unichem_id, batch, leave=False)
         ids, errors = [], []
         for inchikey, response in output:
@@ -64,20 +71,23 @@ def collate(output_path: Path):
     ids = list(map(pd.read_csv, output_path.glob('ids/ids_*.csv')))
     if not ids:
         raise ValueError('IDs files not found')
-    ids = pd.concat(ids)
-    ids = ids.sort_values(['inchikey', 'src_name','src_compound_id'])
+    ids = pd.concat(ids).drop_duplicates()
+    ids = ids.sort_values(['inchikey', 'src_name', 'src_compound_id'])
     total = len(ids)
     ids.drop_duplicates(['inchikey', 'src_name'], inplace=True)
     dups = total - len(ids)
     if dups > 0:
         logger.warning(f'{dups} duplicates removed.')
-    ids = ids.pivot(index='inchikey', columns='src_name', values='src_compound_id')
+    ids = ids.pivot(index='inchikey',
+                    columns='src_name',
+                    values='src_compound_id')
     ids.fillna('', inplace=True)
     ids.to_csv(output_path / 'pointers.csv')
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Create maps between compounds and unique IDs.')
+    parser = argparse.ArgumentParser(
+        description='Create maps between compounds and unique IDs.')
     parser.add_argument('action', choices=['pull', 'collate'])
     parser.add_argument('output_path')
     args = parser.parse_args()
@@ -87,5 +97,5 @@ def main():
         collate(Path(args.output_path))
 
 
-if __name__=='__main__':
+if __name__ == '__main__':
     main()
