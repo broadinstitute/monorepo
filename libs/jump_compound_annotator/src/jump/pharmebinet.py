@@ -30,9 +30,8 @@ def open_gz(output_path: Path, redownload=False):
         edges = pd.read_parquet(edges_fpath)
     return edges, nodes
 
-
-if __name__ == '__main__':
-    output_path = Path('./output')
+def get_compound_annotations(output_dir: str):
+    output_path = Path(output_dir)
     jump_ids = load_jump_ids(output_path)
     edges, nodes = open_gz(output_path)
 
@@ -64,3 +63,4 @@ if __name__ == '__main__':
                                      values='gene_symbols',
                                      aggfunc=sum))
     annotations.columns.name = None
+    return annotations

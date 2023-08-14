@@ -16,11 +16,13 @@ def get_compound_annotations(output_dir: str):
     jump_ids = load_jump_ids(output_path).query('src_name=="drugbank"')
     kg = load_kg(output_path)
 
-    rels = kg.query('x_type=="drug" and y_type=="gene/protein"')
-    rels = rels.merge(jump_ids, left_on='x_id', right_on='src_compound_id')
-    rels = rels.pivot_table(index='inchikey',
-                            columns='display_relation',
-                            values='y_name',
-                            aggfunc=list)
-    rels.columns.name = None
-    return rels
+    annotations = kg.query('x_type=="drug" and y_type=="gene/protein"')
+    annotations = annotations.merge(jump_ids,
+                                    left_on='x_id',
+                                    right_on='src_compound_id')
+    annotations = annotations.pivot_table(index='inchikey',
+                                          columns='display_relation',
+                                          values='y_name',
+                                          aggfunc=list)
+    annotations.columns.name = None
+    return annotations
