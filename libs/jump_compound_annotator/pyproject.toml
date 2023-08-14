@@ -12,7 +12,8 @@ authors = [
 dependencies = [
   "pandas",
   "tqdm",
-  "requests"
+  "requests",
+  "pyarrow"
 ]
 
 [project.urls]

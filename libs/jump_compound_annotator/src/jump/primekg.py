@@ -1,5 +1,5 @@
 from pathlib import Path
-from jump.utils import download_file
+from jump.utils import download_file, load_jump_ids
 import pandas as pd
 
 
@@ -9,14 +9,6 @@ def load_kg(output_path: Path, redownload=False):
     download_file(url, filepath, redownload)
     kg = pd.read_csv(filepath, low_memory=False)
     return kg
-
-
-def load_jump_ids(output_path):
-    ids = list(map(pd.read_csv, output_path.glob('ids/ids_*.csv')))
-    if not ids:
-        raise ValueError('IDs files not found')
-    ids = pd.concat(ids).drop_duplicates().reset_index(drop=True)
-    return ids
 
 
 def get_compound_annotations(output_dir: str):
