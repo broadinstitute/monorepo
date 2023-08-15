@@ -8,7 +8,7 @@ from jump.utils import download_file, load_jump_ids
 
 def open_zip(output_path: Path, redownload=False):
     filepath = output_path / 'openbiolink/openbiolink.zip'
-    url = 'https://zenodo.org/record/3834052/files/HQ_UNDIR.zip?download=1'
+    url = 'https://zenodo.org/record/5361324/files/HQ_UNDIR.zip?download=1'
     download_file(url, filepath, redownload)
 
     zip_path = 'HQ_UNDIR/graph_files'
