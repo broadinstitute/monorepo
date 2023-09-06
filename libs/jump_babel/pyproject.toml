@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "broad-babel"
+version = "0.1.0"
+description = "A translator of Broad and JUMP ids to more conventional names."
+authors = ["Alan Munoz"]
+readme = "README.md"
+packages = [{include = "broad_babel"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.group.dev.dependencies]
+jupytext = "^1.15.0"
+ipdb = "^0.13.13"
+isort = "^5.12.0"
+black = "^23.7.0"
+biopython = "^1.81"
+jupyter = "^1.0.0"
+more-itertools = "^10.1.0"
+tqdm = "^4.66.1"
+pandas = ">=2.0.3"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
