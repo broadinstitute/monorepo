@@ -4,7 +4,7 @@ version = "0.1.0"
 description = "A translator of Broad and JUMP ids to more conventional names."
 authors = ["Alan Munoz"]
 readme = "README.md"
-packages = [{include = "broad_babel"}]
+packages = [{include = "broad_babel", from= "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
