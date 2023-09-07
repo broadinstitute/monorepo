@@ -5,7 +5,10 @@ import csv
 import sqlite3
 import typing as t
 
-import importlib_resources
+try:
+    import importlib_resources
+except:
+    import importlib.resources as importlib_resources
 
 DB_NAME = "names.db"
 TABLE = "names"
