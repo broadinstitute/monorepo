@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "broad-babel"
-version = "0.1.0"
+version = "0.1.1"
 description = "A translator of Broad and JUMP ids to more conventional names."
 authors = ["Alan Munoz"]
 readme = "README.md"
