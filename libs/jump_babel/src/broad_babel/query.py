@@ -86,14 +86,13 @@ def export_csv(output: str = "exported.csv", table: str = TABLE):
 
     query.export_csv("my_file.csv")
     """
+    con = sqlite3.connect(DB_FILE)
+    cur = con.cursor()
     with open(output, "w", newline="") as f:
-        con = sqlite3.connect(DB_FILE)
-        cur = con.cursor()
         data = cur.execute(f"SELECT * FROM {table}").fetchall()
         data = [[x if x is not None else "" for x in row] for row in data]
         writer = csv.writer(f)
 
-        writer.writerow(
-            [x[1] for x in cur.execute(f"PRAGMA table_info({TABLE})").fetchall()]
-        )
+        headers = [x[1] for x in cur.execute(f"PRAGMA table_info({TABLE})").fetchall()]
+        writer.writerow(headers)
         writer.writerows(data)
