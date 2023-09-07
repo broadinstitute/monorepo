@@ -1,0 +1,87 @@
+#+title: Process_data
+This notebook shows how to combine all metadata sources into one and generate an sqlite3 database with it
+
+Combine big dataframes (containing JUMP and general ids ). ORF contains also our gene name our standard key
+#+begin_src bash
+echo "perturbation,jump_id,standard_key,broad_sample" > merged.csv
+tail -n +2 compound.csv | sed 's/^/compound,/' | sed 's/$/,/' >> merged.csv
+tail -n +2 crispr.csv | sed 's/^/cripsr,/' | sed 's/$/,/' >> merged.csv
+tail -n +2 orf.csv | awk 'BEGIN{FS=",";OFS=",";} {print $1,$3,$2}' | sed 's/^/orf,/'  >> merged.csv # Orf data is fully contained in orf.csv
+#+end_src
+
+#+RESULTS:
+
+Combine the metadata files, they are missing the JUMP key
+#+begin_src bash
+
+echo "perturbation,jump_id,broad_sample,standard_key" > merged_unsorted.csv
+for i in *metadata.csv; do
+    perturbation="${i%%_*}"
+    tail -n +2 $i | sed "s/^/${perturbation},,/" >> merged_unsorted.csv;
+done
+
+#match last two columns
+awk 'BEGIN{FS=",";OFS=",";} {print $1,$2,$3,$4}' merged_unsorted.csv > merged_small.csv
+#+end_src
+
+#+RESULTS:
+
+Add the standard_key from the small datasets into the big one
+#+BEGIN_SRC python
+#!/usr/bin/env python3
+import csv
+
+target = "merged.csv"
+source = "merged_small.csv"
+
+# Assuming
+# perturbation, jump_id, standard_key, broad_sample for (big) target
+# perturbation, jump_id, broad_sample, standard_key for source
+
+target = "merged.csv"
+source = "merged_small.csv"
+
+with open(target) as file:
+    listed_contents = [x.strip().split(",") for x in file.readlines()]
+
+
+with open(source) as file:
+    source_rows = [x.strip().split(",") for x in file.readlines()]
+
+# perturbation, jump_id, broad_sample,standard_id for target
+standard_broad = {x[-1]: x[:-1] for x in source_rows[1:]}
+for i, target_row in enumerate(listed_contents[1:]):
+    new_value_found = standard_broad.get(target_row[2])
+    if new_value_found:
+        listed_contents[i + 1][3] = new_value_found[2]
+        del standard_broad[target_row[2]]
+
+# Add the entries without a jump id
+listed_contents += [[v[0], v[1], k, v[2]] for k, v in standard_broad.items()]
+
+# Write into a csv file
+with open("output.csv", "w") as f:
+    writer = csv.writer(f)
+    writer.writerows(listed_contents)
+#+END_SRC
+
+#+RESULTS:
+: None
+
+
+Use the pandas to save it as a sqlite3 database
+#+BEGIN_SRC python
+#!/usr/bin/env python3
+
+import sqlite3
+import pandas as pd
+
+csv_file = "output.csv"
+conn = sqlite3.connect("names.db")
+c = conn.cursor()
+df = pd.read_csv(csv_file)
+df.to_sql("names", conn, if_exists="replace", index=False)
+#+END_SRC
+
+#+RESULTS:
+: None
