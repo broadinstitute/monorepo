@@ -8,6 +8,7 @@ packages = [{include = "broad_babel", from= "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
+pooch = "^1.7.0"
 
 [tool.poetry.group.dev.dependencies]
 jupytext = "^1.15.0"
