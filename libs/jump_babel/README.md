@@ -39,6 +39,11 @@ You can fetch any field using another (note that the output is a list of tuples)
 run_query(query="JCP2022_915119", input_column="jump_id", output_column="broad_sample")
 ```
 
+Note that there are some duplicates that arise from both between orf and crispr perturbations, but also within orf standard_keys.
+
+```python
+run_query("ccsbBroad304_00900", input_column = "broad_sample", output_column = "*")
+```
 
 ## Additional documentation
 Metadata sources and additional documentation is available [here](./docs). 
