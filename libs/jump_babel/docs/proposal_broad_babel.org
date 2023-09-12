@@ -34,12 +34,10 @@ trimmed as much as possible to focus on the important data.
 :PROPERTIES:
 :CUSTOM_ID: data-sources
 :END:
-- JUMP perturbation lists:
-  https://github.com/jump-cellpainting/jump-perturbation-lists/tree/main
 - JUMP CP Metadata:
-  https://github.com/jump-cellpainting/datasets/tree/main/metadata
+"https://github.com/jump-cellpainting/datasets/raw/baacb8be98cfa4b5a03b627b8cd005de9f5c2e70/metadata/
 - JUMP-target metadata:
-  https://github.com/jump-cellpainting/JUMP-Target/blob/master/JUMP-Target-1_compound_metadata.tsv
+https://github.com/jump-cellpainting/JUMP-Target/raw/bd046851a28fb2257ef4c57c5ea4d496f1a08642"
 
 * Considerations
 :PROPERTIES:
