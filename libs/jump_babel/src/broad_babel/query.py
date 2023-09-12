@@ -5,16 +5,13 @@ import csv
 import sqlite3
 import typing as t
 
-try:
-    import importlib_resources
-except:
-    import importlib.resources as importlib_resources
+import pooch
 
-DB_NAME = "names.db"
+DB_FILE = pooch.retrieve(
+    url="doi:10.5281/zenodo.8339363/names.db",
+    known_hash="md5:d6bb9bf23161b7ecf21fc443bf848fb2",
+)
 TABLE = "names"
-
-with importlib_resources.files("broad_babel") as f:
-    DB_FILE = f / "data" / DB_NAME
 
 
 def run_query(
