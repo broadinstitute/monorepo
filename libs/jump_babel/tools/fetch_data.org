@@ -1,0 +1,37 @@
+#+title: Combine
+
+Combine multiple data sources.
+
+#+begin_src bash
+# Get the metadata sources from JUMP-target-1 and the datasets repo
+for perturbation in "compound" "crispr" "orf"; do
+wget -qO - "https://github.com/jump-cellpainting/datasets/raw/baacb8be98cfa4b5a03b627b8cd005de9f5c2e70/metadata/${perturbation}.csv.gz" | gzip -d > ${perturbation}.csv;
+wget -qO - "https://github.com/jump-cellpainting/JUMP-Target/raw/bd046851a28fb2257ef4c57c5ea4d496f1a08642/JUMP-Target-1_${perturbation}_metadata.tsv" | sed "s/\t/,/g" > JUMP_Target-1_${perturbation}_metadata.csv
+done
+# And the Target-2 compound metadata
+wget -qO - "https://github.com/jump-cellpainting/JUMP-Target/raw/bd046851a28fb2257ef4c57c5ea4d496f1a08642/JUMP-Target-2_compound_metadata.tsv" | sed "s/\t/,/g" > JUMP-Target-2_compound_metadata.csv
+
+#+end_src
+
+#+RESULTS:
+
+And now let us check which entries in crispr.csv exist in other files.
+#+begin_src bash
+for CRISPR_LINE in $(cat "crispr.csv"); do
+    JUMP_ID_CRISPR=$(cut -f1 -d"," <<< $CRISPR_LINE)
+    META_SYMBOL=$(cut -f3 -d"," <<< $CRISPR_LINE)
+    ORF_LINE=$(grep ",${META_SYMBOL}," orf.csv)
+    if [ ! -z "$LINE" ]; then
+        JUMP_ID_ORF=$(cut -f1 -d"," <<< $ORF_LINE)
+        echo "${JUMP_ID_CRISPR},${JUMP_ID_ORF},${META_SYMBOL}" >> duplicated_crispr_orf.csv
+    fi
+
+done
+
+# if wc -l $LINE; then echo "True"; fi
+#+end_src
+
+#+RESULTS:
+
+#+RESULTS:
+: /Users/amunozgo/Documents/sync/projects/broad-babel/tools
