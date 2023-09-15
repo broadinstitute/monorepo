@@ -82,7 +82,9 @@ end
 
 ** Integrate matches of small datasets with broad_sample to big datasets with JUMP ids
 Add the standard_key from the small datasets into the big one
-#+BEGIN_SRC jupyter :kernel python :session test
+#+BEGIN_SRC jupyter-python :session test
+#!/usr/bin/env python3
+
 """
 Combine both data sources, integrating the broad_sample and
 additional metadata when available
@@ -104,22 +106,15 @@ with open(source) as file:
     source_rows = [x.strip().split(",") for x in file.readlines()]
 
 # perturbation, jump_id, broad_sample,standard_id for target
-standard_broad = {x[2]: x for x in source_rows[1:]}
+standard_row = {x[2]: x for x in source_rows[1:]}
 for i, target_row in enumerate(listed_contents[1:]):
-    new_value_found = standard_broad.get(target_row[2])
-    if new_value_found:  # Fill values where unavailable
-        for j, val in enumerate(new_value_found):
-            listed_contents[i + 1][j] = listed_contents[i + 1][j] or val
-        if (
-            (new_value_found[0] == target_row[0])
-            and (new_value_found[2] == target_row[2])
-            and (new_value_found[3] == target_row[3])
-        ):
-            print(f"Found duplicate: { ( new_value_found[0],*new_value_found[2:4] ) }")
-            del standard_broad[target_row[2]]
+    new_value_found = standard_row.get(target_row[2])
+    if new_value_found:
+        listed_contents[i + 1][3:] = new_value_found[3:]
+        del standard_row[target_row[2]]
 
 # Add the entries without a jump id
-listed_contents += [v for v in standard_broad.values()]
+listed_contents += [v for v in standard_row.values()]
 
 # Write into a csv file
 with open("entries_synonyms.csv", "w") as f:
