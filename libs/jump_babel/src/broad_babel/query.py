@@ -8,8 +8,8 @@ import typing as t
 import pooch
 
 DB_FILE = pooch.retrieve(
-    url="doi:10.5281/zenodo.8339363/names.db",
-    known_hash="md5:d6bb9bf23161b7ecf21fc443bf848fb2",
+    url="doi:10.5281/zenodo.8350361/names.db",
+    known_hash="md5:80f0f5b8ea8c01a911c1a9196dcbd2fd",
 )
 TABLE = "names"
 
