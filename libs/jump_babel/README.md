@@ -31,7 +31,14 @@ export_csv("./output.csv")
 ```
 
 ## Custom querying
-The available fields are ("perturbation", "jump_id", "standard_key" and "broad_sample")
+The available fields are:
+- perturbation: Dataset of origin for a given entry
+- JCP2022: Identifier from the JUMP dataset
+- standard_key: Gene Entrez id for gene-related perturbations, and InChIKey for compound perturbations
+- broad_sample: Internal Broad ID
+- pert_type: Type of perturbation, options are trt (treatment), HBB (), control, negcon (Negative Control) and poscon (Positive Control).
+- control_type: Only applicable for entries when pert_type is "control". This value can be negcon, poscon_cp, poscon_diverse, poscon_orf and trt (treatment).
+
 
 You can fetch any field using another (note that the output is a list of tuples)
 
