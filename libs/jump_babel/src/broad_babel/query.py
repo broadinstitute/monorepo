@@ -15,7 +15,10 @@ TABLE = "names"
 
 
 def run_query(
-    query: str or t.List[str], input_column: str, output_column: str or t.List[str]
+    query: str or t.List[str],
+    input_column: str,
+    output_column: str or t.List[str],
+    operator: None or str = None,
 ) -> str or t.Dict[str, str]:
     """Query one or multiple values to the database.
 
@@ -27,12 +30,15 @@ def run_query(
         Type of name the input belongs to. It can be jump_id, broad_sample or standard_key.
     output_column : str or t.List[str]
         Desired name translation.
+    operator : None or str
+        Type of comparison to use, default is "=", but use "LIKE" to match an expression.
 
     Returns
     -------
-    str or t.Dict[str, str]
-        Translated name (str) if query is string.
-        Dictionary with input->output names if the input is a collection of strings.
+    str, t.List[t.Tuple[str]] or t.Dict[str, str]
+        - Translated name (str) if query is string and only one occurrence is found.
+        - List of tuples with all fields if output_column is not one column or multiple occurrnces are found.
+        - Dictionary with input->output names if the input is a collection of strings.
 
     """
     con = sqlite3.connect(DB_FILE)
@@ -42,7 +48,7 @@ def run_query(
     ) = f"SELECT {output_column} FROM {TABLE} WHERE {input_column} "
     placeholder = "?"  # For SQLite. See DBAPI paramstyle.
     if isinstance(query, str):
-        operator = "="
+        operator = operator or "="
         query = (query,)
     else:
         operator = "IN"

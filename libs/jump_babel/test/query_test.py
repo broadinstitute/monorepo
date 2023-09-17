@@ -3,7 +3,6 @@
 from pathlib import Path
 
 import pytest
-
 from broad_babel.query import broad_to_standard, export_csv, run_query
 
 
@@ -45,3 +44,16 @@ def test_basic_query_broad(query, output_column):
 )
 def test_broad_to_standard(query):
     broad_to_standard(query)
+
+
+@pytest.mark.parametrize(
+    "query",
+    ["BRD-K18895904%", "BRD-K21728777%"],
+)
+def test_like_query(query):
+    run_query(
+        query,
+        input_column="broad_sample",
+        output_column="*",
+        operator="LIKE",
+    )
