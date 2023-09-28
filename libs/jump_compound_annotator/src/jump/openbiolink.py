@@ -29,7 +29,6 @@ def open_zip(output_path: Path, redownload=False):
 
 def get_compound_annotations(output_dir: str):
     output_path = Path(output_dir)
-    jump_ids = load_jump_ids(output_path).query('src_name=="pubchem"')
     gene_ids = load_gene_ids()
     gene_ids.dropna(subset='NCBI_Gene_ID', inplace=True)
     gene_ids['NCBI_Gene_ID'] = gene_ids['NCBI_Gene_ID'].astype(int)
@@ -37,7 +36,7 @@ def get_compound_annotations(output_dir: str):
     edges, nodes = open_zip(output_path)
     query = 'source.str.startswith("PUBCHEM") and target.str.startswith("NCBIGENE")'
     edges = edges.query(query).copy()
-    edges['pubchem_id'] = edges['source'].str.split(':', expand=True)[1]
+    edges['source'] = edges['source'].str.split(':', expand=True)[1]
     edges['ncbi_id'] = edges['target'].str.split(':', expand=True)[1]
     edges['gene_name'] = edges['ncbi_id'].astype(int).map(gene_mapper)
     missing = edges.query('gene_name.isna()').drop_duplicates(subset='ncbi_id')
@@ -49,12 +48,7 @@ def get_compound_annotations(output_dir: str):
         print(f'{len(missing)} NCBI Gene IDs could not be found. '
               f'Dropping {nans} annotations')
 
-    annotations = jump_ids.merge(edges,
-                                 left_on='src_compound_id',
-                                 right_on='pubchem_id')
-    annotations = annotations.pivot_table(index='inchikey',
-                                          columns='rel_type',
-                                          values='gene_name',
-                                          aggfunc=list)
-    annotations.columns.name = None
-    return annotations
+    edges = edges[['source', 'gene_name', 'rel_type']].copy()
+    edges.rename(columns={'gene_name': 'target'})
+    edges['source_id'] = 'pubchem'
+    return edges
