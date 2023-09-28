@@ -4,7 +4,7 @@ from pathlib import Path
 import pandas as pd
 from jump.uniprot import get_gene_names
 
-from jump.utils import download_file, load_jump_ids
+from jump.utils import download_file
 
 
 def open_zip(output_path: Path, redownload=False):
@@ -22,20 +22,16 @@ def open_zip(output_path: Path, redownload=False):
 
 
 def get_compound_annotations(output_dir: str):
-    output_path = Path(output_dir)
-    jump_ids = load_jump_ids(output_path).query('src_name=="drugbank"')
-    edges = open_zip(output_path)
-    edges = edges.query('source.isin(@jump_ids.src_compound_id)').copy()
+    rel_types = [
+        'DPI', 'DRUG_CARRIER', 'DRUG_DISEASE_ASSOCIATION', 'DRUG_ENZYME',
+        'DRUG_PATHWAY_ASSOCIATION', 'DRUG_TARGET', 'DRUG_TRANSPORTER'
+    ]
+    edges = open_zip(Path(output_dir)).query('rel_type in @rel_types')
     uniprot_ids = edges['target'].drop_duplicates().tolist()
     results = get_gene_names(uniprot_ids)
     uniprot_to_gene = {r['from']: r['to'] for r in results['results']}
     edges['target'] = edges['target'].map(uniprot_to_gene)
     edges.dropna(subset=['target'], inplace=True)
-    annotations = jump_ids.merge(edges,
-                                 left_on='src_compound_id',
-                                 right_on='source')
-    annotations = annotations.pivot_table(index='inchikey',
-                                          columns='rel_type',
-                                          values='target',
-                                          aggfunc=list)
-    return annotations
+    edges.drop_duplicates(inplace=True)
+    edges['source_id'] = 'drugbank'
+    return edges[['source', 'target', 'rel_type', 'source_id']]
