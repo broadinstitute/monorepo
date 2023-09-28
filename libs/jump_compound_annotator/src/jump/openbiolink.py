@@ -3,7 +3,7 @@ from zipfile import ZipFile
 
 import pandas as pd
 
-from jump.utils import download_file, load_jump_ids, load_gene_ids
+from jump.utils import download_file, load_gene_ids
 
 
 def open_zip(output_path: Path, redownload=False):

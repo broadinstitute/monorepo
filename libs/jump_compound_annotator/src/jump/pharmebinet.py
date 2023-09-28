@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from jump.utils import download_file, load_jump_ids
+from jump.utils import download_file
 
 
 def open_gz(output_path: Path, redownload=False):
@@ -30,37 +30,28 @@ def open_gz(output_path: Path, redownload=False):
         edges = pd.read_parquet(edges_fpath)
     return edges, nodes
 
+
 def get_compound_annotations(output_dir: str):
     output_path = Path(output_dir)
-    jump_ids = load_jump_ids(output_path)
     edges, nodes = open_gz(output_path)
+    nodes = nodes.set_index('node_id')
+    chem_ids = nodes.query('labels=="Chemical|Compound"').index
+    edges = edges.query('start_id in @chem_ids')
+    edges = edges.query('type.str.endswith("G")')
+    edges = edges[['start_id', 'end_id', 'type']]
+    trgt_ids = edges['end_id'].drop_duplicates()
+    tgt_nodes = get_node_props(nodes.loc[trgt_ids])
+    edges['source'] = edges['start_id'].map(nodes['identifier'])
+    edges['target'] = edges['end_id'].map(tgt_nodes['gene_symbols'])
+    edges.rename(columns={'type': 'rel_type'}, inplace=True)
+    edges['source_id'] = 'drugbank'
+    edges = edges[['source', 'target', 'rel_type', 'source_id']]
+    return edges.explode('target')
 
-    cpd_nodes = nodes.query('labels=="Chemical|Compound"')
-    cpd_node_props = pd.DataFrame(cpd_nodes['properties'].apply(
-        json.loads).tolist())
-    for col in 'node_id', 'identifier', 'name':
-        cpd_node_props[col] = cpd_nodes[col].values
-    jump_nodes = cpd_node_props.query('inchikey.isin(@jump_ids.inchikey)')
 
-    jump_edges = edges.query('start_id.isin(@jump_nodes.node_id)')
-    jump_edges_gene = jump_edges.query('type.str.endswith("G")')
-
-    gene_nodes = nodes.query('node_id.isin(@jump_edges_gene.end_id)')
-    gene_node_props = pd.DataFrame(gene_nodes['properties'].apply(
-        json.loads).tolist())
-    gene_node_props['node_id'] = gene_nodes['node_id'].values
-
-    rel = jump_edges_gene[['type', 'start_id', 'end_id']]
-
-    annotations = (rel.merge(jump_nodes,
-                             left_on='start_id',
-                             right_on='node_id').merge(
-                                 gene_node_props,
-                                 left_on='end_id',
-                                 right_on='node_id').pivot_table(
-                                     index='inchikey',
-                                     columns='type_x',
-                                     values='gene_symbols',
-                                     aggfunc=sum))
-    annotations.columns.name = None
-    return annotations
+def get_node_props(nodes: pd.DataFrame) -> pd.DataFrame:
+    node_props = pd.DataFrame(nodes['properties'].apply(json.loads).tolist(),
+                              index=nodes.index)
+    for col in 'identifier', 'name':
+        node_props[col] = nodes[col].values
+    return node_props
