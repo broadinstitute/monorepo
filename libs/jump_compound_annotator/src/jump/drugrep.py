@@ -23,12 +23,14 @@ def open_data(output_path: Path, redownload=False):
     return dframe
 
 
-def get_compound_annotations(output_dir: str):
+def get_compound_annotations(output_dir: str) -> pd.DataFrame:
     edges = open_data(Path(output_dir))
     edges = edges[['pubchem_cid', 'target']].dropna()
     edges['target'] = edges['target'].str.split('|')
     edges = edges.explode('target').drop_duplicates()
-    edges.columns = ['pubchem_id', 'target']
+    edges.columns = ['source', 'target']
+    edges['rel_type'] = 'target'
+    edges['source_id'] = 'pubchem'
     return edges
 
 
