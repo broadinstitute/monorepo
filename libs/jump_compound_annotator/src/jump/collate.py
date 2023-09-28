@@ -3,6 +3,7 @@ from pathlib import Path
 
 from jump.biokg import get_compound_annotations as get_biokg
 from jump.dgidb import get_compound_annotations as get_dgidb
+from jump.drugrep import get_compound_annotations as get_drugrep
 from jump.drkg import get_compound_annotations as get_drkg
 from jump.hetionet import get_compound_annotations as get_hetionet
 from jump.ncbi import get_synonyms
@@ -23,31 +24,27 @@ def concat_annotations(output_dir: str, overwrite: bool = False):
     openbiolink = get_openbiolink(output_dir)
     pharmebinet = get_pharmebinet(output_dir)
     primekg = get_primekg(output_dir)
+    drugrep = get_drugrep(output_dir)
 
     annotations = []
-    names = 'biokg', 'dgidb', 'hetionet', 'openbiolink', 'pharmebinet', 'primekg'
-    datasets = biokg, dgidb, hetionet, openbiolink, pharmebinet, primekg
+    names = 'biokg', 'dgidb', 'drugrep', 'hetionet', 'openbiolink', 'pharmebinet', 'primekg'
+    datasets = biokg, dgidb, drugrep, hetionet, openbiolink, pharmebinet, primekg
     for name, ds in zip(names, datasets):
-        for rel_type in ds:
-            labels = ds[rel_type].explode().to_frame()
-            labels = labels.melt(ignore_index=False,
-                                 var_name='rel_type',
-                                 value_name='gene')
-            labels['database'] = name
-            annotations.append(labels)
-    annotations = pd.concat(annotations).dropna(subset='gene').reset_index()
+            ds['database'] = name
+            annotations.append(ds)
+    annotations = pd.concat(annotations).reset_index(drop=True)
 
     # Fill genes with synonyms from ncbi
     synonyms = get_synonyms(output_dir)
     gene_ids = load_gene_ids()
-    query = ('not gene.isin(@gene_ids["Approved_symbol"]) '
-             'and gene.isin(@synonyms["Synonyms"])')
+    query = ('not target in @gene_ids["Approved_symbol"] '
+             'and target in @synonyms["Synonyms"]')
     mappable = annotations.query(query)
-    mapper = synonyms.query('Synonyms.isin(@mappable.gene)')
+    mapper = synonyms.query('Synonyms.isin(@mappable.target)')
     mapper = mapper.set_index('Synonyms')['Symbol']
-    mappable = mappable.gene.map(mapper)
-    annotations.loc[mappable.index, 'gene'] = mappable.values
-    annotations = annotations.query('gene.isin(@gene_ids["Approved_symbol"])')
+    mappable = mappable['target'].map(mapper)
+    annotations.loc[mappable.index, 'target'] = mappable.values
+    annotations = annotations.query('target in @gene_ids["Approved_symbol"]')
     annotations = annotations.reset_index(drop=True).copy()
     annotations.to_parquet(filepath)
     return annotations

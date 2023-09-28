@@ -49,6 +49,7 @@ def get_compound_annotations(output_dir: str):
               f'Dropping {nans} annotations')
 
     edges = edges[['source', 'gene_name', 'rel_type']].copy()
-    edges.rename(columns={'gene_name': 'target'})
+    edges = edges.dropna().drop_duplicates()
+    edges.rename(columns={'gene_name': 'target'}, inplace=True)
     edges['source_id'] = 'pubchem'
     return edges

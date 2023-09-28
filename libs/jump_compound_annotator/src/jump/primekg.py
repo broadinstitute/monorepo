@@ -1,5 +1,5 @@
 from pathlib import Path
-from jump.utils import download_file, load_jump_ids
+from jump.utils import download_file
 import pandas as pd
 
 
@@ -11,18 +11,15 @@ def load_kg(output_path: Path, redownload=False):
     return kg
 
 
-def get_compound_annotations(output_dir: str):
+def get_compound_annotations(output_dir: str) -> pd.DataFrame:
     output_path = Path(output_dir)
-    jump_ids = load_jump_ids(output_path).query('src_name=="drugbank"')
-    kg = load_kg(output_path)
-
-    annotations = kg.query('x_type=="drug" and y_type=="gene/protein"')
-    annotations = annotations.merge(jump_ids,
-                                    left_on='x_id',
-                                    right_on='src_compound_id')
-    annotations = annotations.pivot_table(index='inchikey',
-                                          columns='display_relation',
-                                          values='y_name',
-                                          aggfunc=list)
-    annotations.columns.name = None
-    return annotations
+    edges = load_kg(output_path)
+    edges = edges.query('x_type=="drug" and y_type=="gene/protein"').copy()
+    edges.rename(columns=dict(x_id='source',
+                              y_name='target',
+                              display_relation='rel_type'),
+                 inplace=True)
+    edges['source_id'] = 'drugbank'
+    edges = edges[['source', 'target', 'rel_type', 'source_id']]
+    edges = edges.dropna().drop_duplicates()
+    return edges

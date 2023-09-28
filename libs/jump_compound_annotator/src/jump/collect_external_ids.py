@@ -7,6 +7,7 @@ import pandas as pd
 
 from jump.biokg import open_zip as open_biokg
 from jump.dgidb import open_tsv_files as open_dgidb
+from jump.drugrep import open_data as open_drugrep
 from jump.hetionet import open_zip as open_hetionet
 from jump.openbiolink import open_zip as open_openbiolink
 from jump.pharmebinet import open_gz as open_pharmebinet
@@ -30,14 +31,14 @@ def export(output_path):
     edges['drug_concept_id'] = edges.drug_concept_id.str[len('chembl:'):]
     dgidb_chembl_id = edges['drug_concept_id'].dropna().drop_duplicates()
 
+    edges = open_drugrep(output_path)
+    drugrep_pubchem_id = edges['pubchem_cid'].dropna().drop_duplicates()
+
     edges, nodes = open_hetionet(output_path)
     query = 'source.str.startswith("Compound") and target.str.startswith("Gene")'
     edges = edges.query(query).copy()
     edges['source'] = edges['source'].str[len('Compound::'):]
     hetionet_drugbank_id = edges['source'].dropna().drop_duplicates()
-
-    #names = 'biokg', 'dgidb', 'hetionet', 'openbiolink', 'pharmebinet', 'primekg'
-    #datasets = biokg, dgidb, hetionet, openbiolink, pharmebinet, primekg
 
     edges, nodes = open_openbiolink(output_path)
     query = 'source.str.startswith("PUBCHEM") and target.str.startswith("NCBIGENE")'
@@ -67,14 +68,19 @@ def export(output_path):
             primekg_drugbank_id,
         ]))
 
+    pubchem_id = np.unique(
+        np.concatenate([
+            openbiolink_pubchem_id,
+            drugrep_pubchem_id,
+        ]))
+
+    chembl_id = dgidb_chembl_id.values
+
+
     external_id_path = (output_path / 'external_ids')
     external_id_path.mkdir(parents=True, exist_ok=True)
-    np.savetxt(external_id_path / 'pubchem.txt',
-               openbiolink_pubchem_id.values,
-               fmt='%s')
-    np.savetxt(external_id_path / 'chembl.txt',
-               dgidb_chembl_id.values,
-               fmt='%s')
+    np.savetxt(external_id_path / 'pubchem.txt', pubchem_id, fmt='%s')
+    np.savetxt(external_id_path / 'chembl.txt', chembl_id, fmt='%s')
     np.savetxt(external_id_path / 'drugbank.txt', drugbank_id, fmt='%s')
 
 
