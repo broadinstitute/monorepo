@@ -23,19 +23,11 @@ def open_zip(output_path: Path, redownload=False):
 
 def get_compound_annotations(output_dir: str):
     output_path = Path(output_dir)
-    jump_ids = load_jump_ids(output_path).query('src_name=="drugbank"')
     edges, nodes = open_zip(output_path)
     query = 'source.str.startswith("Compound") and target.str.startswith("Gene")'
     edges = edges.query(query).copy()
     edges['source'] = edges['source'].str[len('Compound::'):]
     edges['target'] = edges['target'].map(nodes.set_index('id').name)
-    edges = edges.query('source.isin(@jump_ids.src_compound_id)')
-    annotations = jump_ids.merge(edges,
-                                 left_on='src_compound_id',
-                                 right_on='source')
-    annotations = annotations.pivot_table(index='inchikey',
-                                          columns='metaedge',
-                                          values='target',
-                                          aggfunc=list)
-    annotations.columns.name = None
-    return annotations
+    edges.rename(columns={'metaedge': 'rel_type'}, inplace=True)
+    edges['source_id'] = 'drugbank'
+    return edges[['source', 'target', 'rel_type', 'source_id']]
