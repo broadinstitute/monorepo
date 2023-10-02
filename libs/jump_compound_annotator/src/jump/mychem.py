@@ -21,7 +21,7 @@ def get_chembl_mapper(output_dir):
     output_path = Path(output_dir)
     output_file = output_path / 'mychem_chembl_mapper.csv'
     if output_file.is_file():
-        return pd.read_csv(output_file).set_index('chembl')['inchikey']
+        return pd.read_csv(output_file, dtype=str).set_index('chembl')['inchikey']
 
     df = pd.read_parquet(output_path / 'annotations.parquet')
     chembl_ids = df.query('source_id=="chembl"').source.unique()
@@ -57,7 +57,7 @@ def get_pubchem_mapper(output_dir):
     output_path = Path(output_dir)
     output_file = output_path / 'mychem_pubchem_mapper.csv'
     if output_file.is_file():
-        return pd.read_csv(output_file).set_index('pubchem')['inchikey']
+        return pd.read_csv(output_file, dtype=str).set_index('pubchem')['inchikey']
 
     df = pd.read_parquet(output_path / 'annotations.parquet')
     pubchem_ids = df.query('source_id=="pubchem"').source.unique()
@@ -93,7 +93,7 @@ def get_drugbank_mapper(output_dir):
     output_path = Path(output_dir)
     output_file = output_path / 'mychem_drugbank_mapper.csv'
     if output_file.is_file():
-        return pd.read_csv(output_file).set_index('drugbank')['inchikey']
+        return pd.read_csv(output_file, dtype=str).set_index('drugbank')['inchikey']
 
     df = pd.read_parquet(output_path / 'annotations.parquet')
     drugbank_ids = df.query('source_id=="drugbank"').source.unique()
