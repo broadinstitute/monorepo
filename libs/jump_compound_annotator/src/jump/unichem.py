@@ -141,5 +141,26 @@ def main():
         collate(Path(args.output_path))
 
 
+def get_inchi_annotations(output_dir):
+    df = pd.read_parquet(Path(output_dir) / 'annotations.parquet')
+    db_mapper = get_mapper(output_dir, 'drugbank')
+    ch_mapper = get_mapper(output_dir, 'chembl')
+    pc_mapper = get_mapper(output_dir, 'pubchem')
+
+    drugbank_mask = df['source_id'] == 'drugbank'
+    chembl_mask = df['source_id'] == 'chembl'
+    pubchem_mask = df['source_id'] == 'pubchem'
+
+    df['inchikey'] = None
+    df.loc[drugbank_mask, 'inchikey'] = df['source'].map(db_mapper)
+    df.loc[chembl_mask, 'inchikey'] = df['source'].map(ch_mapper)
+    df.loc[pubchem_mask, 'inchikey'] = df['source'].map(pc_mapper)
+
+    inchi_regex = r'^([A-Z]{14}\-[A-Z]{10})(\-[A-Z])$'
+    df = df.query('inchikey.fillna("").str.fullmatch(@inchi_regex)')
+    df = df.drop_duplicates().reset_index(drop=True).copy()
+    return df
+
+
 if __name__ == '__main__':
     main()

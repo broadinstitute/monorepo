@@ -7,10 +7,12 @@ from jump.dgidb import get_compound_annotations as get_dgidb
 from jump.drkg import get_compound_annotations as get_drkg
 from jump.drugrep import get_compound_annotations as get_drugrep
 from jump.hetionet import get_compound_annotations as get_hetionet
+from jump.mychem import get_inchi_annotations as mychem_annotations
 from jump.ncbi import get_synonyms
 from jump.openbiolink import get_compound_annotations as get_openbiolink
 from jump.pharmebinet import get_compound_annotations as get_pharmebinet
 from jump.primekg import get_compound_annotations as get_primekg
+from jump.unichem import get_inchi_annotations as unichem_annotations
 from jump.utils import load_gene_ids
 
 
@@ -49,3 +51,13 @@ def concat_annotations(output_dir: str, overwrite: bool = False):
     annotations = annotations.reset_index(drop=True).copy()
     annotations.to_parquet(filepath)
     return annotations
+
+
+def get_inchi_annotations(output_dir):
+    df_unichem = unichem_annotations(output_dir)
+    df_mychem = mychem_annotations(output_dir)
+    df = pd.concat([df_mychem, df_unichem]).drop_duplicates()
+    df = df.drop_duplicates(['inchikey', 'rel_type', 'target'])
+    df = df.reset_index(drop=True).copy()
+
+    return df

@@ -137,4 +137,9 @@ def get_inchi_annotations(output_dir):
     df.loc[drugbank_mask, 'inchikey'] = df['source'].map(db_mapper)
     df.loc[chembl_mask, 'inchikey'] = df['source'].map(ch_mapper)
     df.loc[pubchem_mask, 'inchikey'] = df['source'].map(pc_mapper)
+
+    inchi_regex = r'^([A-Z]{14}\-[A-Z]{10})(\-[A-Z])$'
+    df = df.query('inchikey.fillna("").str.fullmatch(@inchi_regex)')
+    df = df.drop_duplicates().reset_index(drop=True).copy()
+
     return df
