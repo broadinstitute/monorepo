@@ -1,3 +1,4 @@
+import json
 from pathlib import Path
 
 import numpy as np
@@ -21,7 +22,8 @@ def get_chembl_mapper(output_dir):
     output_path = Path(output_dir)
     output_file = output_path / 'mychem_chembl_mapper.csv'
     if output_file.is_file():
-        return pd.read_csv(output_file, dtype=str).set_index('chembl')['inchikey']
+        return pd.read_csv(output_file,
+                           dtype=str).set_index('chembl')['inchikey']
 
     df = pd.read_parquet(output_path / 'annotations.parquet')
     chembl_ids = df.query('source_id=="chembl"').source.unique()
@@ -29,12 +31,12 @@ def get_chembl_mapper(output_dir):
     result = thread_map(inchis_from_chembl, batches, max_workers=8)
     result = sum(result, [])
 
-    errors, mapper = {}, {}
+    mapper = {}
     for dbid, rs in zip(chembl_ids, result):
         if 'error' not in rs and 'notfound' not in rs:
             mapper[dbid] = rs['_id']
         else:
-            errors[dbid] = rs
+            mapper[dbid] = json.dumps(rs)
 
     mapper = pd.Series(mapper, name='inchikey')
     mapper.index.name = 'chembl'
@@ -57,7 +59,8 @@ def get_pubchem_mapper(output_dir):
     output_path = Path(output_dir)
     output_file = output_path / 'mychem_pubchem_mapper.csv'
     if output_file.is_file():
-        return pd.read_csv(output_file, dtype=str).set_index('pubchem')['inchikey']
+        return pd.read_csv(output_file,
+                           dtype=str).set_index('pubchem')['inchikey']
 
     df = pd.read_parquet(output_path / 'annotations.parquet')
     pubchem_ids = df.query('source_id=="pubchem"').source.unique()
@@ -65,12 +68,12 @@ def get_pubchem_mapper(output_dir):
     result = thread_map(inchis_from_pubchem, batches, max_workers=8)
     result = sum(result, [])
 
-    errors, mapper = {}, {}
+    mapper = {}
     for dbid, rs in zip(pubchem_ids, result):
         if 'error' not in rs and 'notfound' not in rs:
             mapper[dbid] = rs['_id']
         else:
-            errors[dbid] = rs
+            mapper[dbid] = json.dumps(rs)
 
     mapper = pd.Series(mapper, name='inchikey')
     mapper.index.name = 'pubchem'
@@ -93,7 +96,8 @@ def get_drugbank_mapper(output_dir):
     output_path = Path(output_dir)
     output_file = output_path / 'mychem_drugbank_mapper.csv'
     if output_file.is_file():
-        return pd.read_csv(output_file, dtype=str).set_index('drugbank')['inchikey']
+        return pd.read_csv(output_file,
+                           dtype=str).set_index('drugbank')['inchikey']
 
     df = pd.read_parquet(output_path / 'annotations.parquet')
     drugbank_ids = df.query('source_id=="drugbank"').source.unique()
@@ -101,12 +105,12 @@ def get_drugbank_mapper(output_dir):
     result = thread_map(inchis_from_drugbank, batches, max_workers=8)
     result = sum(result, [])
 
-    errors, mapper = {}, {}
+    mapper = {}
     for dbid, rs in zip(drugbank_ids, result):
         if 'error' not in rs and 'notfound' not in rs:
             mapper[dbid] = rs['_id']
         else:
-            errors[dbid] = rs
+            mapper[dbid] = json.dumps(rs)
 
     mapper = pd.Series(mapper, name='inchikey')
     mapper.index.name = 'drugbank'
@@ -117,3 +121,20 @@ def get_drugbank_mapper(output_dir):
     mapper['DB08866'] = 'LRHSUZNWLAJWRT-GAJBHWORSA-N'
     mapper.to_csv(output_file)
     return mapper
+
+
+def get_inchi_annotations(output_dir):
+    df = pd.read_parquet(Path(output_dir) / 'annotations.parquet')
+    db_mapper = get_drugbank_mapper(output_dir)
+    ch_mapper = get_chembl_mapper(output_dir)
+    pc_mapper = get_pubchem_mapper(output_dir)
+
+    drugbank_mask = df['source_id'] == 'drugbank'
+    chembl_mask = df['source_id'] == 'chembl'
+    pubchem_mask = df['source_id'] == 'pubchem'
+
+    df['inchikey'] = None
+    df.loc[drugbank_mask, 'inchikey'] = df['source'].map(db_mapper)
+    df.loc[chembl_mask, 'inchikey'] = df['source'].map(ch_mapper)
+    df.loc[pubchem_mask, 'inchikey'] = df['source'].map(pc_mapper)
+    return df

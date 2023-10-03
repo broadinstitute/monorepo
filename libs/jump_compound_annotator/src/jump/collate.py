@@ -2,7 +2,6 @@ from pathlib import Path
 
 import pandas as pd
 
-from jump import mychem
 from jump.biokg import get_compound_annotations as get_biokg
 from jump.dgidb import get_compound_annotations as get_dgidb
 from jump.drkg import get_compound_annotations as get_drkg
@@ -50,20 +49,3 @@ def concat_annotations(output_dir: str, overwrite: bool = False):
     annotations = annotations.reset_index(drop=True).copy()
     annotations.to_parquet(filepath)
     return annotations
-
-
-def get_inchi_annotations(output_dir):
-    df = concat_annotations(output_dir)
-    db_mapper = mychem.get_drugbank_mapper(output_dir)
-    ch_mapper = mychem.get_chembl_mapper(output_dir)
-    pc_mapper = mychem.get_pubchem_mapper(output_dir)
-
-    drugbank_mask = df['source_id'] == 'drugbank'
-    chembl_mask = df['source_id'] == 'chembl'
-    pubchem_mask = df['source_id'] == 'pubchem'
-
-    df['inchikey'] = None
-    df.loc[drugbank_mask, 'inchikey'] = df['source'].map(db_mapper)
-    df.loc[chembl_mask, 'inchikey'] = df['source'].map(ch_mapper)
-    df.loc[pubchem_mask, 'inchikey'] = df['source'].map(pc_mapper)
-    return df
