@@ -4,20 +4,20 @@ Basic querying logic using Python's sqlite
 import csv
 import sqlite3
 import typing as t
+from functools import cache
 
 import pooch
 
 DB_FILE = pooch.retrieve(
-    # Temorarily commented out due to Zenodo API change
+    # Temporarily commented out due to Zenodo API change
     # url="doi:10.5281/zenodo.8350361/names.db",
-    url=("https://zenodo.org/records/8350361/files/"
-         "names.db"
-        ),
+    url=("https://zenodo.org/records/8350361/files/" "names.db"),
     known_hash="md5:80f0f5b8ea8c01a911c1a9196dcbd2fd",
 )
 TABLE = "names"
 
 
+@cache
 def run_query(
     query: str or t.List[str],
     input_column: str,
