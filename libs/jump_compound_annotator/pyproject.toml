@@ -1,5 +1,5 @@
 [project]
-name = "jump_dti_labels"
+name = "jump_fetcher_drug_target_interaction"
 version = "0.0.1"
 description = "Find drug target interaction annotations for JUMP compounds"
 readme = "README.md"
@@ -35,7 +35,7 @@ requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "jump_dti_labels"
+name = "jump_fetcher_drug_target_interaction"
 version = "0.0.1"
 description = "Find drug target interaction annotations for JUMP compounds"
 readme = "README.md"
