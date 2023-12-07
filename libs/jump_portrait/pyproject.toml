@@ -10,6 +10,12 @@ packages = [{include = "jump_portrait", from= "src"}]
 python = "^3.9"
 pooch = "^1.7.0"
 tqdm = "^4.66.1"
+matplotlib = "^3.8.2"
+pyarrow = "^14.0.1"
+fsspec = "^2023.12.1"
+s3fs = "^2023.12.1"
+boto3 = ">=1.33.1"
+s3path = "^0.5.0"
 
 [tool.poetry.group.dev.dependencies]
 jupytext = "^1.15.0"
