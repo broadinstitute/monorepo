@@ -152,3 +152,10 @@ df.to_sql("names", conn, if_exists="replace", index=False)
 
 
 Finally you can upload it to Zenodo and update the pooch retrieval url and hash on [[file:../src/broad_babel/query.py]]
+
+* Cleanup
+#+begin_src fish
+#rm *.csv
+#+end_src
+
+#+RESULTS:
