@@ -1,0 +1,50 @@
+[project]
+name = "jump_fetcher_drug_target_interaction"
+version = "0.0.1"
+description = "Find drug target interaction annotations for JUMP compounds"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {file = "LICENSE.txt"}
+keywords = ["jump-dataset", "DTI"]
+authors = [
+  {name = "John Arevalo", email = "johnarevalo@gmail.com" }
+]
+dependencies = [
+  "pandas",
+  "tqdm",
+  "requests",
+  "pyarrow"
+]
+
+[project.urls]
+"Homepage" = "https://github.com/jump-cellpainting/jump_dti_labels"
+"Bug Reports" = "https://github.com/jump-cellpainting/jump_dti_labels/issues"
+"Source" = "https://github.com/jump-cellpainting/jump_dti_labels"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry]
+name = "jump_fetcher_drug_target_interaction"
+version = "0.0.1"
+description = "Find drug target interaction annotations for JUMP compounds"
+readme = "README.md"
+keywords = ["jump-dataset", "DTI"]
+authors = ["John Arevalo"]
+packages = [{include = "jump", from= "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+tqdm = "^4.66.1"
+pandas = "^2.0.3"
+requests = "^2.31.0"
+pyarrow = "^14.0.1"
+
+[tool.poetry.group.dev.dependencies]
+jupytext = "^1.15.0"
+ipdb = "^0.13.13"
+isort = "^5.12.0"
+black = "^23.7.0"
+jupyter = "^1.0.0"
+pytest = "^7.4.1"
