@@ -563,6 +563,20 @@ urllib3 = [
 crt = ["awscrt (==0.19.17)"]
 
 [[package]]
+name = "broad-babel"
+version = "0.1.7"
+description = "A translator of Broad and JUMP ids to more conventional names."
+optional = false
+python-versions = ">=3.8,<4.0"
+files = [
+    {file = "broad_babel-0.1.7-py3-none-any.whl", hash = "sha256:f3b0d1b7859a019a150897dd323392ccda2a2a7b8f3e973f794452f3fa10e4c8"},
+    {file = "broad_babel-0.1.7.tar.gz", hash = "sha256:cda32009d5650a29a96f1441207c260bd933208b6c4cd0b74c269fa5060a70fc"},
+]
+
+[package.dependencies]
+pooch = ">=1.7.0,<2.0.0"
+
+[[package]]
 name = "certifi"
 version = "2023.11.17"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -4153,4 +4167,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "da24a5702d579bc9cf775b016027928ab49ed8dd67b0c289ceb1d53d1e57f885"
+content-hash = "517247902be575570fb4c085bc4d503fb155ac83243a0a864ae6859035a569c1"
