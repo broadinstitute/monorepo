@@ -17,6 +17,7 @@ s3fs = "^2023.12.1"
 boto3 = ">=1.33.1"
 s3path = "^0.5.0"
 broad-babel = "^0.1.7"
+pathos = "^0.3.1"
 
 [tool.poetry.group.dev.dependencies]
 jupytext = "^1.15.0"
