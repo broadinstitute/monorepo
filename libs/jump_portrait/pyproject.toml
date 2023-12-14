@@ -28,7 +28,6 @@ black = "^23.7.0"
 biopython = "^1.81"
 jupyter = "^1.0.0"
 tqdm = "^4.66.1"
-pandas = ">=2.0.3"
 pytest = "^7.4.1"
 csvkit = "^1.1.1"
 
