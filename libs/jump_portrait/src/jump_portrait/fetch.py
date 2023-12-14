@@ -5,16 +5,14 @@ Functions to get JUMP-CP images from AWS's s3://cellpainting-gallery.
 Based on github.com/jump-cellpainting/datasets/blob/baacb8be98cfa4b5a03b627b8cd005de9f5c2e70/sample_notebook.ipynb
 
 The general workflow is a bit contrived but it works:
-a) If you have a item of interest and want to see them:
+a) If you have an item of interest and want to see them:
 - Use broad_babel to convert item name to jump id (get_item_location_metadata)
 - Use JUMP identifier to fetch the metadata dataframe with image locations (load_metadatra_parquets)
 - Use this location dataframe to build a full path and fetch it from there
 
 Current problems:
 - More controls than individual samples
-- Threading to fetch parquet dataframes from aws freezes with no explanation
-- get_jump_image is not incorporated to a workflow yet
-- Control info is murky, requires work on broad_babel
+- Control info is murky, requires using broad_babel
 
 """
 from functools import cache
@@ -252,7 +250,7 @@ def get_well_image_uris(s3_location_uri, well: str) -> pl.DataFrame:
 def get_item_location_info(
     item_name: str, controls: bool = True, **kwargs
 ) -> pl.DataFrame:
-    """Wrapper to obtain a dataframe with locations of a item.
+    """Wrapper to obtain a dataframe with locations of an item.
 
     Parameters
     ----------
