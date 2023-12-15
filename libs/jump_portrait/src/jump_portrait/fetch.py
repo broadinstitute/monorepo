@@ -28,7 +28,7 @@ from botocore.config import Config
 from broad_babel import query
 from s3path import PureS3Path, S3Path
 
-from jump_portrait.utils import parallel
+from jump_portrait.utils import batch_processing, parallel
 
 
 @cache
@@ -106,7 +106,7 @@ def get_jump_image(
     well: str,
     channel: str,
     site: str = 1,
-    correction: str = "",
+    correction: str = "Orig",
 ) -> np.ndarray:
     """Main function to fetch a JUMP image for AWS.
     Metadata for most files can be obtained from a set of data frames,
@@ -234,13 +234,14 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
             map(lambda x: x["Metadata_Well"], metadata_fields),
         )
     )
-    well_images_uri = parallel(iterable, lambda x: get_well_image_uris(*x))
+    well_images_uri = parallel(iterable, get_well_image_uris)
 
     selected_uris = pl.concat(well_images_uri)
 
     return selected_uris
 
 
+@batch_processing
 def get_well_image_uris(s3_location_uri, well: str) -> pl.DataFrame:
     # Returns a dataframe indicating the image location of specific wells for a given parquet file.
     locations_df = pl.read_parquet(s3_location_uri, use_pyarrow=True)

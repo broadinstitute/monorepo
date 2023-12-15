@@ -1,8 +1,10 @@
 """General utilities"""
 from collections.abc import Callable, Iterable
+from itertools import chain
 from typing import Any
 
 from joblib import Parallel, cpu_count, delayed
+from tqdm import tqdm
 
 
 def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
@@ -39,6 +41,7 @@ def parallel(
     args: list[Any] = [],
     jobs: int = None,
     timeout: float = None,
+    **kwargs: dict[Any, Any],
 ) -> list[Any]:
     """Distribute process on iterable.
 
@@ -61,9 +64,31 @@ def parallel(
         A list of outputs genetated by function.
     """
     jobs = jobs or cpu_count()
-    if hasattr("__len__", iterable) and len(iterable) < jobs:
+
+    if not hasattr(iterable, "__len__"):
+        iterable = list(iterable)
+
+    if len(iterable) < jobs:
         jobs = len(iterable)
     slices = slice_iterable(iterable, jobs)
-    return Parallel(n_jobs=jobs, timeout=timeout)(
-        delayed(func)(*chunk, *args) for chunk in [iterable[s] for s in slices]
+    result = Parallel(n_jobs=jobs, timeout=timeout)(
+        delayed(func)(chunk, idx, *args, **kwargs)
+        for idx, chunk in enumerate([iterable[s] for s in slices])
     )
+
+    if result is not None:
+        return list(chain(*[x for x in result if x is not None]))
+
+
+def batch_processing(f: Callable):
+    # This assumes parameters are packed in a tuple
+    def batched_fn(item_list: Iterable, job_idx: int, *args, **kwargs):
+        results = []
+        for item in (pbar := tqdm(item_list, position=job_idx)):
+            # pbar.set_description(f"Processing {item}")
+            results.append(f(*item, *args, **kwargs))
+
+        if any([x is not None for x in results]):
+            return results
+
+    return batched_fn
