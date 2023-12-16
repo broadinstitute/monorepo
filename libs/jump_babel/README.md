@@ -36,8 +36,7 @@ The available fields are:
 - JCP2022: Identifier from the JUMP dataset
 - standard_key: Gene Entrez id for gene-related perturbations, and InChIKey for compound perturbations
 - broad_sample: Internal Broad ID
-- pert_type: Type of perturbation, options are trt (treatment), HBB (), control, negcon (Negative Control) and poscon (Positive Control).
-- control_type: Only applicable for entries when pert_type is "control". This value can be negcon, poscon_cp, poscon_diverse, poscon_orf and trt (treatment).
+- pert_type: Type of perturbation, options are trt (treatment), control, negcon (Negative Control), poscon_cp (Positive Control, Compound Probe), poscon_diverse, poscon_orf, and poscon (Positive Control).
 
 
 You can fetch any field using another (note that the output is a list of tuples)

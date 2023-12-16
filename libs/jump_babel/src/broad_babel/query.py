@@ -11,17 +11,19 @@ import pooch
 DB_FILE = pooch.retrieve(
     # Temporarily commented out due to Zenodo API change
     # url="doi:10.5281/zenodo.8350361/names.db",
-    url=("https://zenodo.org/records/8350361/files/" "names.db"),
-    known_hash="md5:80f0f5b8ea8c01a911c1a9196dcbd2fd",
+    # url=("https://zenodo.org/records/8350361/files/" "names.db"),
+    # known_hash="md5:80f0f5b8ea8c01a911c1a9196dcbd2fd",
+    url=("https://zenodo.org/records/10393656/files/" "babel.db"),
+    known_hash="md5:df52c4843ef9cf914db55b9d85f304d4",
 )
-TABLE = "names"
+TABLE = "babel"
 
 
 @cache
 def run_query(
-    query: str or t.List[str],
+    query: str or tuple[str],
     input_column: str,
-    output_column: str or t.List[str],
+    output_column: str or str,
     operator: None or str = None,
 ) -> str or t.Dict[str, str]:
     """Query one or multiple values to the database.
@@ -31,7 +33,7 @@ def run_query(
     query : str or t.List[str]
         Input identifiers
     input_column : str
-        Type of name the input belongs to. It can be jump_id, broad_sample or standard_key.
+        Type of name the input belongs to. It can be JCP2022, broad_sample or standard_key.
     output_column : str or t.List[str]
         Desired name translation.
     operator : None or str

@@ -88,13 +88,15 @@ targets_combined = pl.concat(
         )
         for target in targets
     ]
-)
+).unique()
 
 
 # Consolidate controls into a single column
-targets_combined_control = targets_combined.with_columns(
-    merge_on_null("pert_type", "control_type")
-).drop("control_type")
+targets_combined_control = (
+    targets_combined.with_columns(merge_on_null("pert_type", "control_type"))
+    .drop("control_type")
+    .unique()
+)
 
 
 # ORF + CRISPR + COMPOUNDS
@@ -155,9 +157,10 @@ final_version = pert_target_all_manual_trt.rename(
 )
 
 # Save
-pert_target_all_manual_trt.write_database(
+db_name = "babel.db"
+final_version.write_database(
     table_name="babel",
-    connection="sqlite:babel.db",
+    connection=f"sqlite:{db_name}",
     if_exists="replace",
     engine="adbc",
 )
