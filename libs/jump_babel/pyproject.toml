@@ -7,8 +7,10 @@ readme = "README.md"
 packages = [{include = "broad_babel", from= "src"}]
 
 [tool.poetry.dependencies]
-python = "^3.8"
+python = "^3.9"
 pooch = "^1.7.0"
+polars = "^0.19.19"
+adbc-driver-sqlite = "^0.8.0"
 
 [tool.poetry.group.dev.dependencies]
 jupytext = "^1.15.0"
