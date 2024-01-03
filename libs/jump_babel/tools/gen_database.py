@@ -99,15 +99,21 @@ targets_combined_control = (
 )
 
 
+def select_if_available(df, cols):
+    # Select columns present in df
+    return df.select(*set(df.columns).intersection(cols))
+
+
 # ORF + CRISPR + COMPOUNDS
-df_all = pl.concat(
-    [
-        get_table(dataset)
-        .rename(provide_mapper(get_table(dataset), std_col))
-        .select(jcp_col, "standard_key")
-        for dataset in ("orf", "crispr", "compound")
-    ]
-)
+df_all = []
+for dataset in ("orf", "crispr", "compound"):
+    table = get_table(dataset).rename(provide_mapper(get_table(dataset), std_col))
+    sel_table = select_if_available(table, (jcp_col, std_col, "Metadata_NCBI_Gene_ID"))
+    if df_all is None:
+        df_all = sel_table
+    else:
+        df_all.append(sel_table)
+df_all = pl.concat(df_all, how="diagonal")
 
 df_all_pert = df_all.join(
     get_table("orf").select(jcp_col, "Metadata_broad_sample", pert_col),
