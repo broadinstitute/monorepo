@@ -37,7 +37,7 @@ The available fields are:
 - standard_key: Gene Entrez id for gene-related perturbations, and InChIKey for compound perturbations
 - broad_sample: Internal Broad ID
 - pert_type: Type of perturbation, options are trt (treatment), control, negcon (Negative Control), poscon_cp (Positive Control, Compound Probe), poscon_diverse, poscon_orf, and poscon (Positive Control).
-
+- NCBI_Gene_ID: NCBI identifier, only applicable to ORF and CRISPR
 
 You can fetch any field using another (note that the output is a list of tuples)
 
