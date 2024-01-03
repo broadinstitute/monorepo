@@ -158,9 +158,11 @@ pert_target_all_manual_trt = pert_target_all_manual.with_columns(
     pl.col(pert_col).fill_null("trt")
 )
 
-final_version = pert_target_all_manual_trt.rename(
-    {x: x.lstrip("Metadata_") for x in (jcp_col, brd_col, pert_col)}
+final_version = pert_target_all_manual_trt.select(
+    pl.all().name.map(lambda col_name: col_name.replace("Metadata_", ""))
 )
+
+# {x: x.lstrip("Metadata_") for x in (jcp_col, brd_col, pert_col)}
 
 # Save
 db_name = "babel.db"
