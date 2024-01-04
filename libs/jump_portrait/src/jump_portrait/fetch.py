@@ -18,22 +18,15 @@ Current problems:
 from functools import cache
 from io import BytesIO
 
-import boto3
 import matplotlib.image as mpimg
 import numpy as np
 import polars as pl
 import pooch
-from botocore import UNSIGNED
-from botocore.config import Config
 from broad_babel import query
-from s3path import PureS3Path, S3Path
 
+from jump_portrait.s3 import (build_s3_image_path, get_image_from_s3path,
+                              s3client)
 from jump_portrait.utils import batch_processing, parallel
-
-
-@cache
-def s3client():
-    return boto3.client("s3", config=Config(signature_version=UNSIGNED))
 
 
 @cache
@@ -78,25 +71,6 @@ def get_sample(n: int = 2, seed: int = 42):
 
     parquet_meta = pl.read_parquet(s3_path, use_pyarrow=True)
     return parquet_meta
-
-
-def build_s3_image_path(
-    row: dict[str, str], channel: str, correction: None or str = None
-) -> PureS3Path:
-    """ """
-    if correction is None:
-        correction = "Orig"
-    index_suffix = correction + channel
-    final_path = (
-        S3Path.from_uri(row["_".join(("PathName", index_suffix))])
-        / row["_".join(("FileName", index_suffix))]
-    )
-    return final_path
-
-
-def get_image_from_s3path(s3_image_path: PureS3Path) -> np.ndarray:
-    response = s3client().get_object(Bucket=s3_image_path.bucket, Key=s3_image_path.key)
-    return mpimg.imread(BytesIO(response["Body"].read()), format="tiff")
 
 
 def get_jump_image(

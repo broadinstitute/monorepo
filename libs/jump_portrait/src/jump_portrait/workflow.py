@@ -1,6 +1,4 @@
 #!/usr/bin/env jupyter
-
-
 """
 Workflow 1: Fetch one image for a given item and a control
 """

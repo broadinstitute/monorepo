@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jump-portrait"
-version = "0.0.1"
+version = "0.0.2"
 description = "Tools to fetch and visualize JUMP images"
 authors = ["Alan Munoz"]
 readme = "README.md"
@@ -30,6 +30,7 @@ jupyter = "^1.0.0"
 tqdm = "^4.66.1"
 pytest = "^7.4.1"
 csvkit = "^1.1.1"
+ruff-lsp = "^0.0.48"
 
 [build-system]
 requires = ["poetry-core"]
