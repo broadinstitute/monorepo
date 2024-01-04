@@ -17,7 +17,6 @@ Current problems:
 """
 from functools import cache
 
-import matplotlib.image as mpimg
 import numpy as np
 import polars as pl
 import pooch
