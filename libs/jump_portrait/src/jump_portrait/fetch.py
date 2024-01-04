@@ -16,7 +16,6 @@ Current problems:
 
 """
 from functools import cache
-from io import BytesIO
 
 import matplotlib.image as mpimg
 import numpy as np
@@ -24,8 +23,7 @@ import polars as pl
 import pooch
 from broad_babel import query
 
-from jump_portrait.s3 import (build_s3_image_path, get_image_from_s3path,
-                              s3client)
+from jump_portrait.s3 import build_s3_image_path, get_image_from_s3path
 from jump_portrait.utils import batch_processing, parallel
 
 
