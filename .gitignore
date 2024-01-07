@@ -1,0 +1,9 @@
+/libs/jump_babel/test/__pycache__/query_test.cpython-311-pytest-7.4.3.pyc
+/libs/jump_babel/src/broad_babel/__pycache__/
+/libs/jump_portrait/src/jump_portrait/__pycache__/
+*.db
+/libs/jump_portrait/.python-version
+*.csv
+/libs/jump_babel/dist/
+/libs/jump_portrait/dist/
+/libs/jump_portrait/tests/
