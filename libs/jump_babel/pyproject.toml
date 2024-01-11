@@ -1,3 +1,6 @@
+[project.urls]
+Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_babel"
+
 [tool.poetry]
 name = "broad-babel"
 version = "0.1.9"
