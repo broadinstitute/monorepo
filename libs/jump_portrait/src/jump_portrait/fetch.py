@@ -152,7 +152,7 @@ def get_item_location_metadata(item_name: str, controls: bool = True) -> pl.Data
             for x in map(
                 lambda x: x[0],
                 query.run_query(
-                    query="negcon", input_column="control_type", output_column="JCP2022"
+                    query="negcon", input_column="pert_type", output_column="JCP2022"
                 ),
             )
             if x is not None
