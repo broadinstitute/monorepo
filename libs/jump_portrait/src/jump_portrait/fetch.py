@@ -158,11 +158,10 @@ def get_item_location_metadata(item_name: str, controls: bool = True) -> pl.Data
             if x is not None
         ]
 
-        plates = meta_wells.filter(
-            pl.col("Metadata_Plate").is_in(found_rows["Metadata_Plate"])
+        controls_meta = meta_wells.filter(
+            pl.col("Metadata_JCP2022").is_in(control_jcp_ids),
+            pl.col("Metadata_Plate").is_in(found_rows["Metadata_Plate"]),
         )
-
-        controls_meta = plates.filter(pl.col("Metadata_JCP2022").is_in(control_jcp_ids))
         controls_meta = controls_meta.with_columns(
             pl.lit("control").alias("standard_key")
         )
@@ -193,30 +192,47 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
     Loading and filtering happens in a threaded manner. Note that it does not check for duplication.
     Returns the wells and
     """
+    core_cols = (
+        "Metadata_Source",
+        "Metadata_Batch",
+        "Metadata_Plate",
+        "Metadata_PlateType",
+    )
     metadata_fields = well_level_metadata.unique(
-        subset=("Metadata_Batch", "Metadata_Plate")
-    ).to_dicts()
-    s3_locations_uri = [format_cellpainting_s3().format(**x) for x in metadata_fields]
+        subset=(
+            *core_cols,
+            "Metadata_Well",
+            "standard_key",
+        )
+    )
+    groups = metadata_fields.group_by(core_cols).agg("Metadata_Well").to_dicts()
+
+    s3_locations_uri = [format_cellpainting_s3().format(**x) for x in groups]
 
     # Get uris for the specific wells in the fetched plates
     iterable = list(
         zip(
             s3_locations_uri,
-            map(lambda x: x["Metadata_Well"], metadata_fields),
+            map(lambda x: x["Metadata_Well"], groups),
         )
     )
     well_images_uri = parallel(iterable, get_well_image_uris)
 
     selected_uris = pl.concat(well_images_uri)
 
+    # uris_with_jcp = selected_uris.join(
+    #     well_level_metadata, on=(*core_cols[:3], "Metadata_Well")
+    # )
+
+    # return uris_with_jcp
     return selected_uris
 
 
 @batch_processing
-def get_well_image_uris(s3_location_uri, well: str) -> pl.DataFrame:
+def get_well_image_uris(s3_location_uri, wells: list[str]) -> pl.DataFrame:
     # Returns a dataframe indicating the image location of specific wells for a given parquet file.
     locations_df = pl.read_parquet(s3_location_uri, use_pyarrow=True)
-    return locations_df.filter(pl.col("Metadata_Well") == well)
+    return locations_df.filter(pl.col("Metadata_Well").is_in(wells))
 
 
 def get_item_location_info(
