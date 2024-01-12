@@ -222,7 +222,7 @@ def get_well_image_uris(s3_location_uri, well: str) -> pl.DataFrame:
 def get_item_location_info(
     item_name: str, controls: bool = True, **kwargs
 ) -> pl.DataFrame:
-    """Wrapper to obtain a dataframe with locations of an item.
+    """Wrapper to obtain a dataframe with locations of an item. It removes duplicate rows.
 
     Parameters
     ----------
@@ -249,4 +249,4 @@ def get_item_location_info(
         well_level_metadata.drop("Metadata_Well"),
         on=("Metadata_Source", "Metadata_Batch", "Metadata_Plate"),
     )
-    return joint
+    return joint.unique()
