@@ -22,6 +22,8 @@ def s3client():
 
 
 def get_image_from_s3path(s3_image_path) -> np.ndarray:
+    # Assumes we are accessing cellpainting-gallery
+    s3_image_path = s3_image_path.lstrip("s3://cellpainting-gallery/")
     response = s3client().get_object(Bucket="cellpainting-gallery", Key=s3_image_path)
     return mpimg.imread(BytesIO(response["Body"].read()), format="tiff")
 
