@@ -127,17 +127,20 @@ def get_jump_image(
     return get_image_from_s3path(s3_image_path)
 
 
-def get_item_location_metadata(item_name: str, controls: bool = True) -> pl.DataFrame:
+def get_item_location_metadata(
+    item_name: str, controls: bool = True, **kwargs
+) -> pl.DataFrame:
     """
     First search for datasets in which this item was present.
     Return tuple with its Metadata location in order source, batch, plate,
     well and site.
     """
+    input_column = kwargs.get("input_column") or "standard_key"
 
     # Get plates
     jcp_ids = query.run_query(
         query=item_name,
-        input_column="standard_key",
+        input_column=input_column,
         output_column="JCP2022,standard_key",
     )
     jcp_item = {x[0]: x[1] for x in jcp_ids}
@@ -180,7 +183,11 @@ def get_item_location_metadata(item_name: str, controls: bool = True) -> pl.Data
 
 def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame:
     """
-    well_level_metadata: pl.DataFrame
+    Filters a dataframe with well info. Loading and filtering happens in a threaded manner. Note that it does not check for whole row duplication.
+
+    Parameters
+    ----------
+    well_level_metadata : pl.DataFrame
         Contains the data
 
     Load metadata from a dataframe containing these columns
@@ -189,8 +196,11 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
     - Metadata_Plate
     - Metadata_Well
 
-    Loading and filtering happens in a threaded manner. Note that it does not check for duplication.
-    Returns the wells and
+
+    Returns
+    -------
+    pl.DataFrame
+        DataFrame with location of item
     """
     core_cols = (
         "Metadata_Source",
@@ -220,11 +230,6 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
 
     selected_uris = pl.concat(well_images_uri)
 
-    # uris_with_jcp = selected_uris.join(
-    #     well_level_metadata, on=(*core_cols[:3], "Metadata_Well")
-    # )
-
-    # return uris_with_jcp
     return selected_uris
 
 
