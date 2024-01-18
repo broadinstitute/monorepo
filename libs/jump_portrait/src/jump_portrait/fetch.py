@@ -264,10 +264,99 @@ def get_item_location_info(
     FIXME: Add docs.
 
     """
-    well_level_metadata = get_item_location_metadata(item_name, controls=controls)
+    input_column = kwargs.get("input_column") or "standard_key"
+
+    well_level_metadata = get_item_location_metadata(
+        item_name, controls=controls, input_column=input_column
+    )
     item_selected_meta = load_filter_well_metadata(well_level_metadata, **kwargs)
     joint = item_selected_meta.join(
         well_level_metadata.drop("Metadata_Well"),
         on=("Metadata_Source", "Metadata_Batch", "Metadata_Plate"),
     )
     return joint.unique()
+
+
+def get_collage(
+    gene: str, channel: str = "DNA", plate_type: str = "ORF", **kwargs
+) -> np.ndarray:
+    """Return a collage of images from a given gene. Returned matrices are arranged in two rows,
+    top row are the perturbations and bottom rows are their plate-per-plate controls.
+
+    Parameters
+    ----------
+    gene : str
+        input gene in standard format
+    channel : str
+        Channel to plot. Default is "DNA".
+    plate_type : str
+        plate type, can be "ORF", "CRISPR" or "Compound". Default is "ORF".
+    **kwargs :
+        Arguments to pass to get_item_location_info
+
+    Returns
+    -------
+    np.ndarray
+        Concatenated array of dimensions (2,N) where N is the number of plates
+        in which the gene is present.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
+    # Convenience variables
+    transient_col = "fullpath"
+    input_column = kwargs.get("input_column", "standard_key")
+    group_by_fields = (
+        "Metadata_Source",
+        "Metadata_Batch",
+        "Metadata_Plate",
+        "Metadata_PlateType",
+    )
+
+    # Find location
+    all_locations = get_item_location_info(gene)
+    image_locations = {}
+    for v in ("control", gene):
+        subdf = all_locations.filter(pl.col(input_column) == v)
+        subdf = subdf.select(reversed(subdf.columns)).with_columns(
+            pl.concat_str(f"^.*Orig{channel}.*$").alias(transient_col)
+        )
+        image_locations[v] = subdf.group_by(group_by_fields).agg(pl.col(transient_col))
+
+    # Merge gene and control dataframes
+    combined = image_locations[gene].join(
+        image_locations["control"],
+        on=group_by_fields[:-2],
+        suffix="_control",
+    )
+
+    combined = combined.filter(pl.col("Metadata_PlateType") == plate_type)
+
+    # Sample items
+    regex = "^fullpath.*$"
+    samples = combined.with_columns(pl.all().map_elements(len)).select(
+        pl.col(regex).map_elements(lambda x: np.random.randint(x))
+    )
+
+    base = combined.select(pl.col(regex)).to_numpy()
+
+    # Fetch the sampled indices from our data frame
+    x, y = samples.shape
+    locations = [["" for _ in range(y)] for _ in range(x)]
+    for i, gene_ctrl in enumerate(samples.to_numpy()):
+        for j, x in enumerate(gene_ctrl):
+            locations[i][j] = base[i, j][x]
+
+    # Reformat and concatenate
+    imgs = []
+    for plate in locations:
+        pair = []
+        for fpath in plate:
+            pair.append(get_image_from_s3path(fpath))
+        imgs.append(pair)
+
+    concat = np.concatenate([np.concatenate(x, axis=0) for x in imgs], axis=1)
+
+    return concat
