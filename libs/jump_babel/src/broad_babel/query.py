@@ -9,10 +9,8 @@ from functools import cache
 import pooch
 
 DB_FILE = pooch.retrieve(
-    # Temporarily commented out due to Zenodo API change
-    # url="doi:10.5281/zenodo.8350361/names.db",
-    # url=("https://zenodo.org/records/8350361/files/" "names.db"),
-    # known_hash="md5:80f0f5b8ea8c01a911c1a9196dcbd2fd",
+    # Temporarily  using URL out due to Zenodo API change
+    # https://github.com/zenodo/zenodo/issues/2506
     url=("https://zenodo.org/records/10542488/files/" "babel.db"),
     known_hash="md5:eef26392377e8a01dd0a7e4ceb2e59a8",
 )
