@@ -7,8 +7,23 @@ from functools import cache
 import polars as pl
 import pooch
 
+# %% Colnames
 
-# Make names consistent
+jcp_col = "Metadata_JCP2022"
+brd_col = "Metadata_broad_sample"
+std_col = "standard_key"
+pert_col = "Metadata_pert_type"
+plate_col = "Metadata_plate_type"
+
+plates_order = ("compound", "orf", "crispr", "compound")
+
+
+def select_if_available(df: pl.DataFrame, cols: tuple[str]):
+    # Select columns present in df
+    return df.select(*set(df.columns).intersection(cols))
+
+
+# %% Make names consistent
 def provide_mapper(
     df: pl.DataFrame, std_col: str, brd_col: str = None
 ) -> dict[str, str]:
@@ -62,7 +77,7 @@ def get_target_plate_urls():
             "https://github.com/jump-cellpainting/JUMP-Target/raw/"
             f"bd046851a28fb2257ef4c57c5ea4d496f1a08642/JUMP-Target-1_{x}_metadata.tsv"
         )
-        for x in ("compound", "orf", "crispr")
+        for x in plates_order[:3]
     ]
 
     target_2_url = (
@@ -72,19 +87,25 @@ def get_target_plate_urls():
     return (*target_1_urls, target_2_url)
 
 
-## Target datasets
+# %% Add file
+
 targets = [pl.read_csv(url, separator="\t") for url in get_target_plate_urls()]
+for i, plate_type in enumerate(plates_order):
+    targets[i] = targets[i].with_columns(pl.lit(plate_type).alias(plate_col))
 
-jcp_col = "Metadata_JCP2022"
-brd_col = "Metadata_broad_sample"
-std_col = "standard_key"
-pert_col = "Metadata_pert_type"
+# %%
 
+
+# Add column names
 
 targets_combined = pl.concat(
     [
         target.rename(provide_mapper(target, std_col, brd_col)).select(
-            std_col, brd_col, "pert_type", "control_type"
+            std_col,
+            brd_col,
+            "pert_type",
+            "control_type",
+            plate_col,
         )
         for target in targets
     ]
@@ -99,16 +120,13 @@ targets_combined_control = (
 )
 
 
-def select_if_available(df, cols):
-    # Select columns present in df
-    return df.select(*set(df.columns).intersection(cols))
-
-
 # ORF + CRISPR + COMPOUNDS
 df_all = []
-for dataset in ("orf", "crispr", "compound"):
+for dataset in plates_order[:3]:
     table = get_table(dataset).rename(provide_mapper(get_table(dataset), std_col))
-    sel_table = select_if_available(table, (jcp_col, std_col, "Metadata_NCBI_Gene_ID"))
+    sel_table = select_if_available(
+        table, (jcp_col, std_col, "Metadata_NCBI_Gene_ID")
+    ).with_columns(pl.lit(dataset).alias(plate_col))
     if df_all is None:
         df_all = sel_table
     else:
@@ -117,6 +135,7 @@ df_all = pl.concat(df_all, how="diagonal")
 
 df_all_pert = df_all.join(
     get_table("orf").select(jcp_col, "Metadata_broad_sample", pert_col),
+    # .with_columns(pl.lit("orf").alias(plate_col)),
     on=jcp_col,
     how="outer",
 )
@@ -129,7 +148,8 @@ all_target_pert = df_all_pert.join(targets_combined_control, on=std_col, how="ou
 pert_target_all = all_target_pert.with_columns(
     merge_on_null(brd_col, f"{brd_col}_right"),
     merge_on_null(pert_col, "pert_type"),
-).drop("pert_type", f"{brd_col}_right")
+    merge_on_null(plate_col, f"{plate_col}_right"),
+).drop("pert_type", f"{brd_col}_right", f"{plate_col}_right")
 
 manual_mapper = {
     "JCP2022_085227": ("Aloxistatin", "poscon"),
