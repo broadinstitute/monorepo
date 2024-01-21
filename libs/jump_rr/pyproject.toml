@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
-broad-babel = "^0.1.9"
+broad-babel = "^0.1.11"
 copairs = {git = "https://github.com/cytomining/copairs.git", rev = "v0.4.0-alpha"}
 numpy = "*"
 fastcluster = "^1.2.6"
