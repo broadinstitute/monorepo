@@ -23,6 +23,7 @@ def run_query(
     input_column: str,
     output_column: str or str,
     operator: None or str = None,
+    predicate: None or str = None,
 ) -> str or t.Dict[str, str]:
     """Query one or multiple values to the database.
 
@@ -36,6 +37,8 @@ def run_query(
         Desired name translation.
     operator : None or str
         Type of comparison to use, default is "=", but use "LIKE" to match an expression.
+    predicate : None or str
+        Additional expressions
 
     Returns
     -------
@@ -58,6 +61,8 @@ def run_query(
         operator = "IN"
         placeholder = ", ".join(placeholder for _ in query)
     expression = expression_prefix + operator + " (%s)" % placeholder
+    if predicate is not None:
+        expression += f" {predicate}"
     return cur.execute(expression, query).fetchall()
 
 
