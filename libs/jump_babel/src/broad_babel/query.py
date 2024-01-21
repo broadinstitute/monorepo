@@ -9,12 +9,10 @@ from functools import cache
 import pooch
 
 DB_FILE = pooch.retrieve(
-    # Temporarily commented out due to Zenodo API change
-    # url="doi:10.5281/zenodo.8350361/names.db",
-    # url=("https://zenodo.org/records/8350361/files/" "names.db"),
-    # known_hash="md5:80f0f5b8ea8c01a911c1a9196dcbd2fd",
-    url=("https://zenodo.org/records/10456863/files/" "babel.db"),
-    known_hash="md5:2eee333428a78b034b384e04352f72da",
+    # Temporarily  using URL out due to Zenodo API change
+    # https://github.com/zenodo/zenodo/issues/2506
+    url=("https://zenodo.org/records/10542488/files/" "babel.db"),
+    known_hash="md5:eef26392377e8a01dd0a7e4ceb2e59a8",
 )
 TABLE = "babel"
 
@@ -25,6 +23,7 @@ def run_query(
     input_column: str,
     output_column: str or str,
     operator: None or str = None,
+    predicate: None or str = None,
 ) -> str or t.Dict[str, str]:
     """Query one or multiple values to the database.
 
@@ -38,6 +37,8 @@ def run_query(
         Desired name translation.
     operator : None or str
         Type of comparison to use, default is "=", but use "LIKE" to match an expression.
+    predicate : None or str
+        Additional expressions
 
     Returns
     -------
@@ -60,6 +61,8 @@ def run_query(
         operator = "IN"
         placeholder = ", ".join(placeholder for _ in query)
     expression = expression_prefix + operator + " (%s)" % placeholder
+    if predicate is not None:
+        expression += f" {predicate}"
     return cur.execute(expression, query).fetchall()
 
 
