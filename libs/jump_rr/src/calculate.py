@@ -42,6 +42,7 @@ output_dir = Path("./databases")
 
 ## Parameters
 n_vals_used = 25  # Number of top and bottom matches used
+dist_as_sim = True  # Display distance as integers instead of floats
 
 ## Column names
 jcp_short = "JCP2022"  # Shortened input data frame
@@ -49,7 +50,7 @@ jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
 match_col = "Match"  # Highest matches
 match_url_col = f"{match_col} Example"  # URL with image examples
-dist_col = "Distance"  # Metric name
+dist_col = "Similarity"  # Metric name
 std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NCBI)
 
@@ -151,9 +152,14 @@ for dataset, filename in datasets_filenames:
         pl.col(match_col).replace(jcp_external_mapper).alias(ext_links_col),
     )
 
-    matches = jcp_translated.with_columns(
-        (pl.col(dist_col) * 1000).cast(pl.Int16)
-    ).rename({url_col: f"{std_outname} Example"})
+    if dist_as_sim:
+        jcp_translated = jcp_translated.with_columns(
+            (
+                (1 - pl.col(dist_col)).round(3)  # .cast(str).alias(dist_col)
+            )
+        )
+
+    matches = jcp_translated.rename({url_col: f"{std_outname} Example"})
 
     # Sort columns
     order = [
@@ -172,7 +178,7 @@ for dataset, filename in datasets_filenames:
     final_output = output_dir / f"{dataset}.parquet"
     matches_translated.write_parquet(final_output, compression="zstd")
 
-    """
-    - TODO add Average precision metrics
-    - STOP add differentiating features when compared to their controls
-    """
+    # - TODO add Average precision metrics
+    # - STOP add differentiating features when compared to their controls
+    # - TODO add Average precision metrics
+    # - STOP add differentiating features when compared to their controls
