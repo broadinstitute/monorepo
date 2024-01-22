@@ -154,9 +154,7 @@ for dataset, filename in datasets_filenames:
 
     if dist_as_sim:
         jcp_translated = jcp_translated.with_columns(
-            (
-                (1 - pl.col(dist_col)).round(3)  # .cast(str).alias(dist_col)
-            )
+            (1 - pl.col(dist_col)).round(3).alias(dist_col)  # .cast(str)            )
         )
 
     matches = jcp_translated.rename({url_col: f"{std_outname} Example"})
