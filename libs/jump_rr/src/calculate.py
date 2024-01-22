@@ -102,7 +102,9 @@ for dataset, filename in datasets_filenames:
     values = cosine_sim[cp.indices(indices.shape)[0], indices].get()
 
     # Build a dataframe containing matches
-    cycles = cycle(range(dataset != "crispr", 10))  # 0-9 if CRISPR; 1-9 if ORF
+
+    offset = dataset != "crispr"
+    cycles = cycle(range(offset, 9 + offset))  # 0-8 if CRISPR; 1-9 if ORF
     jcp_ids = urls.select(pl.col(jcp_col)).to_series().to_numpy().astype("<U15")
     moving_idx = np.repeat(cycles, len(indices))
     url_vals = urls.get_column(url_col).to_numpy()
