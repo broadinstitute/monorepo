@@ -178,5 +178,3 @@ for dataset, filename in datasets_filenames:
 
     # - TODO add Average precision metrics
     # - STOP add differentiating features when compared to their controls
-    # - TODO add Average precision metrics
-    # - STOP add differentiating features when compared to their controls
