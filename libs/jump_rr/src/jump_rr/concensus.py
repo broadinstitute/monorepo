@@ -4,6 +4,7 @@ Group multiple wells
 """
 from itertools import cycle
 
+import numpy as np
 import polars as pl
 
 # Names
@@ -44,3 +45,18 @@ def get_concensus_meta_urls(prof: pl.DataFrame) -> tuple:
         med.replace_column(med.columns.index(srs.name), srs)
 
     return med, meta, urls
+
+
+def get_cycles(dataset: str) -> cycle:
+    # Generate a cycle of indices based on the dataset
+    offset = dataset != "crispr"
+    cycles = cycle(range(offset, 9 + offset))  # 0-8 if CRISPR; 1-9 if ORF
+    return cycles
+
+
+def repeat_cycles(n: int, dataset: str) -> np.ndarray:
+    # Use mnultiple cycles to iterate over multiple next()
+    # while keeping track of each individual cycle
+    cycles = get_cycles(dataset)
+    cycled_indices = np.repeat(cycles, n)
+    return cycled_indices
