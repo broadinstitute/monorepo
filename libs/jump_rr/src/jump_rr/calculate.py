@@ -28,6 +28,7 @@ import cupyx.scipy.spatial as spatial
 import numpy as np
 import polars as pl
 from broad_babel.query import run_query
+from jump_rr.concensus import get_concensus_meta_urls
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -63,6 +64,37 @@ url_template = (
 )
 img_formatter = '{{"img_src": {}, "href": {}, "width": 200}}'
 
+
+# precor_file = "full_profiles_cc_adj_mean_corr.parquet"
+# precor_path = dir_path / "orf" / precorrection_file
+# precor = pl.read_parquet(precorrection_path)
+# med, meta, urls  = get_concensus_meta_urls(precor)
+
+# # Group features in a consistent manner
+# # apples with apples, oranges with oranges
+# # Two cases
+# # - Channel-based
+# # - Non-channel based shape
+# data_only =med.select(pl.all().exclude("^Metadata.*$"))
+# cols = data_only.columns
+
+# # regex = re.compile(r"^\([A-za-z]+\)_\(\S+\)_\(DNA|RNA|Mito|ERAGP\)_\(\S+\)$")
+# masks = "|".join(("Cells","Nuclei","Cytoplasm","Image"))
+# channels = "|".join(("DNA","AGP","RNA","ER","Mito","Image"))
+# chless_feats ="|".join(("AreaShape","Neighbors","RadialDistribution","Location","Count","Number","Parent","Children","ObjectSkeleton","Threshold"))
+
+# std = re.compile(f"({masks})_(\S+)_(Orig)?({channels})(_.*)?")
+# chless = re.compile(f"({masks})_({chless_feats})_?([a-zA-Z]+)?(.*)?")
+
+# results = [(std.findall(x) or chless.findall(x))[0] for x in cols]
+# # Convert to format MASK,FEATURE,CHANNEL(opt),SUFFIX
+# results = [(x[0], ''.join(x[1:3]),"" ,x[3]) if len(x)<5 else (*x[:2],''.join(x[2:4]),x[4]) for x in results]
+
+# feature_meta = pl.DataFrame(results, schema=[("Mask",str),("Feature",str),("Channel",str),( "suffix" ,str)])
+
+# features = pl.concat((feature_meta, data_only.transpose()),how="vertical")
+# vals = cp.array(med.select(pl.all().exclude("^Metadata.*$")))
+
 # %% Processing starts
 for dataset, filename in datasets_filenames:
     profiles_path = dir_path / dataset / f"{filename}.parquet"
@@ -71,24 +103,7 @@ for dataset, filename in datasets_filenames:
     df = pl.read_parquet(profiles_path)
 
     # %% add build url from individual wells
-    df = df.with_columns(
-        pl.concat_str(
-            pl.col("Metadata_Source"),
-            pl.col("Metadata_Plate"),
-            pl.col("Metadata_Well"),
-            separator="/",
-        )
-        .map_elements(lambda x: url_template.format(x))
-        .alias(url_col)
-    )
-    grouped = df.group_by(jcp_col)
-    med = grouped.median()
-    meta = grouped.agg(pl.col("^Metadata_.*$").map_elements(cycle))
-
-    urls = grouped.agg(pl.col(url_col).map_elements(cycle))
-
-    for srs in meta.iter_columns():
-        med.replace_column(med.columns.index(srs.name), srs)
+    med, mrys, urls = get_concensus_meta_urls(df)
 
     vals = cp.array(med.select(pl.all().exclude("^Metadata.*$")))
 
@@ -103,7 +118,6 @@ for dataset, filename in datasets_filenames:
     values = cosine_sim[cp.indices(indices.shape)[0], indices].get()
 
     # Build a dataframe containing matches
-
     offset = dataset != "crispr"
     cycles = cycle(range(offset, 9 + offset))  # 0-8 if CRISPR; 1-9 if ORF
     jcp_ids = urls.select(pl.col(jcp_col)).to_series().to_numpy().astype("<U15")

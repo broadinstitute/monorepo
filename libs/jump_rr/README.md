@@ -1,17 +1,17 @@
 
 # Table of Contents
 
-1.  [Quick data access](#org3e5187d)
-2.  [Overview](#orgb5b5c25)
-3.  [Data accessibility](#orgbf4f464)
-4.  [Installation](#org6201052)
-    1.  [pip](#org8b6fe5d)
-    2.  [poetry (dev)](#orgcf613bf)
-5.  [Contributions](#org5068f8c)
+1.  [Quick data access](#orge8b4c2e)
+2.  [Overview](#org78a3c4d)
+3.  [Data accessibility](#org9c12959)
+4.  [Installation](#org8f0b596)
+    1.  [pip](#org7b2b0a0)
+    2.  [poetry (dev)](#orgb4e1773)
+5.  [Contributions](#org04b6589)
 
 
 
-<a id="org3e5187d"></a>
+<a id="orge8b4c2e"></a>
 
 # Quick data access
 
@@ -59,34 +59,36 @@ Use the following datasets to explore morphological similarities between gene an
 <td class="org-left">Compound</td>
 <td class="org-left">TBD</td>
 <td class="org-left">TBD</td>
-<td class="org-left">Chemical compound</td>
+<td class="org-left">Chemical compounds</td>
 </tr>
 </tbody>
 </table>
 
+Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which increase sample replicability.
 
-<a id="orgb5b5c25"></a>
+
+<a id="org78a3c4d"></a>
 
 # Overview
 
 This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that are to be accessed by biologists using [datasette-lite](https://github.com/simonw/datasette-lite).
 
 
-<a id="orgbf4f464"></a>
+<a id="org9c12959"></a>
 
 # Data accessibility
 
 The raw morphological profiles are currently in a local server. It will be provided independently and this section updated in the future.
 
 
-<a id="org6201052"></a>
+<a id="org8f0b596"></a>
 
 # Installation
 
 You do not need to install this unless you want to re-do the similarity calculations. You can use the datasette web interface provided if your goal is to explore genes. We assume that a GPU and cuda11 are available in the server where this is run. This is to use cupy, which offers vastly faster distance calculations.
 
 
-<a id="org8b6fe5d"></a>
+<a id="org7b2b0a0"></a>
 
 ## pip
 
@@ -95,7 +97,7 @@ Use this if you want to analyse data.
     pip install jump_rr
 
 
-<a id="orgcf613bf"></a>
+<a id="orgb4e1773"></a>
 
 ## poetry (dev)
 
@@ -106,7 +108,7 @@ Use this if you want to tweak the functions
     poetry install --with dev
 
 
-<a id="org5068f8c"></a>
+<a id="org04b6589"></a>
 
 # Contributions
 
