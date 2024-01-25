@@ -1,5 +1,5 @@
 [tool.poetry]
-name = "jump-rr"
+name = "jump_rr"
 version = "0.1.0"
 description = "Tools to compare profiles in a round-robin manner (all-vs-all)"
 authors = ["Alan"]
@@ -28,7 +28,7 @@ cubinlinker-cu11 = {version = "^0.3.0.post1", source = "nvidia"}
 jupyter = "^1.0.0"
 jupytext = "^1.15.2"
 ipdb = "^0.13.13"
-ruff-lsp = "^0.0.48"
+ruff-lsp = "^0.0.50"
 
 
 [[tool.poetry.source]]
