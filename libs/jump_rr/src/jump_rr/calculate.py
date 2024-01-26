@@ -32,6 +32,7 @@ from jump_rr.concensus import (
     get_cycles,
     repeat_cycles,
 )
+from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -116,20 +117,9 @@ for dataset, filename in datasets_filenames:
         }
     )
 
-    # %% Add gene name translations
-    uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])  # [0]
-    mapper_values = run_query(
-        query=uniq_jcp,
-        input_column=jcp_short,
-        output_column=f"{jcp_short},standard_key,NCBI_Gene_ID",
-        predicate=f"AND plate_type = '{dataset}'",
-    )
-
-    jcp_external_mapper = {}
-    jcp_std_mapper = {}
-    for jcp, std, external_id in mapper_values:
-        jcp_external_mapper[jcp] = external_formatter.format(external_id)
-        jcp_std_mapper[jcp] = std
+    # %% Translate genes names to standard
+    uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])
+    jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, plate_type)
 
     jcp_translated = jcp_df.with_columns(
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
