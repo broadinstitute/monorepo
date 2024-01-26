@@ -159,10 +159,13 @@ jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, plate_type)
 
 jcp_translated = df.with_columns(
     pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
+    pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
 )
 
 # Reorder columns
-order =
+order = ["Mask", "Feature", "Channel", std_outname, url_col, "value", jcp_short]
+sorted_df = jcp_translated.select(order)
+
 # Output
 output_dir.mkdir(parents=True, exist_ok=True)
-df.write_parquet(output_dir / "orf_features.parquet", compression="zstd")
+sorted_df.write_parquet(output_dir / "orf_features.parquet", compression="zstd")
