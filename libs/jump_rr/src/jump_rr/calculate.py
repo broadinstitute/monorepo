@@ -26,7 +26,6 @@ import cupy as cp
 import cupyx.scipy.spatial as spatial
 import numpy as np
 import polars as pl
-from broad_babel.query import run_query
 from jump_rr.concensus import (
     get_concensus_meta_urls,
     get_cycles,
@@ -39,7 +38,7 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 # %% Setup
 ## Paths
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
-datasets_filenames = (
+platetype_filename = (
     ("crispr", "harmonized_no_sphering_profiles"),
     ("orf", "transformed_inf_eff_filtered"),
 )
@@ -60,17 +59,11 @@ std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NCBI)
 
 # HTML formatters
-external_formatter = (
-    '{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}}'
-)
-url_template = (
-    '"https://phenaid.ardigen.com/static-jumpcpexplorer/' 'images/{}_{{}}.jpg"'
-)
 img_formatter = '{{"img_src": {}, "href": {}, "width": 200}}'
 
 # %% Processing starts
-for dataset, filename in datasets_filenames:
-    profiles_path = dir_path / dataset / f"{filename}.parquet"
+for plate_type, filename in platetype_filename:
+    profiles_path = dir_path / plate_type / f"{filename}.parquet"
 
     # %% Load Metadata
     df = pl.read_parquet(profiles_path)
@@ -93,8 +86,8 @@ for dataset, filename in datasets_filenames:
     # Build a dataframe containing matches
     jcp_ids = urls.select(pl.col(jcp_col)).to_series().to_numpy().astype("<U15")
     url_vals = urls.get_column(url_col).to_numpy()
-    cycles = get_cycles(dataset)
-    cycled_indices = repeat_cycles(len(indices), dataset)
+    cycles = get_cycles(plate_type)
+    cycled_indices = repeat_cycles(len(indices), plate_type)
 
     jcp_df = pl.DataFrame(
         {
@@ -127,7 +120,7 @@ for dataset, filename in datasets_filenames:
         pl.col(match_col).replace(jcp_external_mapper).alias(ext_links_col),
     )
 
-    if dist_as_sim:
+    if dist_as_sim:  # Convert cosine distance to similarity
         jcp_translated = jcp_translated.with_columns(
             (1 - pl.col(dist_col)).round(3).alias(dist_col)  # .cast(str)            )
         )
@@ -148,7 +141,7 @@ for dataset, filename in datasets_filenames:
 
     # %% Save results
     output_dir.mkdir(parents=True, exist_ok=True)
-    final_output = output_dir / f"{dataset}.parquet"
+    final_output = output_dir / f"{plate_type}.parquet"
     matches_translated.write_parquet(final_output, compression="zstd")
 
     # - TODO add Average precision metrics
