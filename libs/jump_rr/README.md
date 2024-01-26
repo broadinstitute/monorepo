@@ -71,7 +71,7 @@ Note that the feature databases are based on interpretable features. The The per
 
 # Overview
 
-This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that are to be accessed by biologists using [datasette-lite](https://github.com/simonw/datasette-lite).
+This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that are to be accessed by biologists using [datasette-lite](https://github.com/simonw/datasette-lite). It is pronounced like "jumper"; RR stands for [Round-Robin](https://en.wikipedia.org/wiki/Round-robin_tournament), a tournament system in which all competitors face every other competitor.
 
 
 <a id="org69be4a3"></a>
