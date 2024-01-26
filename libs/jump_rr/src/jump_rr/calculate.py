@@ -31,6 +31,7 @@ from jump_rr.concensus import (
     get_cycles,
     repeat_cycles,
 )
+from jump_rr.index_selection import get_bottom_top_indices, get_top_bottom_indices
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -76,24 +77,20 @@ for plate_type, filename in platetype_filename:
     # %% Calculate cosine distance
     cosine_sim = spatial.distance.cdist(vals, vals, metric="cosine")
 
-    # Get most correlated and anticorrelated indices and values
-    mask = cp.ones(len(cosine_sim), dtype=bool)
-    mask[n_vals_used : -n_vals_used - 1] = False
-    mask[0] = False
-    indices = cosine_sim.argsort(axis=1)[:, mask].get()
-    values = cosine_sim[cp.indices(indices.shape)[0], indices].get()
+    # Get most correlated and anticorrelated indices
+    xs, ys = get_bottom_top_indices(cosine_sim, n_vals_used, skip_first=True)
 
     # Build a dataframe containing matches
     jcp_ids = urls.select(pl.col(jcp_col)).to_series().to_numpy().astype("<U15")
     url_vals = urls.get_column(url_col).to_numpy()
     cycles = get_cycles(plate_type)
-    cycled_indices = repeat_cycles(len(indices), plate_type)
+    cycled_indices = repeat_cycles(len(xs), plate_type)
 
     jcp_df = pl.DataFrame(
         {
             jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
-            match_col: jcp_ids[indices.flatten()].astype("<U15"),
-            dist_col: values.flatten(),
+            match_col: jcp_ids[ys].astype("<U15"),
+            dist_col: cosine_sim[xs, ys],
             url_col: [  # Secuentially produce multiple images
                 img_formatter.format(img_src, img_src)
                 for x in url_vals
@@ -102,9 +99,7 @@ for plate_type, filename in platetype_filename:
             ],
             match_url_col: [  # Use indices to fetch matches
                 img_formatter.format(img_src, img_src)
-                for url, idx in zip(
-                    url_vals[indices.flatten()], cycled_indices[indices.flatten()]
-                )
+                for url, idx in zip(url_vals[ys], cycled_indices[ys])
                 if (img_src := next(url).format(next(idx)))
             ],
         }

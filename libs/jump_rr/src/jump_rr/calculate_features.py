@@ -34,6 +34,7 @@ import polars as pl
 
 # from broad_babel.query import run_query
 from jump_rr.concensus import get_concensus_meta_urls
+from jump_rr.index_selection import get_bottom_top_indices
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -87,7 +88,6 @@ std = re.compile(f"({masks})_(\S+)_(Orig)?({channels})(_.*)?")
 chless = re.compile(f"({masks})_({chless_feats})_?([a-zA-Z]+)?(.*)?")
 
 # %% Loading
-
 precor = pl.read_parquet(precor_path)
 
 # %% Split data into med (concensus), meta and urls
@@ -122,17 +122,10 @@ features = pl.concat((feature_meta, data_only.transpose()), how="horizontal")
 feat_med = features.group_by(("Mask", "Feature", "Channel")).median()
 
 vals = cp.array(feat_med.select(pl.col("^column.*$")).to_numpy())
-sorted_indices = vals.argsort(axis=1)
 
 # Find top and bottom $n_values_used
-xs, ys = map(
-    lambda x: x.get(),
-    cp.where(
-        (sorted_indices < n_vals_used)
-        | (sorted_indices.shape[1] - n_vals_used - 1 < sorted_indices)
-    ),
-)
 
+xs, ys = get_bottom_top_indices(vals, n_vals_used, skip_first=False)
 
 jcp_ids = med[jcp_col][ys]
 
