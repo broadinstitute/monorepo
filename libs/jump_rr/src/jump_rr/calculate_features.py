@@ -34,6 +34,7 @@ import polars as pl
 
 # from broad_babel.query import run_query
 from jump_rr.concensus import get_concensus_meta_urls
+from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -52,9 +53,8 @@ jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 match_col = "Match"  # Highest matches
 match_url_col = f"{match_col} Example"  # URL with image examples
-dist_col = "Similarity"  # Metric name
 std_outname = "Gene/Compound"  # Standard item name
-ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NCBI)
+ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
 
 ## REGEX
 masks = "|".join(("Cells", "Nuclei", "Cytoplasm", "Image"))
@@ -124,7 +124,7 @@ feat_med = features.group_by(("Mask", "Feature", "Channel")).median()
 vals = cp.array(feat_med.select(pl.col("^column.*$")).to_numpy())
 sorted_indices = vals.argsort(axis=1)
 
-# xs, ys = map(lambda x: x.get(),cp.where(
+# Find top and bottom $n_values_used
 xs, ys = map(
     lambda x: x.get(),
     cp.where(
@@ -148,5 +148,15 @@ df = pl.DataFrame(
     }
 )
 
+
+plate_type = "orf"
+uniq = tuple(df.get_column(jcp_short).unique())
+jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, plate_type)
+
+jcp_translated = df.with_columns(
+    pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
+)
+
+# Output
 output_dir.mkdir(parents=True, exist_ok=True)
 df.write_parquet(output_dir / "orf_features.parquet", compression="zstd")
