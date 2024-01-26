@@ -118,7 +118,7 @@ for plate_type, filename in platetype_filename:
 
     if dist_as_sim:  # Convert cosine distance to similarity
         jcp_translated = jcp_translated.with_columns(
-            (1 - pl.col(dist_col)).round(3).alias(dist_col)  # .cast(str)            )
+            (1 - pl.col(dist_col)).alias(dist_col)  # .round(3).cast(str))
         )
 
     matches = jcp_translated.rename({url_col: f"{std_outname} Example"})
