@@ -33,7 +33,7 @@ Use the following datasets to explore morphological similarities between gene an
 <tr>
 <th scope="col" class="org-left">Dataset</th>
 <th scope="col" class="org-left">Perturbation simile</th>
-<th scope="col" class="org-left">Feature simile</th>
+<th scope="col" class="org-left">Feature ranking</th>
 <th scope="col" class="org-left">Description</th>
 </tr>
 </thead>
@@ -42,7 +42,7 @@ Use the following datasets to explore morphological similarities between gene an
 <tr>
 <td class="org-left">ORF</td>
 <td class="org-left"><a href="https://broad.io/orf">broad.io/orf</a></td>
-<td class="org-left"><a href="https://broad.io/orf_feature">broad.io/orf<sub>feature</sub></a></td>
+<td class="org-left"><a href="https://broad.io/orf_feature">broad.io/orf_feature</a></td>
 <td class="org-left">Gene overexpression</td>
 </tr>
 
