@@ -12,13 +12,19 @@ url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to wor
 jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 # HTML formatters
-external_formatter = (
-    '{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}}'
-)
-url_template = (
-    '"https://phenaid.ardigen.com/static-jumpcpexplorer/' 'images/{}_{{}}.jpg"'
-)
-img_formatter = '{{"img_src": {}, "href": {}, "width": 200}}'
+
+
+def format_val(kind: str, input_value: str or int or list):
+    # Apply html formating for Datasette hyperlinks and visualisation
+    if isinstance(input_value, str) or isinstance(input_value, int):
+        input_value = [input_value]
+
+    formatters = dict(
+        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}" "label":"External"}}',
+        url='"https://phenaid.ardigen.com/static-jumpcpexplorer/' 'images/{}_{{}}.jpg"',
+        img='{{"img_src": {}, "href": {}, "width": 200}}',
+    )
+    return formatters[kind].format(*input_value)
 
 
 def get_concensus_meta_urls(prof: pl.DataFrame) -> tuple:
@@ -33,7 +39,7 @@ def get_concensus_meta_urls(prof: pl.DataFrame) -> tuple:
             pl.col("Metadata_Well"),
             separator="/",
         )
-        .map_elements(lambda x: url_template.format(x))
+        .map_elements(lambda x: format_val("url", x))
         .alias(url_col)
     )
     grouped = prof.group_by(jcp_col)

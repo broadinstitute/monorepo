@@ -27,11 +27,12 @@ import cupyx.scipy.spatial as spatial
 import numpy as np
 import polars as pl
 from jump_rr.concensus import (
+    format_val,
     get_concensus_meta_urls,
     get_cycles,
     repeat_cycles,
 )
-from jump_rr.index_selection import get_bottom_top_indices, get_top_bottom_indices
+from jump_rr.index_selection import get_bottom_top_indices
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -90,15 +91,15 @@ for plate_type, filename in platetype_filename:
         {
             jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
             match_col: jcp_ids[ys].astype("<U15"),
-            dist_col: cosine_sim[xs, ys],
+            dist_col: cosine_sim[xs, ys].get(),
             url_col: [  # Secuentially produce multiple images
-                img_formatter.format(img_src, img_src)
+                format_val("img", (img_src, img_src))
                 for x in url_vals
                 for j in range(n_vals_used * 2)
                 if (img_src := next(x).format(next(cycles)))
             ],
             match_url_col: [  # Use indices to fetch matches
-                img_formatter.format(img_src, img_src)
+                format_val("img", (img_src, img_src))
                 for url, idx in zip(url_vals[ys], cycled_indices[ys])
                 if (img_src := next(url).format(next(idx)))
             ],

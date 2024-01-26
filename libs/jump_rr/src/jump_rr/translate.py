@@ -1,9 +1,6 @@
 #!/usr/bin/env jupyter
 from broad_babel.query import run_query
-
-external_formatter = (
-    '{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}}'
-)
+from jump_rr.concensus import format_val
 
 
 def get_mappers(
@@ -21,8 +18,9 @@ def get_mappers(
         predicate=f"AND plate_type = '{plate_type}'",
     )
 
-    output_ids = {k: {} for k in output_cols}
+    mappers = {k: {} for k in output_cols}
     for input_id, *output_ids in mapper_values:
-        for k, new_id in output_ids.items():
-            output_ids[k][input_id] = external_formatter.format(new_id)
-    return output_ids
+        for k, new_id in zip(mappers.keys(), output_ids):
+            mappers[k][input_id] = format_val("external", new_id)
+
+    return mappers.values()
