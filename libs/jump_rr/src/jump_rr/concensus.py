@@ -20,7 +20,7 @@ def format_val(kind: str, input_value: str or int or list):
         input_value = [input_value]
 
     formatters = dict(
-        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}" "label":"External"}}',
+        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}}',
         url='"https://phenaid.ardigen.com/static-jumpcpexplorer/' 'images/{}_{{}}.jpg"',
         img='{{"img_src": {}, "href": {}, "width": 200}}',
     )

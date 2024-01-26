@@ -21,6 +21,8 @@ def get_mappers(
     mappers = {k: {} for k in output_cols}
     for input_id, *output_ids in mapper_values:
         for k, new_id in zip(mappers.keys(), output_ids):
-            mappers[k][input_id] = format_val("external", new_id)
+            mappers[k][input_id] = (
+                format_val("external", new_id) if k == "NCBI_Gene_ID" else new_id
+            )
 
     return mappers.values()
