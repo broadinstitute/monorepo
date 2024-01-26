@@ -14,8 +14,8 @@
 
 """
 Select the perturbations with highest and lowest feature values
-for CRISPR and ORF datasets using a GPU, then wrangle information
- and produce an explorable data frame.
+for CRISPR (TODO waiting for data) and ORF datasets using a GPU,
+then wrangle information and produce an explorable data frame.
 
 This is intended for use on a server with GPUs and high RAM to analyse
  data massively.
@@ -33,7 +33,12 @@ import numpy as np
 import polars as pl
 
 # from broad_babel.query import run_query
-from jump_rr.concensus import get_concensus_meta_urls
+from jump_rr.concensus import (
+    format_val,
+    get_concensus_meta_urls,
+    get_cycles,
+    repeat_cycles,
+)
 from jump_rr.index_selection import get_bottom_top_indices
 from jump_rr.translate import get_mappers
 
@@ -48,6 +53,7 @@ precor_path = dir_path / "orf" / precor_file
 
 ## Parameters
 n_vals_used = 25  # Number of top and bottom matches used
+plate_type = "orf"
 
 ## Column names
 jcp_short = "JCP2022"  # Shortened input data frame
@@ -56,6 +62,7 @@ match_col = "Match"  # Highest matches
 match_url_col = f"{match_col} Example"  # URL with image examples
 std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
+url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
 
 ## REGEX
 masks = "|".join(("Cells", "Nuclei", "Cytoplasm", "Image"))
@@ -102,7 +109,6 @@ med, meta, urls = get_concensus_meta_urls(precor)
 data_only = med.select(pl.all().exclude("^Metadata.*$"))
 cols = data_only.columns
 
-
 # Apply regular expressions
 # Convert to format MASK,FEATURE,CHANNEL(opt),SUFFIX, merging channels
 # where necessary
@@ -127,7 +133,9 @@ vals = cp.array(feat_med.select(pl.col("^column.*$")).to_numpy())
 
 xs, ys = get_bottom_top_indices(vals, n_vals_used, skip_first=False)
 
-jcp_ids = med[jcp_col][ys]
+url_vals = urls.get_column(url_col).to_numpy()
+cycles = get_cycles(plate_type)
+cycled_indices = repeat_cycles(len(xs), plate_type)
 
 # %% Build Data Frame
 df = pl.DataFrame(
@@ -137,12 +145,15 @@ df = pl.DataFrame(
             for col in ["Mask", "Feature", "Channel"]
         },
         "value": vals[xs, ys].get(),
-        jcp_short: jcp_ids,
+        jcp_short: med[jcp_col][ys],
+        url_col: [  # Use indices to fetch matches
+            format_val("img", (img_src, img_src))
+            for url, idx in zip(url_vals[ys], cycled_indices[ys])
+            if (img_src := next(url).format(next(idx)))
+        ],
     }
 )
 
-
-plate_type = "orf"
 uniq = tuple(df.get_column(jcp_short).unique())
 jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, plate_type)
 
@@ -150,6 +161,8 @@ jcp_translated = df.with_columns(
     pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
 )
 
+# Reorder columns
+order =
 # Output
 output_dir.mkdir(parents=True, exist_ok=True)
 df.write_parquet(output_dir / "orf_features.parquet", compression="zstd")
