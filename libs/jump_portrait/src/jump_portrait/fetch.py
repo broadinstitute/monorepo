@@ -7,7 +7,7 @@ Based on github.com/jump-cellpainting/datasets/blob/baacb8be98cfa4b5a03b627b8cd0
 The general workflow is a bit contrived but it works:
 a) If you have an item of interest and want to see them:
 - Use broad_babel to convert item name to jump id (get_item_location_metadata)
-- Use JUMP identifier to fetch the metadata dataframe with image locations (load_metadatra_parquets)
+- Use JUMP identifier to fetch the metadata dataframe with image locations (TODO isolate this)
 - Use this location dataframe to build a full path and fetch it from there
 
 Current problems:
