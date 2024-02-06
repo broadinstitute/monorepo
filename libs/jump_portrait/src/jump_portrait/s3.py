@@ -23,8 +23,15 @@ def s3client():
 
 def get_image_from_s3path(s3_image_path) -> np.ndarray:
     # Assumes we are accessing cellpainting-gallery
-    if s3_image_path.startswith("s3"):
-        s3_image_path = s3_image_path[26:]
+
+    s3_image_path = str(s3_image_path)  # if instance is S3Path
+
+    # Remove all possible prefixes
+    bucket_name = "cellpainting-gallery"
+    s3_image_path = s3_image_path.removeprefix(f"s3:/{bucket_name}/")
+    s3_image_path = s3_image_path.removeprefix(f"/{bucket_name}/")
+    s3_image_path = s3_image_path.removeprefix(f"{bucket_name}/")
+
     response = s3client().get_object(Bucket="cellpainting-gallery", Key=s3_image_path)
     return mpimg.imread(BytesIO(response["Body"].read()), format="tiff")
 
