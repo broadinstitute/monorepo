@@ -22,7 +22,7 @@ import polars as pl
 import pooch
 from broad_babel import query
 
-from jump_portrait.s3 import build_s3_image_path, get_image_from_s3path
+from jump_portrait.s3 import build_s3_image_path, get_image_from_s3path, read_parquet_s3
 from jump_portrait.utils import batch_processing, parallel
 
 
@@ -66,7 +66,7 @@ def get_sample(n: int = 2, seed: int = 42):
     )
     s3_path = format_cellpainting_s3().format(**sample.to_dicts()[0])
 
-    parquet_meta = pl.read_parquet(s3_path, use_pyarrow=True)
+    parquet_meta = read_parquet_s3(s3_path)  # , use_pyarrow=True)
     return parquet_meta
 
 
@@ -113,7 +113,7 @@ def get_jump_image(
     s3_location_frame_uri = format_cellpainting_s3().format(
         Metadata_Source=source, Metadata_Batch=batch, Metadata_Plate=plate
     )
-    location_frame = pl.read_parquet(s3_location_frame_uri, use_pyarrow=True)
+    location_frame = read_parquet_s3(s3_location_frame_uri)  # , use_pyarrow=True)
     unique_site = location_frame.filter(
         (pl.col("Metadata_Well") == well) & (pl.col("Metadata_Site") == str(site))
     )
@@ -236,7 +236,7 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
 @batch_processing
 def get_well_image_uris(s3_location_uri, wells: list[str]) -> pl.DataFrame:
     # Returns a dataframe indicating the image location of specific wells for a given parquet file.
-    locations_df = pl.read_parquet(s3_location_uri, use_pyarrow=True)
+    locations_df = read_parquet_s3(s3_location_uri)  # , use_pyarrow=True)
     return locations_df.filter(pl.col("Metadata_Well").is_in(wells))
 
 

@@ -169,3 +169,8 @@ sorted_df = jcp_translated.select(order)
 # Output
 output_dir.mkdir(parents=True, exist_ok=True)
 sorted_df.write_parquet(output_dir / "orf_features.parquet", compression="zstd")
+
+# Quick printing of features
+# for n,i in enumerate( results ):
+#     if len(i[3]):
+#         print(n,i)

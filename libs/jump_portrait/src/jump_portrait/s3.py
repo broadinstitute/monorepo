@@ -5,8 +5,11 @@ from io import BytesIO
 import boto3
 import matplotlib.image as mpimg
 import numpy as np
+import polars as pl
+import pyarrow as pa
 from botocore import UNSIGNED
 from botocore.config import Config
+from s3fs import S3FileSystem
 from s3path import PureS3Path, S3Path
 
 """
@@ -64,3 +67,11 @@ def build_s3_image_path(
         / row["_".join(("FileName", index_suffix))]
     )
     return final_path
+
+
+def read_parquet_s3(path: str):
+    return pl.read_parquet(
+        path,
+        use_pyarrow=True,
+        pyarrow_options={"filesystem": S3FileSystem(anonymous=True)},
+    )
