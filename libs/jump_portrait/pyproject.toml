@@ -28,6 +28,7 @@ jupyter = "^1.0.0"
 jupytext = "^1.15.0"
 pytest = "^7.4.1"
 ruff-lsp = "^0.0.48"
+black = "^24.1.1"
 
 [build-system]
 requires = ["poetry-core"]
