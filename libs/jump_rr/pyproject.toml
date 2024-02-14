@@ -8,7 +8,7 @@ readme = "README.md"
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
 broad-babel = "^0.1.11"
-copairs = {git = "https://github.com/cytomining/copairs.git", rev = "v0.4.0-alpha"}
+# copairs = {git = "https://github.com/cytomining/copairs.git", rev = "v0.4.0-alpha"}
 numpy = "*"
 fastcluster = "^1.2.6"
 pyarrow = "^14.0.1"
@@ -22,6 +22,7 @@ rmm-cu11 = {version = "^23.12.0", source = "nvidia"}
 ucx-py-cu11 = {version = "^0.35.0", source = "nvidia"}
 ptxcompiler-cu11 = {version = "^0.7.0.post1", source = "nvidia"}
 cubinlinker-cu11 = {version = "^0.3.0.post1", source = "nvidia"}
+statsmodels = "0.14.1"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -29,6 +30,7 @@ jupyter = "^1.0.0"
 jupytext = "^1.15.2"
 ipdb = "^0.13.13"
 ruff-lsp = "^0.0.50"
+ruff = "<0.2.0"
 
 
 [[tool.poetry.source]]
