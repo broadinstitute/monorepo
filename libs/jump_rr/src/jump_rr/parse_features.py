@@ -1,10 +1,12 @@
 #!/usr/bin/env jupyter
 import re
+from functools import cache
 
 import polars as pl
 
 
-def get_feature_groups(cols):
+@cache
+def get_feature_groups(cols: tuple[str]) -> pl.DataFrame:
     """
     Group features in a consistent manner
     apples with apples, oranges with oranges
