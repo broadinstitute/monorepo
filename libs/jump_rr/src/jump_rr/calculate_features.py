@@ -64,63 +64,19 @@ std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
 url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
 
-## REGEX
-masks = "|".join(("Cells", "Nuclei", "Cytoplasm", "Image"))
-channels = "|".join(
-    (
-        "DNA",
-        "AGP",
-        "RNA",
-        "ER",
-        "Mito",
-        "Image",
-    )
-)
-chless_feats = "|".join(
-    (
-        "AreaShape",
-        "Neighbors",
-        "RadialDistribution",
-        "Location",
-        "Count",
-        "Number",
-        "Parent",
-        "Children",
-        "ObjectSkeleton",
-        "Threshold",
-    )
-)
-
-std = re.compile(f"({masks})_(\S+)_(Orig)?({channels})(_.*)?")
-chless = re.compile(f"({masks})_({chless_feats})_?([a-zA-Z]+)?(.*)?")
 
 # %% Loading
 precor = pl.read_parquet(precor_path)
 
 # %% Split data into med (concensus), meta and urls
 med, meta, urls = get_concensus_meta_urls(precor)
-
-
-# Group features in a consistent manner
-# apples with apples, oranges with oranges
-# Two cases
-# - Channel-based
-# - Non-channel based shape
-data_only = med.select(pl.all().exclude("^Metadata.*$"))
-cols = data_only.columns
-
-# Apply regular expressions
-# Convert to format MASK,FEATURE,CHANNEL(opt),SUFFIX, merging channels
-# where necessary
-results = [(std.findall(x) or chless.findall(x))[0] for x in cols]
-results = [
-    (x[0], "".join(x[1:3]), "", x[3]) if len(x) < 5 else (*x[:2], "".join(x[2:4]), x[4])
-    for x in results
-]
+cols = med.select(pl.all().exclude("^Metadata.*$")).columns
+from parse_features.get_feature_groups
+results = get_features_grouped(cols)
 
 # Select Mask, Feature and Channel features
 feature_meta = pl.DataFrame(
-    [x[:3] for x in results], schema=[("Mask", str), ("Feature", str), ("Channel", str)]
+    results, schema=[("Mask", str), ("Feature", str), ("Channel", str)]
 )
 
 features = pl.concat((feature_meta, data_only.transpose()), how="horizontal")
