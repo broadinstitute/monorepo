@@ -23,6 +23,7 @@ ucx-py-cu11 = {version = "^0.35.0", source = "nvidia"}
 ptxcompiler-cu11 = {version = "^0.7.0.post1", source = "nvidia"}
 cubinlinker-cu11 = {version = "^0.3.0.post1", source = "nvidia"}
 statsmodels = "0.14.1"
+tqdm = "^4.66.2"
 
 
 [tool.poetry.group.dev.dependencies]
