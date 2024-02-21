@@ -24,6 +24,7 @@ Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vig
 
 from math import sqrt
 from pathlib import Path
+from time import perf_counter
 
 try:
     import cupy as cp
@@ -32,7 +33,15 @@ except Exception:
 
 import numpy as np
 import polars as pl
-from scipy.stats import t  # TODO try to reimplement on cupy
+from parse_features import get_feature_groups
+from pathos.multiprocessing import Pool
+from scipy.stats import combine_pvalues, t
+from statsmodels.stats.multitest import multipletests
+from tqdm import tqdm
+
+# TODO try to reimplement statsmodels on cupy
+
+np.seterr(divide="ignore")
 
 
 def sample_ids(
@@ -67,22 +76,44 @@ def sample_ids(
     return result
 
 
-def group_by_trt(
-    df: pl.DataFrame, column: str = "Metadata_JCP2022"
+def partition_by_trt(
+    df: pl.DataFrame,
+    column: str = "Metadata_JCP2022",
+    negcons_per_plate: int = 2,
+    seed: int = 42,
 ) -> dict[str, tuple[pl.DataFrame, pl.DataFrame]]:
     """
     Partition a dataframe by using identifier column (by default Metadata_JCP2022)
     and then further split into two dataframes, one for positive controls and one
     for negative controls.
     """
-    pos_partition, neg_partition = sampled.partition_by("Metadata_pert_type")
+    meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
+    pos_partition, neg_partition = df.select(
+        pl.col(meta_cols),
+        pl.all().exclude("^Metadata.*$").cast(pl.Float32),
+    ).partition_by("Metadata_pert_type", include_key=False)
+
+    neg_partition = neg_partition.drop(column)
+    if negcons_per_plate:  # Sample $negcons_per_plate elements from each plate
+        neg_partition = neg_partition.filter(
+            pl.int_range(0, pl.count()).shuffle(seed=seed).over("Metadata_Plate")
+            < negcons_per_plate
+        )
+
     ids_plates = dict(pos_partition.group_by(column).agg("Metadata_Plate").iter_rows())
-    ids_prof = pos_partition.partition_by(column, as_dict=True, maintain_order=False)
-    negcons = neg_partition.partition_by(
-        "Metadata_Plate", as_dict=True, maintain_order=False
+
+    ids_prof = pos_partition.drop("Metadata_pert_type", "Metadata_Plate").partition_by(
+        column, as_dict=True, maintain_order=False, include_key=False
     )
+
+    # TODO is there a better way to return only float values?
     id_trt_negcon = {
-        id_: (ids_prof[id_], pl.concat(negcons[plate] for plate in plates))
+        id_: (
+            ids_prof[id_],
+            neg_partition.filter(pl.col("Metadata_Plate").is_in(plates)).drop(
+                "Metadata_Plate"
+            ),
+        )
         for id_, plates in ids_plates.items()
     }
     return id_trt_negcon
@@ -101,15 +132,9 @@ def get_p_value(a, b, negcons_per_plate: int = 2, seed: int = 42):
     3. Sample negative controls
     4. Calculate p value of both distributions
     """
-    if negcons_per_plate:  # Sample $negcons_per_plate elements from each plate
-        b = b.filter(
-            pl.int_range(0, pl.count()).shuffle(seed=seed).over("Metadata_Plate")
-            < negcons_per_plate
-        )
     # Convert relevant values to cupy
-    matrix_a, matrix_b = [
-        cp.array(x.select(pl.all().exclude("^Metadata.*$"))) for x in (a, b)
-    ]
+    matrix_a = cp.array(a)
+    matrix_b = cp.array(b)
 
     # Calculate t statistic
     mean_a, mean_b = (matrix_a.mean(axis=0), matrix_b.mean(axis=0))
@@ -121,40 +146,107 @@ def get_p_value(a, b, negcons_per_plate: int = 2, seed: int = 42):
     # Calculate p value
     df = n_a + n_b - 2
     p = (1 - t.cdf((np.abs(t_stat).get()), df)) ** 2  # TODO cupy remove scipy dep
-    return p
+
+    return np.nan_to_num(p, nan=1.0)
+
+
+def get_corrected_feature_pvals(
+    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]], negcons_per_plate, seed
+) -> pl.DataFrame:
+    """
+    1. Calculate the p value of all features
+    2. then adjust the p value to account for multiple testing
+    3. Group features based on their hierarchy and compute combined p-value per group using
+    4. then correct the p values from step 5 (fdr_bh)
+
+    # TODO how to deal with NaNs? I currently replace them with 1
+    # TODO double-check if the statistics work for features that originate from the same cell
+    """
+    features = tuple(
+        list(partitioned.values())[0][0]
+        .select(pl.all().exclude("^Metadata.*$"))
+        .columns
+    )
+    groups = get_feature_groups(features)
+
+    print("Calculating p values")
+    timer = perf_counter()
+
+    n_items = len(partitioned)
+    p_values = np.ones((n_items, len(features)), dtype=np.float32)
+    for i, k in tqdm(enumerate(partitioned.keys()), total=n_items):
+        p_values[i, :] = get_p_value(
+            # *partitioned.pop(k),  # Free up memory
+            *partitioned[k],
+            negcons_per_plate=negcons_per_plate,
+            seed=seed,
+        )
+    print(f"{perf_counter()-timer}")
+
+    print("FDR correction")
+    timer = perf_counter()
+    corrected = pl.DataFrame(
+        [multipletests(x, method="fdr_bh")[1] for x in p_values],
+        schema=precor.select(pl.all().exclude("^Metadata.*$")).columns,
+    )
+    print(f"{perf_counter()-timer}")
+
+    # %% Group pvalues
+
+    parsed = pl.concat((corrected.transpose(), groups), how="horizontal")
+    agg = parsed.group_by(groups.columns).agg(pl.all())
+    # TODO think of if/how to deal with features that come empty
+
+    # Combine p values and fill nans
+    print("Combine p values using parsed features")
+    timer = perf_counter()
+
+    tmp = agg.drop(groups.columns).to_numpy()
+
+    with Pool() as p:
+        fully_grouped_pvals = p.map(
+            lambda x: np.nan_to_num(combine_pvalues(x).pvalue, nan=1.0),
+            tmp.flatten(),
+        )
+    print(f"{perf_counter()-timer}")
+
+    print("Perform the correction for grouped features")
+    second_grouping_matrix = np.reshape(fully_grouped_pvals, tmp.shape)
+    timer = perf_counter()
+    with Pool() as p:
+        second_correction = p.map(
+            lambda x: multipletests(x, method="fdr_bh")[1],
+            second_grouping_matrix.T,
+        )
+    print(f"{perf_counter()-timer}")
+    corrected_p_value = pl.DataFrame(
+        np.transpose(second_correction), schema=agg.columns[3:]
+    )
+
+    final = pl.concat((agg.select(groups.columns), corrected_p_value), how="horizontal")
+    return final
 
 
 # %% Testing zone
 
 # %% Loading
-from tqdm import tqdm
 
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
 precor_file = "full_profiles_cc_adj_mean_corr.parquet"
 precor_path = dir_path / "orf" / precor_file
 precor = pl.read_parquet(precor_path)
-
-
 sampled = sample_ids(precor)
-partitioned = group_by_trt(sampled)
-negcons_per_plate = 1
+
+
+negcons_per_plate = 2
 seed = 42
-p_values = {
-    k: get_p_value(a, b, negcons_per_plate=negcons_per_plate, seed=seed)
-    for k, (a, b) in tqdm(partitioned.items())
-}
-# pval_mat = cp.sort(cp.array(list(p_values.values())), axis=0)
-pval_mat = np.array(list(p_values.values()))
+print("Partition data into treatment and negative control")
+timer = perf_counter()
+partitioned = partition_by_trt(sampled, seed=seed)
+print(f"{perf_counter()-timer}")
 
-# %% Correct p values for multiple tests
+# %%
 
 
-from statsmodels.stats.multitest import multipletests
-
-corrected = pl.DataFrame(
-    [multipletests(x, is_sorted=True)[1] for x in pval_mat.T.get()],
-    schema=precor.select(pl.all().exclude("^Metadata.*$")).columns,
-)
-
-# %% Group pvalues
-from scipy.stats import combine_pvalues
+corrected_pvalues = get_corrected_feature_pvals(partitioned, negcons_per_plate, seed)
+corrected_pvalues.write_parquet("corrected_pvalues.parquet", compression="zstd")
