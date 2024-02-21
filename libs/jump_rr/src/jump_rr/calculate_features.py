@@ -25,7 +25,6 @@ Steps:
 - Get median from the grouped subfeatures
 - Build dataframe
 """
-import re
 from pathlib import Path
 
 import cupy as cp
@@ -40,6 +39,7 @@ from jump_rr.concensus import (
     repeat_cycles,
 )
 from jump_rr.index_selection import get_bottom_top_indices
+from jump_rr.parse_features import get_features_groups
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -71,13 +71,8 @@ precor = pl.read_parquet(precor_path)
 # %% Split data into med (concensus), meta and urls
 med, meta, urls = get_concensus_meta_urls(precor)
 cols = med.select(pl.all().exclude("^Metadata.*$")).columns
-from parse_features.get_feature_groups
-results = get_features_grouped(cols)
+results = get_features_groups(cols)
 
-# Select Mask, Feature and Channel features
-feature_meta = pl.DataFrame(
-    results, schema=[("Mask", str), ("Feature", str), ("Channel", str)]
-)
 
 features = pl.concat((feature_meta, data_only.transpose()), how="horizontal")
 
