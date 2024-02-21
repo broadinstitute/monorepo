@@ -235,14 +235,16 @@ dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
 precor_file = "full_profiles_cc_adj_mean_corr.parquet"
 precor_path = dir_path / "orf" / precor_file
 precor = pl.read_parquet(precor_path)
-sampled = sample_ids(precor)
+
+# Sample for testing
+# sampled = sample_ids(precor)
 
 
 negcons_per_plate = 2
 seed = 42
 print("Partition data into treatment and negative control")
 timer = perf_counter()
-partitioned = partition_by_trt(sampled, seed=seed)
+partitioned = partition_by_trt(precor, seed=seed)
 print(f"{perf_counter()-timer}")
 
 # %%
