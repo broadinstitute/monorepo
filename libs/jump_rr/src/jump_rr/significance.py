@@ -185,10 +185,7 @@ def get_corrected_feature_pvals(
 
     print("FDR correction")
     timer = perf_counter()
-    corrected = pl.DataFrame(
-        [multipletests(x, method="fdr_bh")[1] for x in p_values],
-        schema=precor.select(pl.all().exclude("^Metadata.*$")).columns,
-    )
+    corrected = pl.DataFrame([multipletests(x, method="fdr_bh")[1] for x in p_values])
     print(f"{perf_counter()-timer}")
 
     # %% Group pvalues
@@ -201,17 +198,17 @@ def get_corrected_feature_pvals(
     print("Combine p values using parsed features")
     timer = perf_counter()
 
-    tmp = agg.drop(groups.columns).to_numpy()
+    np_pvals = agg.drop(groups.columns).to_numpy()
 
     with Pool() as p:
         fully_grouped_pvals = p.map(
             lambda x: np.nan_to_num(combine_pvalues(x).pvalue, nan=1.0),
-            tmp.flatten(),
+            np_pvals.flatten(),
         )
     print(f"{perf_counter()-timer}")
 
     print("Perform the correction for grouped features")
-    second_grouping_matrix = np.reshape(fully_grouped_pvals, tmp.shape)
+    second_grouping_matrix = np.reshape(fully_grouped_pvals, np_pvals.shape)
     timer = perf_counter()
     with Pool() as p:
         second_correction = p.map(
@@ -227,28 +224,30 @@ def get_corrected_feature_pvals(
     return final
 
 
-# %% Testing zone
+def get_corrected_pvals(
+    profiles_parquet: str,
+    out_file: str or None = "corrected_pvalues.parquet",
+    overwrite: bool = False,
+    **kwargs,
+):
+    out_file = Path(out_file)
 
-# %% Loading
+    if not overwrite and out_file.exists():
+        corrected_pvals = pl.read_parquet(out_file, use_pyarrow=True)
+    else:
+        precor = pl.read_parquet(profiles_parquet, use_pyarrow=True)
+        print("Calculating corrected p-values")
+        print("Partition data into treatment and negative control")
+        timer = perf_counter()
+        partitioned = partition_by_trt(precor, seed=kwargs.get("seed", 42))
+        print(f"{perf_counter()-timer}")
 
-dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
-precor_file = "full_profiles_cc_adj_mean_corr.parquet"
-precor_path = dir_path / "orf" / precor_file
-precor = pl.read_parquet(precor_path)
+        corrected_pvals = get_corrected_feature_pvals(partitioned, **kwargs)
 
-# Sample for testing
-# sampled = sample_ids(precor)
+        if out_file is not None:
+            out_file.parent.mkdir(exist_ok=True, parents=True)
+            corrected_pvals.write_parquet(
+                "corrected_pvalues.parquet", compression="zstd"
+            )
 
-
-negcons_per_plate = 2
-seed = 42
-print("Partition data into treatment and negative control")
-timer = perf_counter()
-partitioned = partition_by_trt(precor, seed=seed)
-print(f"{perf_counter()-timer}")
-
-# %%
-
-
-corrected_pvalues = get_corrected_feature_pvals(partitioned, negcons_per_plate, seed)
-corrected_pvalues.write_parquet("corrected_pvalues.parquet", compression="zstd")
+    return corrected_pvals
