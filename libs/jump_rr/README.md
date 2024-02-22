@@ -1,17 +1,34 @@
 
 # Table of Contents
 
-1.  [Quick data access](#org576d10a)
-2.  [Overview](#org0f22c5e)
-3.  [Data accessibility](#org69be4a3)
-4.  [Installation](#org539a3ea)
+1.  [Decision flowchart](#org576d10a)
+2.  [Quick data access](#qda)
+3.  [Overview](#org0f22c5e)
+4.  [Data accessibility](#org69be4a3)
+5.  [Installation](#org539a3ea)
     1.  [pip](#org4a64c80)
     2.  [poetry (dev)](#org76d8a20)
-5.  [Contributions](#orgf86efb7)
-
+6.  [Contributions](#orgf86efb7)
 
 
 <a id="org576d10a"></a>
+
+# Decision flowchart
+```mermaid
+flowchart LR
+    A[Start] --> B{What kind of data do I have?}
+    B -- Chemicals --> C[(WIP)]
+    B -- Genes --> D{What kind of genetic perturbation?}
+    B -- Genes and Chemicals --> asd[(WIP)]
+    B -- None, I just want to explore images --> images[(WIP)]
+    D -- Overexpression --> orf{Are you looking for specific features?}
+    D -- Knock-out --> crispr{Are you looking for specific features?}
+    orf -- No -->  F{broad.io/orf}
+    orf -- Yes -->  G{broad.io/orf_feature}
+    crispr -- No -->  H{broad.io/crispr}
+    crispr -- Yes --> I[(WIP)]
+```
+<a id="qda"></a>
 
 # Quick data access
 
