@@ -23,9 +23,9 @@ flowchart LR
     B -- None, I just want to explore images --> images[(WIP)]
     D -- Overexpression --> orf{Are you looking for specific features?}
     D -- Knock-out --> crispr{Are you looking for specific features?}
-    orf -- No -->  F{broad.io/orf}
-    orf -- Yes -->  G{broad.io/orf_feature}
-    crispr -- No -->  H{broad.io/crispr}
+    orf -- No -->  F[(broad.io/orf)]
+    orf -- Yes -->  G[(broad.io/orf_feature)]
+    crispr -- No -->  H[(broad.io/crispr)]
     crispr -- Yes --> I[(WIP)]
 ```
 <a id="qda"></a>
