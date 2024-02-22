@@ -24,7 +24,7 @@ def get_edge_indices(mat: cp.array, n: int, which: str = "bottom") -> cp.array:
     assert which in ("top", "bottom"), "which must be either top or bottom"
 
     if which == "bottom":
-        mask[n - 1 :] = False
+        mask[n:] = False
     else:
         mask[: -n - 1] = False
 
