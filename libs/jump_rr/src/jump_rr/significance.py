@@ -53,7 +53,7 @@ def sample_ids(
 ) -> pl.DataFrame:
     """Sample all occurrences of n ids in a given column, adding their negative controls."""
     identifiers = (
-        precor.filter(pl.col("Metadata_pert_type") != pl.lit("negcon"))
+        df.filter(pl.col("Metadata_pert_type") != pl.lit("negcon"))
         .get_column(column)
         .sample(n)
     )
@@ -151,7 +151,9 @@ def get_p_value(a, b, negcons_per_plate: int = 2, seed: int = 42):
 
 
 def get_corrected_feature_pvals(
-    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]], negcons_per_plate, seed
+    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
+    negcons_per_plate: int = 2,
+    seed: int = 42,
 ) -> pl.DataFrame:
     """
     1. Calculate the p value of all features
@@ -196,15 +198,16 @@ def get_corrected_feature_pvals(
 
     # Combine p values and fill nans
     print("Combine p values using parsed features")
-    timer = perf_counter()
 
     np_pvals = agg.drop(groups.columns).to_numpy()
 
+    timer = perf_counter()
     with Pool() as p:
         fully_grouped_pvals = p.map(
             lambda x: np.nan_to_num(combine_pvalues(x).pvalue, nan=1.0),
             np_pvals.flatten(),
         )
+
     print(f"{perf_counter()-timer}")
 
     print("Perform the correction for grouped features")
@@ -251,3 +254,11 @@ def get_corrected_pvals(
             )
 
     return corrected_pvals
+
+
+# Autogenerates the parquet file if run from command line
+if __name__ == "__main__":
+    dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
+    precor_file = "full_profiles_cc_adj_mean_corr.parquet"
+    precor_path = dir_path / "orf" / precor_file
+    corrected_pvals = get_corrected_pvals(precor_path, overwrite=True)
