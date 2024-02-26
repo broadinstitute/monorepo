@@ -16,7 +16,7 @@ def test_get_item_location(gene, control):
 @pytest.mark.parametrize("batch", ["2021_08_17_U2OS_48_hr_run16"])
 @pytest.mark.parametrize("plate", ["Dest210809-134534"])
 @pytest.mark.parametrize("well", ["A01"])
-@pytest.mark.parametrize("channel", ["DNA"])
+@pytest.mark.parametrize("channel", ["DNA", "AGP", "Mito", "ER", "RNA"])
 @pytest.mark.parametrize("site", [1])
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
 @pytest.mark.parametrize("apply_correction", [True, False])
