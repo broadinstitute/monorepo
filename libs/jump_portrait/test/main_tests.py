@@ -18,8 +18,14 @@ def test_get_item_location(gene, control):
 @pytest.mark.parametrize("well", ["A01"])
 @pytest.mark.parametrize("channel", ["DNA"])
 @pytest.mark.parametrize("site", [1])
-def test_get_jump_image(source, batch, plate, well, channel, site):
+@pytest.mark.parametrize("correction", ["Orig", "Illum"])
+@pytest.mark.parametrize("apply_correction", [True, False])
+def test_get_jump_image(
+    source, batch, plate, well, channel, site, correction, apply_correction
+):
     # Check that finding image locations from gene or compoundsa works
-    image = get_jump_image(source, batch, plate, well, channel, site)
+    image = get_jump_image(
+        source, batch, plate, well, channel, site, correction, apply_correction
+    )
     assert len(image.shape) == 2  # Two-dimensional image
     assert len(image) > 10  # Check that it is a large-ish image

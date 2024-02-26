@@ -78,6 +78,7 @@ def get_jump_image(
     channel: str,
     site: str = 1,
     correction: str = "Orig",
+    apply_correction: bool = True,
 ) -> np.ndarray:
     """Main function to fetch a JUMP image for AWS.
     Metadata for most files can be obtained from a set of data frames,
@@ -99,6 +100,8 @@ def get_jump_image(
         Site identifier (also called foci), default is 1.
     correction : str
         Whether or not to use corrected data. It does not by default.
+    apply_illum : bool
+        When correction=="Illum" apply Illum correction on original image.
 
     Returns
     -------
@@ -124,7 +127,14 @@ def get_jump_image(
     s3_image_path = build_s3_image_path(
         row=first_row, channel=channel, correction=correction
     )
-    return get_image_from_s3path(s3_image_path)
+    result = get_image_from_s3path(s3_image_path)
+
+    if correction == "Illum" and apply_correction:
+        original_image_path = build_s3_image_path(
+            row=first_row, channel=channel, correction="Orig"
+        )
+        result = result / get_image_from_s3path(s3_image_path)
+    return result
 
 
 def get_item_location_metadata(
