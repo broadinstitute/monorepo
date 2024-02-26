@@ -9,8 +9,9 @@ sample = get_sample()
 
 source, batch, plate, well, site, *rest = sample.row(0)
 channel = "DNA"
+correction = "Illum"
 
-img = get_jump_image(source, batch, plate, well, channel, site)
+img = get_jump_image(source, batch, plate, well, channel, site, correction)
 
 """
 Workflow 2: Fetch all images for a given item and their controls
