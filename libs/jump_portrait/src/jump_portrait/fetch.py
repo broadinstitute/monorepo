@@ -133,7 +133,7 @@ def get_jump_image(
         original_image_path = build_s3_image_path(
             row=first_row, channel=channel, correction="Orig"
         )
-        result = result / get_image_from_s3path(s3_image_path)
+        result = get_image_from_s3path(original_image_path) / result
     return result
 
 
