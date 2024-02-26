@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "kaljax"
+version = "0.0.0"
+description = "Kalman filter implemented in JAX for GPU and CPU usage"
+authors = ["Alan"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9"
+pyarrow = "^14.0.1"
+adbc-driver-sqlite = "^0.8.0"
+jax = {extras = ["gpu"], version = "^0.4.25", source = "jax"}
+
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+jupytext = "^1.15.2"
+ipdb = "^0.13.13"
+ruff-lsp = "^0.0.50"
+ruff = "<0.2.0"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[[tool.poetry.source]]
+name = "jax"
+url = "https://storage.googleapis.com/jax-releases/jax_releases.html"
+priority = "explicit"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
