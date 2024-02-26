@@ -1,4 +1,5 @@
 #!/usr/bin/env jupyter
+import numpy as np
 import pytest
 from jump_portrait.fetch import get_item_location_info, get_jump_image
 
@@ -28,4 +29,6 @@ def test_get_jump_image(
         source, batch, plate, well, channel, site, correction, apply_correction
     )
     assert len(image.shape) == 2  # Two-dimensional image
-    assert len(image) > 10  # Check that it is a large-ish image
+    assert len(image) > 10  # It is large-ish
+    assert img.sum() > 0  # Not empty
+    assert np.isnan(img).sum() == 0  # No NaNs
