@@ -138,7 +138,7 @@ def get_jump_image(
 
 
 def get_item_location_metadata(
-    item_name: str, controls: bool = True, **kwargs
+        item_name: str, controls: bool = True, operator:str or None=None, **kwargs
 ) -> pl.DataFrame:
     """
     First search for datasets in which this item was present.
@@ -152,6 +152,7 @@ def get_item_location_metadata(
         query=item_name,
         input_column=input_column,
         output_column="JCP2022,standard_key",
+        operator = operator,
     )
     jcp_item = {x[0]: x[1] for x in jcp_ids}
     meta_wells = get_table("well")
