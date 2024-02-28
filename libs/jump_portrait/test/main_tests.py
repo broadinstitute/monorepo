@@ -30,4 +30,4 @@ def test_get_jump_image(
     )
     assert len(image.shape) == 2  # Two-dimensional image
     assert len(image) > 10  # It is large-ish
-    assert img.sum() > 0  # Not empty nor nulls
+    assert image.sum() > 0  # Not empty nor nulls
