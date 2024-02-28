@@ -79,6 +79,7 @@ def get_jump_image(
     site: str = 1,
     correction: str = "Orig",
     apply_correction: bool = True,
+    compressed: bool = False,
 ) -> np.ndarray:
     """Main function to fetch a JUMP image for AWS.
     Metadata for most files can be obtained from a set of data frames,
@@ -100,8 +101,10 @@ def get_jump_image(
         Site identifier (also called foci), default is 1.
     correction : str
         Whether or not to use corrected data. It does not by default.
-    apply_illum : bool
+    apply_correction : bool
         When correction=="Illum" apply Illum correction on original image.
+    compressed : bool
+        Whether or not to return a compressed image. Default is False.
 
     Returns
     -------
@@ -111,8 +114,13 @@ def get_jump_image(
     Examples
     --------
     FIXME: Add docs.
-
     """
+
+    # Compressed images are already corrected
+    if compressed:
+        correction = "Orig"
+        apply_correction = False
+
     s3_location_frame_uri = format_cellpainting_s3().format(
         Metadata_Source=source, Metadata_Batch=batch, Metadata_Plate=plate
     )
@@ -125,7 +133,7 @@ def get_jump_image(
 
     first_row = unique_site.row(0, named=True)
     s3_image_path = build_s3_image_path(
-        row=first_row, channel=channel, correction=correction
+        row=first_row, channel=channel, correction=correction, compressed=compressed
     )
     result = get_image_from_s3path(s3_image_path)
 

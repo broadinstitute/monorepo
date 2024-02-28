@@ -21,8 +21,9 @@ def test_get_item_location(gene, control):
 @pytest.mark.parametrize("site", [1])
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
 @pytest.mark.parametrize("apply_correction", [True, False])
+@pytest.mark.parametrize("compressed", [True, False])
 def test_get_jump_image(
-    source, batch, plate, well, channel, site, correction, apply_correction
+    source, batch, plate, well, channel, site, correction, apply_correction, compressed
 ):
     # Check that finding image locations from gene or compoundsa works
     image = get_jump_image(
