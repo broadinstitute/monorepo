@@ -45,6 +45,45 @@ def get_image_from_s3path(s3_image_path) -> np.ndarray:
         result = np.load(response_body)
     else:
         raise Exception(f"Format not supported for {s3_image_path}")
+
+    return result
+
+
+def get_corrected_image(
+    images_location: dict,
+    channel: str,
+    correction: str or None,
+    apply_correction: bool = True,
+) -> np.ndarray:
+    """Correct the image from a given location when appropriate by dividing it by another image in the same location dictionary.
+
+    Parameters
+    ----------
+    images_location : dict
+    channel : str
+    correction : str or None
+
+    Returns
+    -------
+    np.ndarray Corrected or raw image
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+
+    """
+    s3_image_path = build_s3_image_path(
+        row=images_location, channel=channel, correction=correction
+    )
+    result = get_image_from_s3path(s3_image_path)
+
+    if apply_correction and not correction in ("Orig", None):
+        original_image_path = build_s3_image_path(
+            row=images_location, channel=channel, correction="Orig"
+        )
+        result = get_image_from_s3path(original_image_path) / result
+
     return result
 
 

@@ -22,7 +22,12 @@ import polars as pl
 import pooch
 from broad_babel import query
 
-from jump_portrait.s3 import build_s3_image_path, get_image_from_s3path, read_parquet_s3
+from jump_portrait.s3 import (
+    build_s3_image_path,
+    get_image_from_s3path,
+    read_parquet_s3,
+    get_corrected_image,
+)
 from jump_portrait.utils import batch_processing, parallel
 
 
@@ -116,7 +121,7 @@ def get_jump_image(
     s3_location_frame_uri = format_cellpainting_s3().format(
         Metadata_Source=source, Metadata_Batch=batch, Metadata_Plate=plate
     )
-    location_frame = read_parquet_s3(s3_location_frame_uri)  # , use_pyarrow=True)
+    location_frame = read_parquet_s3(s3_location_frame_uri)
     unique_site = location_frame.filter(
         (pl.col("Metadata_Well") == well) & (pl.col("Metadata_Site") == str(site))
     )
@@ -124,35 +129,29 @@ def get_jump_image(
     assert len(unique_site) == 1, "More than one site found"
 
     first_row = unique_site.row(0, named=True)
-    s3_image_path = build_s3_image_path(
-        row=first_row, channel=channel, correction=correction
-    )
-    result = get_image_from_s3path(s3_image_path)
 
-    if correction == "Illum" and apply_correction:
-        original_image_path = build_s3_image_path(
-            row=first_row, channel=channel, correction="Orig"
-        )
-        result = get_image_from_s3path(original_image_path) / result
+    result = get_corrected_image(first_row, channel, correction, apply_correction)
     return result
 
 
 def get_item_location_metadata(
-        item_name: str, controls: bool = True, operator:str or None=None, **kwargs
+    item_name: str,
+    controls: bool = True,
+    operator: str or None = None,
+    input_column: str = "standard_key",
 ) -> pl.DataFrame:
     """
     First search for datasets in which this item was present.
     Return tuple with its Metadata location in order source, batch, plate,
     well and site.
     """
-    input_column = kwargs.get("input_column") or "standard_key"
 
     # Get plates
     jcp_ids = query.run_query(
         query=item_name,
         input_column=input_column,
         output_column="JCP2022,standard_key",
-        operator = operator,
+        operator=operator,
     )
     jcp_item = {x[0]: x[1] for x in jcp_ids}
     meta_wells = get_table("well")
@@ -252,7 +251,9 @@ def get_well_image_uris(s3_location_uri, wells: list[str]) -> pl.DataFrame:
 
 
 def get_item_location_info(
-    item_name: str, controls: bool = True, **kwargs
+    item_name: str,
+    controls: bool = True,
+    input_column="standard_key",
 ) -> pl.DataFrame:
     """Wrapper to obtain a dataframe with locations of an item. It removes duplicate rows.
 
@@ -262,8 +263,6 @@ def get_item_location_info(
         Item of interest to query
     controls: bool
         Wether or not to fetch controls in the same plates as samples
-    **kwargs: dict
-        Keyword arguments passed on to load_filter_metadata
 
     Returns
     -------
@@ -275,12 +274,10 @@ def get_item_location_info(
     FIXME: Add docs.
 
     """
-    input_column = kwargs.get("input_column") or "standard_key"
-
     well_level_metadata = get_item_location_metadata(
         item_name, controls=controls, input_column=input_column
     )
-    item_selected_meta = load_filter_well_metadata(well_level_metadata, **kwargs)
+    item_selected_meta = load_filter_well_metadata(well_level_metadata)
     joint = item_selected_meta.join(
         well_level_metadata.drop("Metadata_Well"),
         on=("Metadata_Source", "Metadata_Batch", "Metadata_Plate"),
@@ -289,7 +286,10 @@ def get_item_location_info(
 
 
 def get_collage(
-    gene: str, channel: str = "DNA", plate_type: str = "ORF", **kwargs
+    gene: str,
+    channel: str = "DNA",
+    plate_type: str = "ORF",
+    input_column: str or None = None,
 ) -> np.ndarray:
     """Return a collage of images from a given gene. Returned matrices are arranged in two rows,
     top row are the perturbations and bottom rows are their plate-per-plate controls.
@@ -302,8 +302,6 @@ def get_collage(
         Channel to plot. Default is "DNA".
     plate_type : str
         plate type, can be "ORF", "CRISPR" or "Compound". Default is "ORF".
-    **kwargs :
-        Arguments to pass to get_item_location_info
 
     Returns
     -------
@@ -318,7 +316,6 @@ def get_collage(
     """
     # Convenience variables
     transient_col = "fullpath"
-    input_column = kwargs.get("input_column", "standard_key")
     group_by_fields = (
         "Metadata_Source",
         "Metadata_Batch",
@@ -327,7 +324,7 @@ def get_collage(
     )
 
     # Find location
-    all_locations = get_item_location_info(gene)
+    all_locations = get_item_location_info(gene, input_column=input_column)
     image_locations = {}
     for v in ("control", gene):
         subdf = all_locations.filter(pl.col(input_column) == v)
