@@ -24,7 +24,7 @@ from broad_babel import query
 
 from jump_portrait.s3 import (
     build_s3_image_path,
-    get_image_from_s3path,
+    get_image_from_s3uri,
     read_parquet_s3,
     get_corrected_image,
 )
@@ -362,7 +362,7 @@ def get_collage(
     for plate in locations:
         pair = []
         for fpath in plate:
-            pair.append(get_image_from_s3path(fpath))
+            pair.append(get_image_from_s3uri(fpath))
         imgs.append(pair)
 
     concat = np.concatenate([np.concatenate(x, axis=0) for x in imgs], axis=1)

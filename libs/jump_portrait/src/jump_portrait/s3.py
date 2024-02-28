@@ -24,27 +24,27 @@ def s3client():
     return boto3.client("s3", config=Config(signature_version=UNSIGNED))
 
 
-def get_image_from_s3path(s3_image_path) -> np.ndarray:
+def get_image_from_s3uri(s3_image_uri) -> np.ndarray:
     # Assumes we are accessing cellpainting-gallery
 
-    s3_image_path = str(s3_image_path)  # if instance is S3Path
+    s3_image_uri = str(s3_image_uri)  # if instance is S3Path
 
     # Remove all possible prefixes
     bucket_name = "cellpainting-gallery"
-    s3_image_path = s3_image_path.removeprefix(f"s3:/{bucket_name}/")
-    s3_image_path = s3_image_path.removeprefix(f"/{bucket_name}/")
-    s3_image_path = s3_image_path.removeprefix(f"{bucket_name}/")
+    s3_image_uri = s3_image_uri.removeprefix(f"s3://{bucket_name}/")
+    s3_image_uri = s3_image_uri.removeprefix(f"/{bucket_name}/")
+    s3_image_uri = s3_image_uri.removeprefix(f"{bucket_name}/")
 
-    response = s3client().get_object(Bucket="cellpainting-gallery", Key=s3_image_path)
+    response = s3client().get_object(Bucket="cellpainting-gallery", Key=s3_image_uri)
     response_body = BytesIO(response["Body"].read())
 
-    if s3_image_path.endswith(".tif") or s3_image_path.endswith(".tiff"):
+    if s3_image_uri.endswith(".tif") or s3_image_uri.endswith(".tiff"):
         result = mpimg.imread(response_body, format="tiff")
 
-    elif s3_image_path.endswith(".npy"):
+    elif s3_image_uri.endswith(".npy"):
         result = np.load(response_body)
     else:
-        raise Exception(f"Format not supported for {s3_image_path}")
+        raise Exception(f"Format not supported for {s3_image_uri}")
 
     return result
 
@@ -76,13 +76,13 @@ def get_corrected_image(
     s3_image_path = build_s3_image_path(
         row=images_location, channel=channel, correction=correction
     )
-    result = get_image_from_s3path(s3_image_path)
+    result = get_image_from_s3uri(s3_image_path)
 
     if apply_correction and not correction in ("Orig", None):
         original_image_path = build_s3_image_path(
             row=images_location, channel=channel, correction="Orig"
         )
-        result = get_image_from_s3path(original_image_path) / result
+        result = get_image_from_s3uri(original_image_path) / result
 
     return result
 
