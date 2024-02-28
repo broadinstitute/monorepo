@@ -65,15 +65,22 @@ def keys(Bucket, Prefix="", StartAfter="", Delimiter="/"):
 
 
 def build_s3_image_path(
-    row: dict[str, str], channel: str, correction: None or str = None
+    row: dict[str, str], channel: str, correction: None or str = None, compressed: bool = False
 ) -> PureS3Path:
     """ """
     if correction is None:
         correction = "Orig"
     index_suffix = correction + channel
+    directory = row["_".join(("PathName", index_suffix))]
+    filename = row["_".join(("FileName", index_suffix))]
+
+    # TODO: Temporary fix, eventually should create load_data_compressed files on s3
+    if compressed:
+        directory = directory.replace("images", "images_compressed", 1)
+
     final_path = (
-        S3Path.from_uri(row["_".join(("PathName", index_suffix))])
-        / row["_".join(("FileName", index_suffix))]
+        S3Path.from_uri(directory)
+        / filename
     )
     return final_path
 
