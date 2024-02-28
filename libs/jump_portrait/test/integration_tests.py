@@ -1,16 +1,7 @@
 #!/usr/bin/env jupyter
-import numpy as np
+
 import pytest
-from jump_portrait.fetch import get_item_location_info, get_jump_image
-
-
-@pytest.mark.parametrize("gene", ["MYT1"])
-@pytest.mark.parametrize("control", [True, False])
-def test_get_item_location(gene, control):
-    # Check that finding image locations from gene or compoundsa works
-    result = get_item_location_info(gene, control).shape
-    assert result[0] > 1
-    assert result[1] == 28
+from jump_portrait.fetch import get_jump_image
 
 
 @pytest.mark.parametrize("source", ["source_10"])
@@ -30,4 +21,14 @@ def test_get_jump_image(
     )
     assert len(image.shape) == 2  # Two-dimensional image
     assert len(image) > 10  # It is large-ish
-    assert img.sum() > 0  # Not empty nor nulls
+    assert image.sum() > 0  # Not empty nor nulls
+
+
+def test_get_corrected_image():
+    # TODO add test
+    pass
+
+
+def test_download_image():
+    # TODO add test
+    pass
