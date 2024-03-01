@@ -23,10 +23,9 @@ Based off the series of [[https://www.youtube.com/watch?v=CaCcOwJPytQ&list=PLX2g
     K = \frac{P_{k_{p}} H^T}{HP_{k_{p}}H^T + R}
     \end{equation}
     #+end_latex
-* Meanings (For a 2-Dimensional example)
+* Glossary (For a 2-Dimensional example)
 - $X_{k_{p}}$: Predicted state matrix
 - $X_k$: State matrix
-- $Y_k$: Observation matrix
 - $A$: Matrix to update the position and velocity based on $\Delta{t}$
 - $A$: Translator matrix to update state based on time
 - $B$: Translator matrix of acceleration into velocity
@@ -35,8 +34,11 @@ Based off the series of [[https://www.youtube.com/watch?v=CaCcOwJPytQ&list=PLX2g
 - $P$: Covariance matrix
 - $K$: Kalman Gain
 - $H$: Transformation to format Kalman filter matrix to $K$ format.
-- $C$:
-- $Z_m$:
+**  These values are used to integrate the new observation it transforms observations into the state matrix shape
+- $Y_k$: Observation matrix
+- $C$: Transform the observed matrix into the state we need it to be
+- $Z_m$: Observation errors that may be introduced in the observation mechanism (e.g., segmentation).  It can be assumed to be zero.
+
 * Flow diagram
 #+begin_src mermaid :file flowchart.png
 flowchart LR
