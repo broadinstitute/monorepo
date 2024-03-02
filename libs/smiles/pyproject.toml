@@ -1,0 +1,23 @@
+[tool.poetry]
+name = "smiles"
+version = "0.0.0"
+description = ""
+authors = ["Alán F. Muñoz <amunozgo@broadinstitute.org>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+Flask = "^3.0.2"
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+jupytext = "^1.15.2"
+ipdb = "^0.13.13"
+ruff-lsp = "^0.0.50"
+ruff = "<0.2.0"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
