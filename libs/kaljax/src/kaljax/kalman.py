@@ -35,11 +35,6 @@ H = jnp.array(
 R = jnp.eye(Ys.shape[1])
 
 
-def generate_initial_state() -> jnp.ndarray:
-    X = jnp.array([[0.0], [0.0], [0.1], [0.1]])
-    return X
-
-
 def kf_predict(X, P, A, Q, B, U):
     X = jnp.dot(A, X) + jnp.dot(B, U)
     P = jnp.dot(A, jnp.dot(P, A.T)) + Q
