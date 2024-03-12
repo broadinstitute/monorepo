@@ -57,8 +57,8 @@ def get_feature_groups(cols: tuple[str]) -> pl.DataFrame:
 
     # Select Mask, Feature and Channel features
     feature_meta = pl.DataFrame(
-        [x[:3] for x in results],
-        schema=[("Mask", str), ("Feature", str), ("Channel", str)],
+        [x for x in results],
+        schema=[("Mask", str), ("Feature", str), ("Channel", str), ("Suffix", str)],
     )
 
     return feature_meta
