@@ -38,7 +38,7 @@ from jump_rr.concensus import (
 )
 from jump_rr.index_selection import get_edge_indices
 from jump_rr.parse_features import get_feature_groups
-from jump_rr.significance import get_corrected_pvals
+from jump_rr.significance import pvals_from_path
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -48,6 +48,7 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 precor_file = "full_profiles_cc_adj_mean_corr.parquet"
+# precor_file = "harmonized_no_sphering_profiles.parquet"
 precor_path = dir_path / "orf" / precor_file
 
 ## Parameters
@@ -76,23 +77,37 @@ med, meta, urls = get_concensus_meta_urls(
     precor.filter(pl.col("Metadata_pert_type") != "negcon")
 )
 med_vals = med.select(pl.exclude("^Metadata.*$"))
-feature_meta = get_feature_groups(tuple(med_vals.columns))
 
-features = pl.concat((feature_meta, med_vals.transpose()), how="horizontal")
 
-feat_med = features.group_by(feature_names).median()
+# %% group by feature
 
+
+def median_values(med_vals, group_by: list[str] or None = None):
+    if group_by is None:
+        feature_meta = get_feature_groups(tuple(med_vals.columns))
+    features = pl.concat((feature_meta, med_vals.transpose()), how="horizontal")
+
+    grouped = features.group_by(feature_meta.columns)
+
+    return grouped.median()
+
+
+feat_med = median_values(med_vals)
 
 # Find top and bottom $n_values_used
 
 # xs, ys = get_bottom_top_indices(vals, n_vals_used, skip_first=False)
 # %%
+#
 # Calculate or read likelihood estimates
-corrected_pvals = get_corrected_pvals(precor_path)
+# TODO check that both groupings return matrices in the same orientation
+# Note that this is cached. To uncache (takes ~5 mins for ORF) run
+# pvals_from_path.clear_cache()
+corrected_pvals = pvals_from_path(precor_path)
 median_vals = cp.array(feat_med.select(pl.col("^column.*$")).to_numpy())
 vals = cp.array(corrected_pvals.drop(feature_names))
 xs, ys = get_edge_indices(
-    vals,
+    vals.T,
     n_vals_used,
 )
 
@@ -106,7 +121,7 @@ df = pl.DataFrame(
     {
         **{
             col: np.repeat(feat_med.get_column(col), n_vals_used)
-            for col in feature_names
+            for col in feat_med.select(pl.all().exclude("^column.*$")).columns
         },
         "Statistic": vals[xs, ys].get(),
         "Median": median_vals[xs, ys].get(),

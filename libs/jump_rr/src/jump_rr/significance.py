@@ -26,6 +26,8 @@ from math import sqrt
 from pathlib import Path
 from time import perf_counter
 
+from cachier import cachier
+
 try:
     import cupy as cp
 except Exception:
@@ -150,26 +152,22 @@ def get_p_value(a, b, negcons_per_plate: int = 2, seed: int = 42):
     return np.nan_to_num(p, nan=1.0)
 
 
-def get_corrected_feature_pvals(
-    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
+def calculate_pvals(
+    profiles: pl.DataFrame,
     negcons_per_plate: int = 2,
     seed: int = 42,
-) -> pl.DataFrame:
+):
     """
+    Calculate the pvalues of all features against a sample of their negative controls.
     1. Calculate the p value of all features
     2. then adjust the p value to account for multiple testing
-    3. Group features based on their hierarchy and compute combined p-value per group using
-    4. then correct the p values from step 5 (fdr_bh)
-
-    # TODO how to deal with NaNs? I currently replace them with 1
-    # TODO double-check if the statistics work for features that originate from the same cell
     """
+    partitioned = partition_by_trt(profiles, seed=seed)
     features = tuple(
         list(partitioned.values())[0][0]
         .select(pl.all().exclude("^Metadata.*$"))
         .columns
     )
-    groups = get_feature_groups(features)
 
     print("Calculating p values")
     timer = perf_counter()
@@ -178,7 +176,6 @@ def get_corrected_feature_pvals(
     p_values = np.ones((n_items, len(features)), dtype=np.float32)
     for i, k in tqdm(enumerate(partitioned.keys()), total=n_items):
         p_values[i, :] = get_p_value(
-            # *partitioned.pop(k),  # Free up memory
             *partitioned[k],
             negcons_per_plate=negcons_per_plate,
             seed=seed,
@@ -190,8 +187,31 @@ def get_corrected_feature_pvals(
     corrected = pl.DataFrame([multipletests(x, method="fdr_bh")[1] for x in p_values])
     print(f"{perf_counter()-timer}")
 
+    return corrected
+
+
+@cachier()
+def pvals_from_path(path: str, *args, **kwargs):
+    """
+    Locally cached version of pvals. To clean cache run <function>.clean_cache().
+    """
+    profiles = pl.read_parquet(path)
+    return calculate_pvals(profiles, *args, **kwargs)
+
+
+def correct_group_feature_pvals(
+    corrected: pl.DataFrame,
+) -> pl.DataFrame:
+    """
+    1. Group features based on their hierarchy and compute combined p-value per group using
+    2. then correct the p values from step 5 (fdr_bh)
+
+    # TODO double-check if the statistics work for features that originate from the same cell
+    """
+
     # %% Group pvalues
 
+    groups = get_feature_groups(corrected.select(pl.all().exclude("^Metadata.*$")))
     parsed = pl.concat((corrected.transpose(), groups), how="horizontal")
     agg = parsed.group_by(groups.columns).agg(pl.all())
     # TODO think of if/how to deal with features that come empty
@@ -227,33 +247,20 @@ def get_corrected_feature_pvals(
     return final
 
 
-def get_corrected_pvals(
-    profiles_parquet: str,
-    out_file: str or None = "corrected_pvalues.parquet",
-    overwrite: bool = False,
+@cachier
+def get_grouped_corrected_pvals(
+    profiles_path: str,
+    *args,
     **kwargs,
 ):
-    out_file = Path(out_file)
+    print("Calculating corrected p-values")
+    print("Partition data into treatment and negative control")
+    timer = perf_counter()
+    corrected_pvals = pvals_from_path(profiles_path, *args, **kwargs)
+    corrected_grouped_pvals = calculate_pvals(corrected_pvals)
+    print(f"{perf_counter()-timer}")
 
-    if not overwrite and out_file.exists():
-        corrected_pvals = pl.read_parquet(out_file, use_pyarrow=True)
-    else:
-        precor = pl.read_parquet(profiles_parquet, use_pyarrow=True)
-        print("Calculating corrected p-values")
-        print("Partition data into treatment and negative control")
-        timer = perf_counter()
-        partitioned = partition_by_trt(precor, seed=kwargs.get("seed", 42))
-        print(f"{perf_counter()-timer}")
-
-        corrected_pvals = get_corrected_feature_pvals(partitioned, **kwargs)
-
-        if out_file is not None:
-            out_file.parent.mkdir(exist_ok=True, parents=True)
-            corrected_pvals.write_parquet(
-                "corrected_pvalues.parquet", compression="zstd"
-            )
-
-    return corrected_pvals
+    return corrected_grouped_pvals
 
 
 # Autogenerates the parquet file if run from command line
@@ -261,4 +268,4 @@ if __name__ == "__main__":
     dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
     precor_file = "full_profiles_cc_adj_mean_corr.parquet"
     precor_path = dir_path / "orf" / precor_file
-    corrected_pvals = get_corrected_pvals(precor_path, overwrite=True)
+    corrected_pvals = pvals_from_path(precor_path, overwrite=True)
