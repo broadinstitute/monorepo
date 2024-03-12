@@ -147,6 +147,7 @@ order = [
     "Mask",
     "Feature",
     "Channel",
+    "Suffix",
     "Statistic",
     std_outname,
     url_col,
@@ -158,8 +159,6 @@ sorted_df = jcp_translated.select(order)
 # Output
 output_dir.mkdir(parents=True, exist_ok=True)
 sorted_df.write_parquet(output_dir / "orf_features.parquet", compression="zstd")
-
-all_vals = df.select(pl.all().exclude("^Metadata_.*$"))
 
 # Procedure
 # 1. Group all features by JCP_ID
