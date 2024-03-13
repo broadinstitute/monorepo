@@ -10,6 +10,8 @@ import polars as pl
 import pyarrow as pa
 from botocore import UNSIGNED
 from botocore.config import Config
+from pyarrow.dataset import dataset
+from s3fs import S3FileSystem
 from s3path import PureS3Path, S3Path
 
 """
@@ -117,12 +119,40 @@ def build_s3_image_path(
     return final_path
 
 
-def read_parquet_s3(path: str):
-    # return pl.scan_parquet(
-    return pl.read_parquet(
-        path,
-        use_pyarrow=True,
-        # Temporarily removed due to them not enabling anonymous fetching
-        # from s3fs import S3FileSystem
-        storage_options={"anon": True},
-    )
+def read_parquet_s3(path: str, lazy: bool = False):
+    """Read parquet file from S3 onto memory.
+
+    Parameters
+    ----------
+    path : str
+        S3 path location.
+    lazy : bool
+        Whether to load lazily or not. The mechanisms changes depending on how
+        the data is to be loaded. Warning: Lazy-loading does not work
+        specifically for the datasets that contain image information.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
+
+    if lazy:
+        # TODO Raise issue and find the problem with the image location datasets.
+        # It seems to be related related to UTF8 encoding.
+        # Example path failing:
+        # 's3a://cellpainting-gallery/cpg0016-jump/source_10/workspace/load_data_csv/2021_08_17_U2OS_48_hr_run16/Dest210809-134534/load_data_with_illum.parquet'
+        raise Exception(
+            "Lazy-loading does not currently work for image location parquets."
+        )
+        fs = S3FileSystem(anon=True)
+        ds = dataset(path, filesystem=fs)
+        result = pl.scan_pyarrow_dataset(ds).collect()
+    else:
+        # Read whole dataframe
+        result = pl.read_parquet(
+            path,
+            use_pyarrow=True,
+            storage_options={"anon": True},
+        )
+    return result
