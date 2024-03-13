@@ -118,10 +118,11 @@ def build_s3_image_path(
 
 
 def read_parquet_s3(path: str):
+    # return pl.scan_parquet(
     return pl.read_parquet(
         path,
         use_pyarrow=True,
         # Temporarily removed due to them not enabling anonymous fetching
         # from s3fs import S3FileSystem
-        # pyarrow_options={"filesystem": S3FileSystem(anonymous=True)},
+        storage_options={"anon": True},
     )
