@@ -138,16 +138,16 @@ def read_parquet_s3(path: str, lazy: bool = False):
     """
 
     if lazy:
-        # TODO Raise issue and find the problem with the image location datasets.
-        # It seems to be related related to UTF8 encoding.
-        # Example path failing:
-        # 's3a://cellpainting-gallery/cpg0016-jump/source_10/workspace/load_data_csv/2021_08_17_U2OS_48_hr_run16/Dest210809-134534/load_data_with_illum.parquet'
         raise Exception(
             "Lazy-loading does not currently work for image location parquets."
         )
         fs = S3FileSystem(anon=True)
         ds = dataset(path, filesystem=fs)
-        result = pl.scan_pyarrow_dataset(ds).collect()
+        # Replace schema to remove metadata, bypassing the fringe case
+        # where it is corrupted, see here for details:
+        # https://github.com/broadinstitute/monorepo/issues/21
+        schema = pa.schema([pa.field(k, pa.utf8()) for k in ds.schema.names])
+        result = pl.scan_pyarrow_dataset(ds.replace_schema(schema))  # .collect()
     else:
         # Read whole dataframe
         result = pl.read_parquet(
