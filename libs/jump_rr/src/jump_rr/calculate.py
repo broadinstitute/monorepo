@@ -27,11 +27,11 @@ import cupyx.scipy.spatial as spatial
 import numpy as np
 import polars as pl
 from jump_rr.concensus import (
-    format_val,
     get_concensus_meta_urls,
     get_cycles,
     repeat_cycles,
 )
+from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_bottom_top_indices
 from jump_rr.translate import get_mappers
 

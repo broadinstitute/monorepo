@@ -1,51 +1,31 @@
 #!/usr/bin/env jupyter
 """
-Group multiple wells
+Functions to group multiple wells
 """
 from itertools import cycle
 
 import numpy as np
 import polars as pl
+from jump_rr.formatters import add_url_col
 
 # Names
-url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
 jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
-# HTML formatters
 
 
-def format_val(kind: str, input_value: str or int or list):
-    # Apply html formating for Datasette hyperlinks and visualisation
-    if isinstance(input_value, str) or isinstance(input_value, int):
-        input_value = [input_value]
-
-    formatters = dict(
-        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}}',
-        url='"https://phenaid.ardigen.com/static-jumpcpexplorer/' 'images/{}_{{}}.jpg"',
-        img='{{"img_src": {}, "href": {}, "width": 200}}',
-    )
-    return formatters[kind].format(*input_value)
-
-
-def get_concensus_meta_urls(prof: pl.DataFrame) -> tuple:
+def get_concensus_meta_urls(
+    prof: pl.DataFrame, url_colname: str = "Metadata_image"
+) -> tuple:
     """
     Returns the data frame as the aggregated median values, metadata and urls.
     Metadata and urls are composed of cycling iterators for the contents that were grouped during concensus.
     """
-    prof = prof.with_columns(
-        pl.concat_str(
-            pl.col("Metadata_Source"),
-            pl.col("Metadata_Plate"),
-            pl.col("Metadata_Well"),
-            separator="/",
-        )
-        .map_elements(lambda x: format_val("url", x))
-        .alias(url_col)
-    )
+    prof = add_url_col(prof, url_colname=url_colname)
+
     grouped = prof.group_by(jcp_col)
     med = grouped.median()
     meta = grouped.agg(pl.col("^Metadata_.*$").map_elements(cycle))
-    urls = grouped.agg(pl.col(url_col).map_elements(cycle))
+    urls = grouped.agg(pl.col(url_colname).map_elements(cycle))
 
     for srs in meta.iter_columns():
         med.replace_column(med.columns.index(srs.name), srs)
@@ -53,16 +33,16 @@ def get_concensus_meta_urls(prof: pl.DataFrame) -> tuple:
     return med, meta, urls
 
 
-def get_cycles(dataset: str) -> cycle:
+def get_range(dataset: str) -> cycle:
     # Generate a cycle of indices based on the dataset
     offset = dataset != "crispr"
-    cycles = cycle(range(offset, 9 + offset))  # 0-8 if CRISPR; 1-9 if ORF
-    return cycles
+    rng = range(offset, 9 + offset)  # 0-8 if CRISPR; 1-9 if ORF
+    return rng
 
 
 def repeat_cycles(n: int, dataset: str) -> np.ndarray:
     # Use mnultiple cycles to iterate over multiple next()
     # while keeping track of each individual cycle
-    cycles = get_cycles(dataset)
+    cycles = cycle(get_range(dataset))
     cycled_indices = np.repeat(cycles, n)
     return cycled_indices
