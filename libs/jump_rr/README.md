@@ -1,15 +1,15 @@
-- [Decision Flowchart](#org688219f)
-- [Quick data access](#org83e8db9)
-- [Overview](#org3bdd4d4)
-- [Data accessibility](#org50475a3)
-- [Installation](#org2f7e8d9)
-  - [pip](#org8f6c877)
-  - [poetry (dev)](#org9f8f7a4)
-- [Contributions](#orgf0ef746)
+- [Decision Flowchart](#org508eccd)
+- [Quick data access](#orgdc31503)
+- [Overview](#org179690a)
+- [Data accessibility](#org8003323)
+- [Installation](#orgb5eebe6)
+  - [pip](#orgd4cc76a)
+  - [poetry (dev)](#org65057ac)
+- [Contributions](#org140fca1)
 
 
 
-<a id="org688219f"></a>
+<a id="org508eccd"></a>
 
 # Decision Flowchart
 
@@ -19,7 +19,7 @@ flowchart LR
     B -- Chemicals --> C[(WIP)]
     B -- Genes --> D{What kind of genetic perturbation?}
     B -- Genes and Chemicals --> asd[(WIP)]
-    B -- None, I just want to explore images --> images[(broad.io/gallery)]
+    B -- None, I just want to explore images --> images[(broad.io/<orf,crispr,compound>_gallery)]
     D -- Overexpression --> orf{Are you looking for specific features?}
     D -- Knock-out --> crispr{Are you looking for specific features?}
     orf -- No -->  F[(broad.io/orf)]
@@ -29,43 +29,43 @@ flowchart LR
 ```
 
 
-<a id="org83e8db9"></a>
+<a id="orgdc31503"></a>
 
 # Quick data access
 
 Use the following datasets to explore morphological similarities between gene and/or compounds.
 
-| Dataset  | Perturbation simile                        | Feature ranking                                       | Gallery                                                     | Description         |
-|-------- |------------------------------------------ |----------------------------------------------------- |----------------------------------------------------------- |------------------- |
-| ORF      | [broad.io/orf](https://broad.io/orf)       | [broad.io/orf\_feature](https://broad.io/orf_feature) | WIP                                                         | Gene overexpression |
-| CRISPR   | [broad.io/crispr](https://broad.io/crispr) | WIP                                                   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery) | Gene knock-out      |
-| Compound | WIP                                        | WIP                                                   | WIP                                                         | Chemical compounds  |
+| Dataset  | Perturbation simile                        | Feature ranking                                       | Gallery                                                           | Description         |
+|-------- |------------------------------------------ |----------------------------------------------------- |----------------------------------------------------------------- |------------------- |
+| ORF      | [broad.io/orf](https://broad.io/orf)       | [broad.io/orf\_feature](https://broad.io/orf_feature) | [broad.io/orf\_gallery](https://broad.io/orf_gallery)             | Gene overexpression |
+| CRISPR   | [broad.io/crispr](https://broad.io/crispr) | WIP                                                   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)       | Gene knock-out      |
+| Compound | WIP                                        | WIP                                                   | [broad.io/compounds\_gallery](https://broad.io/compounds_gallery) | Chemical compounds  |
 
 Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which increase sample replicability.
 
 
-<a id="org3bdd4d4"></a>
+<a id="org179690a"></a>
 
 # Overview
 
 This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that are to be accessed by biologists using [datasette-lite](https://github.com/simonw/datasette-lite).
 
 
-<a id="org50475a3"></a>
+<a id="org8003323"></a>
 
 # Data accessibility
 
 The raw morphological profiles are currently in a local server. It will be provided independently and this section updated in the future.
 
 
-<a id="org2f7e8d9"></a>
+<a id="orgb5eebe6"></a>
 
 # Installation
 
 You do not need to install this unless you want to re-do the similarity calculations. You can use the datasette web interface provided if your goal is to explore genes. We assume that a GPU and cuda11 are available in the server where this is run. This is to use cupy, which offers vastly faster distance calculations.
 
 
-<a id="org8f6c877"></a>
+<a id="orgd4cc76a"></a>
 
 ## pip
 
@@ -76,7 +76,7 @@ pip install jump_rr
 ```
 
 
-<a id="org9f8f7a4"></a>
+<a id="org65057ac"></a>
 
 ## poetry (dev)
 
@@ -89,7 +89,7 @@ poetry install --with dev
 ```
 
 
-<a id="orgf0ef746"></a>
+<a id="org140fca1"></a>
 
 # Contributions
 

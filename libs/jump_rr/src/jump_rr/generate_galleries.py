@@ -18,7 +18,6 @@ Generate an interface to browse all available JUMP images.
 """
 from pathlib import Path
 
-import numpy as np
 import polars as pl
 from jump_rr.concensus import get_range
 from jump_rr.formatters import get_formatter
@@ -27,9 +26,10 @@ from jump_rr.translate import get_mappers
 # %% Setup
 ## Paths
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
-platetype_filename = (
+platetype_filepath = (
     ("crispr", "harmonized_no_sphering_profiles"),
     ("orf", "transformed_inf_eff_filtered"),
+    ("compounds", "mad_int_featselect_scanorama"),
 )
 output_dir = Path("./databases")
 
@@ -41,9 +41,14 @@ ext_links_col = "External resources"  # Link to external resources (e.g., NCBI)
 
 
 # %% Processing starts
-for plate_type, filename in platetype_filename:
-    profiles_path = dir_path / plate_type / f"{filename}.parquet"
 
+platetype_paths = [
+    (plate_type, dir_path / plate_type / f"{filename}.parquet")
+    for plate_type, filename in platetype_filepath
+]
+
+
+def generate_gallery(plate_type: str, profiles_path: str or Path, write: bool = True):
     # %% Load Metadata
     df = pl.scan_parquet(profiles_path)
 
@@ -86,7 +91,14 @@ for plate_type, filename in platetype_filename:
     order = [pl.col(x) for x in (std_outname, ext_links_col, jcp_col, "^Foci.*$")]
     df = df.select(order).collect()
 
-    # %% Save results
-    output_dir.mkdir(parents=True, exist_ok=True)
-    final_output = output_dir / f"{plate_type}_gallery.parquet"
-    df.write_parquet(final_output, compression="zstd")
+    # %% Write results
+    if write:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        final_output = output_dir / f"{plate_type}_gallery.parquet"
+        df.write_parquet(final_output, compression="zstd")
+    return df
+
+
+# No need for threading, as this is very fast
+for plate_type, filepath in platetype_paths:
+    print(generate_gallery(plate_type, filepath).head())
