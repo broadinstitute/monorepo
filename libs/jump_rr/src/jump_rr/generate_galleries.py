@@ -101,4 +101,4 @@ def generate_gallery(plate_type: str, profiles_path: str or Path, write: bool = 
 
 # No need for threading, as this is very fast
 for plate_type, filepath in platetype_paths:
-    print(generate_gallery(plate_type, filepath).head())
+    generate_gallery(plate_type, filepath, write=True)

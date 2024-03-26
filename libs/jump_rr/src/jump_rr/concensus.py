@@ -34,9 +34,13 @@ def get_concensus_meta_urls(
 
 
 def get_range(dataset: str) -> cycle:
-    # Generate a cycle of indices based on the dataset
+    """
+    Generate a cycle of indices based on the dataset
+    0-8 if CRISPR; 1-9 if ORF, 1-6 if compounds
+    """
     offset = dataset != "crispr"
-    rng = range(offset, 9 + offset)  # 0-8 if CRISPR; 1-9 if ORF
+    max_offset = (dataset == "compounds") * (-3)
+    rng = range(offset, 9 + offset + max_offset)
     return rng
 
 
