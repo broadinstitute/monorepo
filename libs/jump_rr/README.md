@@ -19,7 +19,7 @@ flowchart LR
     B -- Chemicals --> C[(WIP)]
     B -- Genes --> D{What kind of genetic perturbation?}
     B -- Genes and Chemicals --> asd[(WIP)]
-    B -- None, I just want to explore images --> images[(broad.io/{orf,crispr,compound}_gallery)]
+    B -- None, I just want to explore images --> images[(broad.io/orf,crispr,compound_gallery)]
     D -- Overexpression --> orf{Are you looking for specific features?}
     D -- Knock-out --> crispr{Are you looking for specific features?}
     orf -- No -->  F[(broad.io/orf)]
