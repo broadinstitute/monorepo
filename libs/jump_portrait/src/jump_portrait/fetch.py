@@ -49,7 +49,8 @@ def get_table(table_name: str) -> pl.DataFrame:
         pooch.retrieve(
             url=METADATA_LOCATION.format(table_name),
             known_hash=METAFILE_HASH[table_name],
-        )
+        ),
+        use_pyarrow=True,  # Better type inference, necessary for CRISPR.
     )
 
 
