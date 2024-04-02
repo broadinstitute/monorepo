@@ -313,13 +313,13 @@ crt = ["awscrt (==0.19.19)"]
 
 [[package]]
 name = "broad-babel"
-version = "0.1.11"
+version = "0.1.12"
 description = "A translator of Broad and JUMP ids to more conventional names."
 optional = false
-python-versions = ">=3.9,<4.0"
+python-versions = "<4.0,>=3.9"
 files = [
-    {file = "broad_babel-0.1.11-py3-none-any.whl", hash = "sha256:b1e73d236f1eab8197ece8f2b4428173703c32291db50fedb14973df91670f56"},
-    {file = "broad_babel-0.1.11.tar.gz", hash = "sha256:53e5c228242e006efc27b026a5a6bb44ea9ae32a1420c5b6832b47e2b22056d4"},
+    {file = "broad_babel-0.1.12-py3-none-any.whl", hash = "sha256:3cf745df99289bbcb1949d641038f03a83c3d69cd617a3fd9e0aa924b7b458c7"},
+    {file = "broad_babel-0.1.12.tar.gz", hash = "sha256:5f8aeb73f62645b1435faac504acff808fa9044a876358de7cc7378a9dcffee0"},
 ]
 
 [package.dependencies]
@@ -3344,4 +3344,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.9"
-content-hash = "2aaf56f6514c5154ae7b4785ee5abfbe81074512fd44c5c41853a33539c67199"
+content-hash = "ba877bd38ce551882f44ca5a76b33cb1bd46784e5f2a6b8d998ddc9af4cd6a8e"

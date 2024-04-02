@@ -28,7 +28,7 @@ from jump_portrait.s3 import (
     read_parquet_s3,
     get_corrected_image,
 )
-from broad_babel import get_table
+from broad_babel.data import get_table
 from jump_portrait.utils import batch_processing, parallel
 
 

@@ -9,7 +9,7 @@ packages = [{include = "jump_portrait", from= "src"}]
 [tool.poetry.dependencies]
 python = "^3.9"
 boto3 = ">=1.33.1"
-broad-babel = "^0.1.7"
+broad-babel = "^0.1.12"
 joblib = "^1.3.2"
 matplotlib = "^3.8.2"
 polars = "^0.19.19"
