@@ -2,24 +2,36 @@ import os
 import pandas as pd
 import tempfile
 from src.smiles.standardize_smiles import StandardizeMolecule
+import pytest
 
 from pathlib import Path
 
 test_data_dir = Path(__file__).resolve().parent / "test_data"
 
 
-def test_standardize_molecule():
-    input_file = (
-        test_data_dir
-        / "smiles_data"
-        / "JUMP-Target-2_compound_metadata_trimmed_input.tsv"
-    ).resolve()
+@pytest.mark.parametrize(
+    "method",
+    [
+        "jump_canonical",
+        "jump_alternate_1",
+    ],
+)
+def test_standardize_molecule(method):
+    input_file = str(
+        (
+            test_data_dir
+            / "smiles_data"
+            / "JUMP-Target-2_compound_metadata_trimmed_input.tsv"
+        ).resolve()
+    )
 
-    expected_output_file = (
-        test_data_dir
-        / "smiles_data"
-        / "JUMP-Target-2_compound_metadata_trimmed_output.csv"
-    ).resolve()
+    expected_output_file = str(
+        (
+            test_data_dir
+            / "smiles_data"
+            / f"JUMP-Target-2_compound_metadata_trimmed_output_{method}.csv"
+        ).resolve()
+    )
 
     tmpdir = tempfile.gettempdir()
 
