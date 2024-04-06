@@ -23,6 +23,8 @@ from rdkit import RDLogger
 
 RDLogger.DisableLog("rdApp.*")
 
+# Credits: [Lewis Mervin](https://github.com/lewismervin1) for the orignal source code.
+
 
 class StandardizeMolecule:
     def __init__(
