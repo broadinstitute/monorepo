@@ -20,7 +20,7 @@ def open_zip(output_path: Path, redownload=False):
     return edges
 
 
-def get_compound_annotations(output_dir: str, return_all=False):
+def get_compound_annotations(output_dir: str):
     rel_types = [
         "DPI",
         "DRUG_CARRIER",
@@ -39,3 +39,31 @@ def get_compound_annotations(output_dir: str, return_all=False):
     edges.drop_duplicates(inplace=True)
     edges["source_id"] = "drugbank"
     return edges[["source", "target", "rel_type", "source_id"]]
+
+
+def get_compound_interactions(output_dir: str):
+    rel_types = ["DDI"]
+    edges = open_zip(Path(output_dir)).query("rel_type in @rel_types")
+    edges.rename(columns={"source": "source_a", "target": "source_b"}, inplace=True)
+    edges["source_id"] = "drugbank"
+    return edges[["source_a", "source_b", "rel_type", "source_id"]]
+
+
+def get_gene_interactions(output_dir: str):
+    rel_types = ["PPI"]
+    edges = open_zip(Path(output_dir)).query("rel_type in @rel_types")
+    uniprot_ids = (
+        edges["source"].drop_duplicates().tolist()
+        + edges["target"].drop_duplicates().tolist()
+    )
+    results = get_gene_names(uniprot_ids)
+    uniprot_to_gene = {r["from"]: r["to"] for r in results["results"]}
+    edges["source"] = edges["source"].map(uniprot_to_gene)
+    edges["target"] = edges["target"].map(uniprot_to_gene)
+    edges.dropna(inplace=True)
+    edges.drop_duplicates(inplace=True)
+    edges["source_id"] = "drugbank"
+
+    edges.rename(columns={"source": "target_a", "target": "target_b"}, inplace=True)
+    edges["source_id"] = "drugbank"
+    return edges[["target_a", "target_b", "rel_type"]]
