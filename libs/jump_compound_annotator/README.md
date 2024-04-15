@@ -13,7 +13,7 @@ queries. Some HTTP requests may get connection errors.
 
 Then run `collate` to get them in a unified file 
 ```bash
-python -m jump.unichem pull outputs
+python -m jump.unichem pull collate
 ```
 
 ## Get annotations from external databases
@@ -29,5 +29,5 @@ concat_annotations('./outputs')
 ## Export external ids to txt files
 
 ```bash
-python jump.export_external_ids ./outputs
+python -m jump.collect_external_ids ./outputs
 ```

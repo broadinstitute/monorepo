@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from jump.utils import download_file, load_jump_ids
+from jump.utils import download_file
 
 
 def open_tsv_files(output_path: Path, redownload=False):
@@ -10,7 +10,7 @@ def open_tsv_files(output_path: Path, redownload=False):
     dframes = []
     for node_type in node_types:
         filepath = output_path / f'dgidb/{node_type}.tsv'
-        url = f'https://www.dgidb.org/data/monthly_tsvs/2022-Feb/{node_type}.tsv'
+        url = f'https://www.dgidb.org/data/2022-Feb/{node_type}.tsv'
         download_file(url, filepath, redownload)
         dframes.append(pd.read_csv(filepath, sep='\t', low_memory=False))
     return tuple(dframes)
