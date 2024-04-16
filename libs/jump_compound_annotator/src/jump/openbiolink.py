@@ -77,9 +77,10 @@ def get_gene_interactions(output_dir: str):
         edges = edges.dropna(subset=["target_a", "target_b"])
         after = len(edges)
         nans = before - after
+        percent = nans / before
         print(
             f"{len(missing)} NCBI Gene IDs could not be found. "
-            f"Dropping {nans} annotations"
+            f"Dropping {nans} annotations ({percent:0.2%})"
         )
 
     edges = edges[["target_a", "target_b", "rel_type"]].copy()
@@ -87,7 +88,7 @@ def get_gene_interactions(output_dir: str):
     return edges
 
 
-def get_gene_interactions(output_dir: str):
+def get_compound_interactions(output_dir: str):
     raise NotImplementedError(
         "openbiolink does not have compound-compound interactions"
     )

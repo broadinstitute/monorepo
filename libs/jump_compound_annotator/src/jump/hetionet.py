@@ -61,4 +61,4 @@ def get_gene_interactions(output_dir: str):
     )
     edges["target_a"] = edges["source"].map(nodes.set_index("id").name)
     edges["target_b"] = edges["target"].map(nodes.set_index("id").name)
-    return edges[["source", "target", "rel_type"]]
+    return edges[["target_a", "target_b", "rel_type"]]

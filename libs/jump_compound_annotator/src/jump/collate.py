@@ -17,9 +17,7 @@ from jump.unichem import get_inchi_annotations as unichem_annotations
 from jump.utils import load_gene_ids
 
 
-def concat_annotations(
-    output_dir: str, overwrite: bool = False
-) -> pd.DataFrame:
+def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame:
     """Aggregate annotations from all sources
 
     Parameters
