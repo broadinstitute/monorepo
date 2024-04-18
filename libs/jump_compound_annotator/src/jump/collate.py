@@ -81,8 +81,9 @@ def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame
 
 
 def get_inchi_annotations(output_dir):
-    df_unichem = unichem_annotations(output_dir)
-    df_mychem = mychem_annotations(output_dir)
+    dframe = pd.read_parquet(Path(output_dir) / 'annotations.parquet')
+    df_unichem = unichem_annotations(output_dir, dframe.copy())
+    df_mychem = mychem_annotations(output_dir, dframe.copy())
     df = pd.concat([df_mychem, df_unichem]).drop_duplicates()
     df = df.drop_duplicates(["inchikey", "rel_type", "target"])
     df = df.reset_index(drop=True).copy()

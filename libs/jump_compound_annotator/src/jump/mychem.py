@@ -123,23 +123,22 @@ def get_drugbank_mapper(output_dir):
     return mapper
 
 
-def get_inchi_annotations(output_dir):
-    df = pd.read_parquet(Path(output_dir) / 'annotations.parquet')
+def get_inchi_annotations(output_dir, dframe: pd.DataFrame, column_id="source"):
     db_mapper = get_drugbank_mapper(output_dir)
     ch_mapper = get_chembl_mapper(output_dir)
     pc_mapper = get_pubchem_mapper(output_dir)
 
-    drugbank_mask = df['source_id'] == 'drugbank'
-    chembl_mask = df['source_id'] == 'chembl'
-    pubchem_mask = df['source_id'] == 'pubchem'
+    drugbank_mask = dframe['source_id'] == 'drugbank'
+    chembl_mask = dframe['source_id'] == 'chembl'
+    pubchem_mask = dframe['source_id'] == 'pubchem'
 
-    df['inchikey'] = None
-    df.loc[drugbank_mask, 'inchikey'] = df['source'].map(db_mapper)
-    df.loc[chembl_mask, 'inchikey'] = df['source'].map(ch_mapper)
-    df.loc[pubchem_mask, 'inchikey'] = df['source'].map(pc_mapper)
+    dframe['inchikey'] = None
+    dframe.loc[drugbank_mask, 'inchikey'] = dframe[column_id].map(db_mapper)
+    dframe.loc[chembl_mask, 'inchikey'] = dframe[column_id].map(ch_mapper)
+    dframe.loc[pubchem_mask, 'inchikey'] = dframe[column_id].map(pc_mapper)
 
     inchi_regex = r'^([A-Z]{14}\-[A-Z]{10})(\-[A-Z])$'
-    df = df.query('inchikey.fillna("").str.fullmatch(@inchi_regex)')
+    df = dframe.query('inchikey.fillna("").str.fullmatch(@inchi_regex)')
     df = df.drop_duplicates().reset_index(drop=True).copy()
 
     return df
