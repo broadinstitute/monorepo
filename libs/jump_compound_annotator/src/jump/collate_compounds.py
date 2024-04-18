@@ -6,6 +6,7 @@ from tqdm import tqdm
 from jump.biokg import get_compound_interactions as get_biokg
 from jump.hetionet import get_compound_interactions as get_hetionet
 from jump.mychem import get_inchi_annotations as mychem_annotations
+from jump.pharmebinet import get_compound_interactions as get_pharmebinet
 from jump.primekg import get_compound_interactions as get_primekg
 from jump.unichem import get_inchi_annotations as unichem_annotations
 
@@ -37,7 +38,7 @@ def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame
     annots = (
         "biokg",
         "primekg",
-        # "pharmebinet",
+        "pharmebinet",
         # "drkg",
         "hetionet",
     )
@@ -68,4 +69,6 @@ def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame
         df_b.drop_duplicates(),
         on=["source_a", "source_b", "rel_type", "source_id", "database"],
     )
+    df.reset_index(inplace=True, drop=True)
+    df.to_parquet(filepath, index=False)
     return df
