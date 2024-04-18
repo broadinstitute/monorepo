@@ -5,10 +5,9 @@ from tqdm import tqdm
 
 from jump.biokg import get_gene_interactions as get_biokg
 from jump.hetionet import get_gene_interactions as get_hetionet
-
-# from jump.pharmebinet import get_compound_annotations as get_pharmebinet
 from jump.ncbi import get_synonyms
 from jump.openbiolink import get_gene_interactions as get_openbiolink
+from jump.pharmebinet import get_gene_interactions as get_pharmebinet
 from jump.primekg import get_gene_interactions as get_primekg
 from jump.utils import load_gene_ids
 
@@ -35,10 +34,10 @@ def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame
     annots = (
         "biokg",
         "primekg",
-        # "pharmebinet",
-        # "drkg",
+        "pharmebinet",
         "openbiolink",
         "hetionet",
+        # "drkg",
     )
     pbar = tqdm(annots)
     for annot in pbar:
@@ -64,7 +63,6 @@ def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame
         mapper = mapper.set_index("Synonyms")["Symbol"]
         mappable = mappable[colname].map(mapper)
         annotations.loc[mappable.index, colname] = mappable.values
-    # annotations = annotations.query('target in @gene_ids["Approved_symbol"]')
     annotations = annotations.reset_index(drop=True).copy()
     annotations.to_parquet(filepath, index=False)
     return annotations

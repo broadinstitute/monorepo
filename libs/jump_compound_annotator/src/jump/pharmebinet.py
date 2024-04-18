@@ -79,10 +79,10 @@ def get_compound_interactions(output_dir: str):
     nodes_feat_ch = get_node_props(nodes_ch)
     nodes_feat_c = get_node_props(nodes_c)
 
-    edges_ch["source_a"] = edges_ch.start_id.map(nodes_feat_ch.identifier)
-    edges_ch["source_b"] = edges_ch.end_id.map(nodes_feat_ch.identifier)
-    edges_c["source_a"] = edges_c.start_id.map(nodes_feat_c.identifier)
-    edges_c["source_b"] = edges_c.end_id.map(nodes_feat_c.identifier)
+    edges_ch["source_a"] = edges_ch["start_id"].map(nodes_feat_ch.identifier)
+    edges_ch["source_b"] = edges_ch["end_id"].map(nodes_feat_ch.identifier)
+    edges_c["source_a"] = edges_c["start_id"].map(nodes_feat_c.identifier)
+    edges_c["source_b"] = edges_c["end_id"].map(nodes_feat_c.identifier)
 
     edges_all = pd.concat(
         [
@@ -97,4 +97,19 @@ def get_compound_interactions(output_dir: str):
 
 
 def get_gene_interactions(output_dir: str):
-    pass
+    output_path = Path(output_dir)
+    edges, nodes = open_gz(output_path)
+    nodes = nodes.set_index("node_id")
+    rgx_g = re.compile(r".*_(G[a-z]+G)$")
+    types_g = [c.group() for c in map(rgx_g.match, edges.type.unique()) if c]
+    edges_g = edges.query("type in @types_g")[["type", "start_id", "end_id"]]
+    nodes_g = nodes.loc[np.unique(edges_g[["start_id", "end_id"]].values)]
+    nodes_feat_g = get_node_props(nodes_g)
+    edges_g["target_a"] = edges_g["start_id"].map(nodes_feat_g["gene_symbols"])
+    edges_g["target_b"] = edges_g["end_id"].map(nodes_feat_g["gene_symbols"])
+    edges_g["target_a"] = edges_g["target_a"].apply(lambda x: x[0])
+    edges_g["target_b"] = edges_g["target_b"].apply(lambda x: x[0])
+    edges_g.rename(columns={"type": "rel_type"}, inplace=True)
+    edges_g = edges_g[["target_a", "target_b", "rel_type"]]
+    edges_g.reset_index(drop=True, inplace=True)
+    return edges_g
