@@ -1,24 +1,24 @@
-- [Table of Contents](#orga99c2d1)
-  - [Tools](#org871403c)
-    - [Libraries](#org8e136aa)
-    - [To be integrated](#org8af11a9)
-  - [Contributing](#org626dd81)
+- [Table of Contents](#Table%20of%20Contents)
+  - [Tools](#Tools)
+    - [Libraries](#Libraries)
+    - [To be integrated](#To%20be%20integrated)
+  - [Contributing](#Contributing)
 
 
 
-<a id="orga99c2d1"></a>
+<a id="Table%20of%20Contents"></a>
 
 # Table of Contents
 
 Documentation under construction. This is intended to concentrate all the shared tools of the Carpenter-Singh Lab, part of the Broad Institute&rsquo;s Imaging Platform.
 
 
-<a id="org871403c"></a>
+<a id="Tools"></a>
 
 ## Tools
 
 
-<a id="org8e136aa"></a>
+<a id="Libraries"></a>
 
 ### Libraries
 
@@ -33,14 +33,14 @@ Documentation under construction. This is intended to concentrate all the shared
     -   [smiles](https://github.com/broadinstitute/monorepo/tree/swb/libs/smiles): Standardiser of (Chemical) SMILES.
 
 
-<a id="org8af11a9"></a>
+<a id="To%20be%20integrated"></a>
 
 ### To be integrated
 
 -   [copairs](https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/tree/master): Find pairs and compute metrics between them.
 
 
-<a id="org626dd81"></a>
+<a id="Contributing"></a>
 
 ## Contributing
 
