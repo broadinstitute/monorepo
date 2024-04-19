@@ -52,7 +52,7 @@ The list of linting rules and exceptions are defined in the \`pyproject.toml\` f
 
 ## Git commit messages
 
-While not strictly enforced, we suggest using [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) standard for commit messages to aid in automatic changelog generation.
+While not strictly enforced, we suggest using the [conventional commits](https://www.conventionalcommits.org/en/v1.0.0/) standard for commit messages to aid in automatic changelog generation.
 
 
 <a id="Documentation%20style%20guide"></a>
@@ -73,25 +73,23 @@ We use numpy documentation style (see [guide](https://numpydoc.readthedocs.io/en
 
 ## Code reviews
 
-We follow multiple rules of the thumb on how to review code to maintain high quality for our libraries and the reproducibility of our results. Consider these points when reviewing others&rsquo; code or requesting one. The suggestions
-
-Objects NOT to commit:
+We follow multiple rules of the thumb on how to review code to maintain high quality for our libraries and the reproducibility of our results. Consider these points when reviewing others&rsquo; code or requesting one. You can read more on anti-patterns [here](https://github.com/quantifiedcode/python-anti-patterns/blob/master/docs/The-Little-Book-Of-Python-Anti-Patterns.pdf). Objects NOT to commit:
 
 -   Binaries: They cannot be version-controlled.
 -   Large files (>3MB): They slow down the repository.
 -   Do not push notebooks to the modules: They are hard to parse, obscure diffs and are much bigger than the equivalent script.
 -   Data: the only exception is tiny (<1MB) datasets for tests, but try to generate it as [pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html) instead if possible.
 
-Common anti-patterns to avoid:
+Observed anti-patterns to avoid:
 
 -   One function can return types of output.
 -   Paths to local files: For full reproducibility we need to be able to access the data when it is publicly available. The exceptions for this are tutorial-like scripts and data that is not yet public. In the latter case use instead a folder present in the data location of the Imaging Platform (e.g., our server&rsquo;s shared storage); add a comment to the url of the private repo pointing to the original files. This will simplify the refactoring when making the data public and ensure that the results are reproducible.
 -   Sample data contains unnecessary information: Everything not necessary to test the functionality of a component is noise, avoid commiting such type of data.
+-   Overusing Try-Except: This may make your code run but it may obscure edge-cases that bring bugs out to the open.
 
-Highly-valued things:
+Things that makes us happy:
 
 -   Lock your dependencies: Regardless of the library you use, please ensure you lock your libraries (e.g., poetry.lock) to ensure others can reproduce your environment.
 -   Document and specify the type all inputs and outputs: This makes code much easier to maintain over time.
--   Avoid try-except systems unless you are using external libraries: These obscure actual failures
 
-[WIP] We will enforce these rules using precommit files.
+[WIP] We will enforce some of these items using precommit files.
