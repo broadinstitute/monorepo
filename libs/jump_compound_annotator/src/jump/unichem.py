@@ -141,28 +141,24 @@ def main():
         collate(Path(args.output_path))
 
 
-def get_inchi_annotations(output_dir, dframe: pd.DataFrame, column_id="source"):
-    """
-    dframe: DataFrame with 'inchikey' and 'source' columns
-    """
-
+def get_inchikeys(output_dir, source_ids, codes):
     db_mapper = get_mapper(output_dir, 'drugbank')
     ch_mapper = get_mapper(output_dir, 'chembl')
     pc_mapper = get_mapper(output_dir, 'pubchem')
 
-    drugbank_mask = dframe['source_id'] == 'drugbank'
-    chembl_mask = dframe['source_id'] == 'chembl'
-    pubchem_mask = dframe['source_id'] == 'pubchem'
+    drugbank_mask = source_ids == 'drugbank'
+    chembl_mask = source_ids == 'chembl'
+    pubchem_mask = source_ids == 'pubchem'
 
-    dframe['inchikey'] = None
-    dframe.loc[drugbank_mask, 'inchikey'] = dframe[column_id].map(db_mapper)
-    dframe.loc[chembl_mask, 'inchikey'] = dframe[column_id].map(ch_mapper)
-    dframe.loc[pubchem_mask, 'inchikey'] = dframe[column_id].map(pc_mapper)
+    inchikeys = pd.Series(index=codes.index)
+    inchikeys[drugbank_mask] = codes.map(db_mapper)
+    inchikeys[chembl_mask] = codes.map(ch_mapper)
+    inchikeys[pubchem_mask] = codes.map(pc_mapper)
 
     inchi_regex = r'^([A-Z]{14}\-[A-Z]{10})(\-[A-Z])$'
-    dframe = dframe.query('inchikey.fillna("").str.fullmatch(@inchi_regex)')
-    dframe = dframe.drop_duplicates().reset_index(drop=True).copy()
-    return dframe
+    inchi_match = inchikeys.fillna("").str.fullmatch(inchi_regex)
+    inchikeys[~inchi_match] = None
+    return inchikeys
 
 
 if __name__ == '__main__':
