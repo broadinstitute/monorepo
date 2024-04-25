@@ -45,19 +45,20 @@ def inchi_from_id(compound_id, source_id):
     return compound_id, last_error_msg
 
 
-def get_mapper(output_dir, source_id):
+def save_mapper(output_dir, codes, source_id):
     output_path = Path(output_dir)
-    output_file = output_path / f'unichem_{source_id}_mapper.csv'
-    if output_file.is_file():
-        return pd.read_csv(output_file,
-                           dtype=str).set_index(source_id)['inchikey']
-    df = pd.read_parquet(output_path / 'annotations.parquet')
-    database_ids = df.query('source_id==@source_id').source.unique()
+    output_file = output_path / f'unichem_{source_id}_mapper.parquet'
     par_func = partial(inchi_from_id, source_id=source_id)
-    mapper = dict(thread_map(par_func, database_ids))
+    mapper = dict(thread_map(par_func, codes))
     mapper = pd.Series(mapper, name='inchikey')
     mapper.index.name = source_id
-    mapper.to_csv(output_file)
+    mapper.reset_index().to_parquet(output_file)
+
+
+def get_mapper(output_dir, source_id):
+    output_path = Path(output_dir)
+    output_file = output_path / f'unichem_{source_id}_mapper.parquet'
+    mapper = pd.read_parquet(output_file).set_index(source_id)['inchikey']
     return mapper
 
 
@@ -150,7 +151,7 @@ def get_inchikeys(output_dir, source_ids, codes):
     chembl_mask = source_ids == 'chembl'
     pubchem_mask = source_ids == 'pubchem'
 
-    inchikeys = pd.Series(index=codes.index)
+    inchikeys = pd.Series(index=codes.index, dtype=str)
     inchikeys[drugbank_mask] = codes.map(db_mapper)
     inchikeys[chembl_mask] = codes.map(ch_mapper)
     inchikeys[pubchem_mask] = codes.map(pc_mapper)
