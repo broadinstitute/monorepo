@@ -9,15 +9,15 @@ from jump.ncbi import get_synonyms
 from jump.openbiolink import get_gene_interactions as get_openbiolink
 from jump.pharmebinet import get_gene_interactions as get_pharmebinet
 from jump.primekg import get_gene_interactions as get_primekg
-from jump.utils import load_gene_ids
+from jump.utils import ncbi_to_symbol
 
 
 def fill_with_synonyms(output_dir, codes):
     """Fill in-place missing gene_ids with synonyms from ncbi"""
     codes = codes.copy()
     synonyms = get_synonyms(output_dir)
-    gene_ids = load_gene_ids()
-    mask = codes.isin(synonyms["Synonyms"]) & (~codes.isin(gene_ids["Approved_symbol"]))
+    symbols = ncbi_to_symbol(Path(output_dir)).values
+    mask = codes.isin(synonyms["Synonyms"]) & (~codes.isin(symbols))
     synmask = synonyms["Synonyms"].isin(codes[mask])
     mapper = synonyms[synmask].set_index("Synonyms")["Symbol"]
     codes[mask] = codes[mask].apply(lambda x: mapper.get(x, x))
