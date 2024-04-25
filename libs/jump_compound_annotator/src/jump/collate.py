@@ -54,8 +54,5 @@ def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame
         datasets_d[annot]["database"] = annot
     dframe = pd.concat(datasets_d.values()).reset_index(drop=True)
     dframe["target"] = fill_with_synonyms(output_dir, dframe["target"])
-    dframe["inchikey"] = get_inchikeys(
-        output_dir, dframe["source_id"], dframe["source"]
-    )
     dframe.to_parquet(filepath)
     return dframe

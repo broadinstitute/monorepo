@@ -40,7 +40,7 @@ def download_file(url, filepath: Path, redownload=False):
     response = requests.get(url, stream=True)
     filepath.parent.mkdir(parents=True, exist_ok=True)
 
-    total_size = int(response.headers.get("content-length"))
+    total_size = int(response.headers.get("content-length", 0))
     block_size = 1024 * 1024  # 1 MB
 
     with filepath.open("wb") as fwriter:
@@ -65,7 +65,7 @@ def ncbi_to_symbol(output_path: Path):
     url = "https://g-a8b222.dd271.03c0.data.globus.org/pub/databases/genenames/hgnc/tsv/hgnc_complete_set.txt"
     dst = output_path / "hgnc" / "complete_set.txt"
     download_file(url, dst)
-    gene_ids = pd.read_csv(dst, sep="\t")
+    gene_ids = pd.read_csv(dst, sep="\t", low_memory=False)
     gene_ids.dropna(subset="entrez_id", inplace=True)
     gene_ids["entrez_id"] = gene_ids["entrez_id"].astype(int)
     gene_mapper = gene_ids.set_index("entrez_id")["symbol"]
