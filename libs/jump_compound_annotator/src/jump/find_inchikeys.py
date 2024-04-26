@@ -11,8 +11,9 @@ from jump.unichem import save_mapper as save_unichem_mapper
 def pull_inchikeys(output_dir, source_ids, codes):
     for source_id in source_ids.unique():
         mask = source_id == source_ids
-        save_mychem_mapper(output_dir, codes[mask], source_id)
-        save_unichem_mapper(output_dir, codes[mask], source_id)
+        unique_codes = codes[mask].drop_duplicates()
+        save_unichem_mapper(output_dir, unique_codes, source_id)
+        save_mychem_mapper(output_dir, unique_codes, source_id)
 
 
 def get_inchikeys(output_dir, source_ids, codes):
@@ -51,5 +52,5 @@ def add_inchikeys(output_dir, pull=False):
     ss_labels["inchikey_b"] = get_inchikeys(
         output_dir, ss_labels["source_id"], ss_labels["source_b"]
     )
-    st_labels.to_parquet(output_path / "annotations_with_inchi.parquet")
-    ss_labels.to_parquet(output_path / "compound_interactions_with_inchi.parquet")
+    st_labels.to_parquet(output_path / "annotations.parquet")
+    ss_labels.to_parquet(output_path / "compound_interactions.parquet")
