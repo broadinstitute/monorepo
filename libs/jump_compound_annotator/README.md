@@ -18,13 +18,22 @@ python -m jump.unichem collate outputs
 
 ## Get annotations from external databases
 
-invoke `concat_annotations` from `jump.collate`
+Pull data from public datasets, select gene and compound interactions, map
+compounds to inchikeys using mychem and unichem
 
 ```python
 from jump.collate import concat_annotations
-concat_annotations('./outputs')
-```
+concat_annotations("./outputs/")
 
+from jump.collate_gene import concat_annotations
+concat_annotations("./outputs/")
+
+from jump.collate_compounds import concat_annotations
+concat_annotations("./outputs/")
+
+from jump.find_inchikeys import add_inchikeys
+add_inchikeys("./outputs/", pull=True)
+```
 
 ## Export external ids to txt files
 

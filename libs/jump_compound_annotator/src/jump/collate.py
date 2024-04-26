@@ -4,7 +4,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from jump.biokg import get_compound_annotations as get_biokg
-from jump.collate_compounds import get_inchikeys
 from jump.collate_gene import fill_with_synonyms
 from jump.dgidb import get_compound_annotations as get_dgidb
 from jump.drugrep import get_compound_annotations as get_drugrep
