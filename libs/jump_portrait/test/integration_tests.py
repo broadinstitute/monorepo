@@ -12,12 +12,17 @@ from jump_portrait.fetch import get_jump_image
 @pytest.mark.parametrize("site", [1])
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
 @pytest.mark.parametrize("apply_correction", [True, False])
+@pytest.mark.parametrize(
+    ("compressed", "staging"),
+    [(True, True), (False, False)]
+)
 def test_get_jump_image(
-    source, batch, plate, well, channel, site, correction, apply_correction
+    source, batch, plate, well, channel, site, correction, apply_correction, compressed, staging
 ):
     # Check that finding image locations from gene or compoundsa works
     image = get_jump_image(
-        source, batch, plate, well, channel, site, correction, apply_correction
+        source, batch, plate, well, channel, site, correction,
+        apply_correction, compressed, staging
     )
     assert len(image.shape) == 2  # Two-dimensional image
     assert len(image) > 10  # It is large-ish
