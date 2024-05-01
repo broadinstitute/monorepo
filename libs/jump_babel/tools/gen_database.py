@@ -126,19 +126,21 @@ pert_target_all = all_target_pert.with_columns(
     merge_on_null(plate_col, f"{plate_col}_right"),
 ).drop("pert_type", f"{brd_col}_right", f"{plate_col}_right")
 
-# We keep this curated list here because it is manually-curated annotations
+# We keep this list here because it is manually-curated, and not everything
+# was contained in the original datasets. The positive controls
+# have not always been clearly defined.
 manual_mapper = {
-    "JCP2022_085227": "poscon",  # "Aloxistatin",
-    "JCP2022_037716": "poscon",  # "AMG900",
-    "JCP2022_025848": "poscon",  # "Dexamethasone",
-    "JCP2022_046054": "poscon",  # "FK-866",
-    "JCP2022_035095": "poscon",  # "LY2109761",
-    "JCP2022_064022": "poscon",  # "NVS-PAK1-1",
-    "JCP2022_050797": "poscon",  # "Quinidine",
     "JCP2022_012818": "poscon",  # "TC-S-7004",
+    "JCP2022_025848": "poscon",  # "Dexamethasone",
     "JCP2022_033924": "negcon",  # "DMSO",
-    "JCP2022_999999": pl.Null,  # "UNTREATED",
+    "JCP2022_035095": "poscon",  # "LY2109761",
+    "JCP2022_037716": "poscon",  # "AMG900",
+    "JCP2022_046054": "poscon",  # "FK-866",
+    "JCP2022_050797": "poscon",  # "Quinidine",
+    "JCP2022_064022": "poscon",  # "NVS-PAK1-1",
+    "JCP2022_085227": "poscon",  # "Aloxistatin",
     "JCP2022_900001": pl.Null,  # "BAD CONSTRUCT",
+    "JCP2022_999999": pl.Null,  # "UNTREATED",
     "JCP2022_UNKNOWN": pl.Null,  # "UNKNOWN",
 }
 jcp_pert = {k: v for k, v in manual_mapper.items()}
@@ -146,15 +148,19 @@ jcp_pert = {k: v for k, v in manual_mapper.items()}
 # %%
 
 # Replace nulls with trt
-pert_target_all_manual_trt = pert_target_all.with_columns(
-    pl.col(pert_col).fill_null("trt")
+pert_target_all_trt = pert_target_all.with_columns(pl.col(pert_col).fill_null("trt"))
+
+# Add manual annotations
+pert_target_all_manual = pert_target_all_trt.with_columns(
+    pl.struct((pert_col, jcp_col)).map_elements(
+        lambda cols: jcp_pert.get(cols[jcp_col], cols[pert_col])
+    )
 )
 
-final_version = pert_target_all_manual_trt.select(
+# Remove "Metadata" prefixes
+final_version = pert_target_all_manual.select(
     pl.all().name.map(lambda col_name: col_name.replace("Metadata_", ""))
 )
-
-# {x: x.lstrip("Metadata_") for x in (jcp_col, brd_col, pert_col)}
 
 # Save
 db_name = "babel.db"
