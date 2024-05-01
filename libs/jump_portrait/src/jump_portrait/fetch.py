@@ -63,6 +63,8 @@ def get_jump_image(
     site: str = 1,
     correction: str = "Orig",
     apply_correction: bool = True,
+    compressed: bool = False,
+    staging: bool = False,
 ) -> np.ndarray:
     """Main function to fetch a JUMP image for AWS.
     Metadata for most files can be obtained from a set of data frames,
@@ -109,7 +111,16 @@ def get_jump_image(
 
     first_row = unique_site.row(0, named=True)
 
-    result = get_corrected_image(first_row, channel, correction, apply_correction)
+    # Compressed images are already corrected
+    if compressed:
+        correction = None
+
+    result = get_corrected_image(first_row,
+                                 channel,
+                                 correction,
+                                 apply_correction,
+                                 compressed,
+                                 staging)
     return result
 
 
