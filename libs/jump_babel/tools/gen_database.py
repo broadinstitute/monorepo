@@ -139,9 +139,9 @@ manual_mapper = {
     "JCP2022_050797": "poscon",  # "Quinidine",
     "JCP2022_064022": "poscon",  # "NVS-PAK1-1",
     "JCP2022_085227": "poscon",  # "Aloxistatin",
-    "JCP2022_900001": pl.Null,  # "BAD CONSTRUCT",
-    "JCP2022_999999": pl.Null,  # "UNTREATED",
-    "JCP2022_UNKNOWN": pl.Null,  # "UNKNOWN",
+    "JCP2022_900001": "null",  # "BAD CONSTRUCT",
+    "JCP2022_999999": "null",  # "UNTREATED",
+    "JCP2022_UNKNOWN": "null",  # "UNKNOWN",
 }
 jcp_pert = {k: v for k, v in manual_mapper.items()}
 
