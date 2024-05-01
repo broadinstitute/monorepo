@@ -13,6 +13,7 @@ std_col = "standard_key"
 pert_col = "Metadata_pert_type"
 plate_col = "Metadata_plate_type"
 
+# Compound first and last are necessary TODO remember why
 plates_order = ("compound", "orf", "crispr", "compound")
 
 
