@@ -22,8 +22,12 @@ import polars as pl
 from jump_rr.concensus import get_range
 from jump_rr.formatters import get_formatter
 from jump_rr.translate import get_mappers
+from pyarrow.dataset import dataset
+from s3fs import S3FileSystem
 
-# %% Setup
+
+
+# %% Setup Local
 ## Paths
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
 platetype_filepath = (

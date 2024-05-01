@@ -97,9 +97,11 @@ targets_combined_control = (
 df_all = []
 for dataset in plates_order[:3]:
     table = get_table(dataset).rename(provide_mapper(get_table(dataset), std_col))
-    sel_table = select_if_available(
-        table, (jcp_col, std_col, "Metadata_NCBI_Gene_ID")
-    ).with_columns(pl.lit(dataset).alias(plate_col))
+    sel_table = (
+        select_if_available(table, (jcp_col, std_col, "Metadata_NCBI_Gene_ID"))
+        .with_columns(pl.lit(dataset).alias(plate_col))
+        .cast(pl.Utf8)
+    )
     if df_all is None:
         df_all = sel_table
     else:
@@ -124,30 +126,27 @@ pert_target_all = all_target_pert.with_columns(
     merge_on_null(plate_col, f"{plate_col}_right"),
 ).drop("pert_type", f"{brd_col}_right", f"{plate_col}_right")
 
+# We keep this curated list here because it is manually-curated annotations
 manual_mapper = {
-    "JCP2022_085227": ("Aloxistatin", "poscon"),
-    "JCP2022_037716": ("AMG900", "poscon"),
-    "JCP2022_025848": ("Dexamethasone", "poscon"),
-    "JCP2022_046054": ("FK-866", "poscon"),
-    "JCP2022_035095": ("LY2109761", "poscon"),
-    "JCP2022_064022": ("NVS-PAK1-1", "poscon"),
-    "JCP2022_050797": ("Quinidine", "poscon"),
-    "JCP2022_012818": ("TC-S-7004", "poscon"),
-    "JCP2022_033924": ("DMSO", "negcon"),
-    "JCP2022_999999": ("UNTREATED", pl.Null),
-    "JCP2022_900001": ("BAD CONSTRUCT", pl.Null),
-    "JCP2022_UNKNOWN": ("UNKNOWN", pl.Null),
+    "JCP2022_085227": "poscon",  # "Aloxistatin",
+    "JCP2022_037716": "poscon",  # "AMG900",
+    "JCP2022_025848": "poscon",  # "Dexamethasone",
+    "JCP2022_046054": "poscon",  # "FK-866",
+    "JCP2022_035095": "poscon",  # "LY2109761",
+    "JCP2022_064022": "poscon",  # "NVS-PAK1-1",
+    "JCP2022_050797": "poscon",  # "Quinidine",
+    "JCP2022_012818": "poscon",  # "TC-S-7004",
+    "JCP2022_033924": "negcon",  # "DMSO",
+    "JCP2022_999999": pl.Null,  # "UNTREATED",
+    "JCP2022_900001": pl.Null,  # "BAD CONSTRUCT",
+    "JCP2022_UNKNOWN": pl.Null,  # "UNKNOWN",
 }
-jcp_std, jcp_pert = [{k: v[i] for k, v in manual_mapper.items()} for i in range(2)]
+jcp_pert = {k: v for k, v in manual_mapper.items()}
 
-pert_target_all_manual = pert_target_all.with_columns(
-    pl.struct((jcp_col, std_col))
-    .map_elements(lambda cols: jcp_std.get(cols[jcp_col], cols[std_col]))
-    .alias(std_col)
-)
+# %%
 
 # Replace nulls with trt
-pert_target_all_manual_trt = pert_target_all_manual.with_columns(
+pert_target_all_manual_trt = pert_target_all.with_columns(
     pl.col(pert_col).fill_null("trt")
 )
 
