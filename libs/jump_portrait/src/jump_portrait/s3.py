@@ -156,8 +156,8 @@ def build_s3_image_path(
     if staging:
         directory = directory.replace("cellpainting-gallery", "staging-cellpainting-gallery")
     if compressed:
-        pattern = r'(images/[^/]+/images)/'
-        replacement = r'\1_compressed/'
+        pattern = r"(images/[^/]+)/(images)/.*"
+        replacement = r"\1/\2_compressed/" + row['Metadata_Plate'] + "/"
         directory = re.sub(pattern, replacement, directory)
         filename = os.path.splitext(filename)[0] + ".png"
 
