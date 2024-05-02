@@ -1,0 +1,17 @@
+#+title: Download Profiles
+#+PROPERTY: header-args :session profiles :tangle yes
+
+Download all the databases including "interpretable" and non-interpretable features. We use a public gist that contains the source of all profiles and an identifier for each.
+#+begin_src bash
+NAME_URL_CSV="https://gist.githubusercontent.com/afermg/afa8486155f6ee4665e380e22e2f111b/raw/5da112e95eef3ff8d85251faeecaab64751c6ec5/jump_profiles.csv"
+OUTDIR="/dgx1nas1/storage/data/shared/morphmap_profiles"
+mkdir -p "${OUTDIR}"
+#+end_src
+
+Iterate over each row and save every ={URL}= as a file named ={NAME}.parquet=.
+#+begin_src bash
+while IFS="," read -r NAME URL; do
+    FILEPATH="${OUTDIR}/${NAME}"
+    wget "${URL}" -O "${FILEPATH}.parquet"
+done < <(wget -O - -nv "${NAME_URL_CSV}")
+#+end_src
