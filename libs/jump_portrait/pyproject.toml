@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jump-portrait"
-version = "0.0.14"
+version = "0.0.16"
 description = "Tools to fetch and visualize JUMP images"
 authors = ["Alan Munoz"]
 readme = "README.md"
@@ -9,7 +9,7 @@ packages = [{include = "jump_portrait", from= "src"}]
 [tool.poetry.dependencies]
 python = "^3.9"
 boto3 = ">=1.33.1"
-broad-babel = "^0.1.13"
+broad-babel = "^0.1.14"
 joblib = "^1.3.2"
 matplotlib = "^3.8.2"
 polars = "^0.19.19"
