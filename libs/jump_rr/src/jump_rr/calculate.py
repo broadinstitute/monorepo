@@ -40,10 +40,8 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 # %% Setup
 ## Paths
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
-platetype_filename = (
-    ("crispr", "harmonized_no_sphering_profiles"),
-    ("orf", "transformed_inf_eff_filtered"),
-)
+# datasets = ("crispr", "orf", "compound")
+datasets = ("crispr", "orf")
 output_dir = Path("./databases")
 
 ## Parameters
@@ -64,10 +62,11 @@ ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NC
 img_formatter = '{{"img_src": {}, "href": {}, "width": 200}}'
 
 # %% Processing starts
-for plate_type, filename in platetype_filename:
-    profiles_path = dir_path / plate_type / f"{filename}.parquet"
+for dataset in datasets:
+    profiles_path = dir_path / f"{dataset}.parquet"
 
     # %% Load Metadata
+    print(dataset)
     df = pl.read_parquet(profiles_path)
 
     # %% add build url from individual wells
@@ -84,8 +83,8 @@ for plate_type, filename in platetype_filename:
     # Build a dataframe containing matches
     jcp_ids = urls.select(pl.col(jcp_col)).to_series().to_numpy().astype("<U15")
     url_vals = urls.get_column(url_col).to_numpy()
-    cycles = get_cycles(plate_type)
-    cycled_indices = repeat_cycles(len(xs), plate_type)
+    cycles = get_cycles(dataset)
+    cycled_indices = repeat_cycles(len(xs), dataset)
 
     jcp_df = pl.DataFrame(
         {
@@ -108,7 +107,7 @@ for plate_type, filename in platetype_filename:
 
     # %% Translate genes names to standard
     uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])
-    jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, plate_type)
+    jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, dataset)
 
     jcp_translated = jcp_df.with_columns(
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
@@ -137,7 +136,7 @@ for plate_type, filename in platetype_filename:
 
     # %% Save results
     output_dir.mkdir(parents=True, exist_ok=True)
-    final_output = output_dir / f"{plate_type}.parquet"
+    final_output = output_dir / f"{dataset}.parquet"
     matches_translated.write_parquet(final_output, compression="zstd")
 
     # - TODO add Average precision metrics
