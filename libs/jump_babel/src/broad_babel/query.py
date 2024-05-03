@@ -66,6 +66,39 @@ def run_query(
     return cur.execute(expression, query).fetchall()
 
 
+def get_mapper(
+    query: list or tuple, input_column: str, output_column: str
+) -> dict[str, str]:
+    """
+    Convenience function to generate a mapper from a set of queries.
+    It delegates matching to sqlite3 and ensures prefixes are removed.
+    Unlike "run_query", this returns a one-to-one relationship by compressing
+    the repeated inputs into a dictionary.
+
+    Parameters
+    ----------
+    query : str or t.List[str]
+        Input identifiers
+    input_column : str
+        Type of name the input belongs to. It can be JCP2022, broad_sample or standard_key.
+    output_column : str or t.List[str]
+        Desired value of resulting dictionary
+
+    Returns
+    -------
+    Dictionary where keys are input_column items and values are their equivalent
+    """
+    input_column = input_column.removeprefix("Metadata_")
+    output_column_column = input_column.removeprefix("Metadata_")
+    return dict(
+        run_query(
+            tuple(query),
+            input_column="JCP2022",
+            output_column="JCP2022,pert_type",
+        )
+    )
+
+
 def broad_to_standard(query: str or t.List[str]) -> str or t.Dict[str, str]:
     """Convert broad ids to standard, either InChiKey or Entrez Gene name.
 
