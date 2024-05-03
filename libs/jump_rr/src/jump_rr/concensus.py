@@ -33,7 +33,7 @@ def get_concensus_meta_urls(
     return med, meta, urls
 
 
-def get_range(dataset: str) -> cycle:
+def get_range(dataset: str) -> range:
     """
     Generate a cycle of indices based on the dataset
     0-8 if CRISPR; 1-9 if ORF, 1-6 if compounds
@@ -44,9 +44,13 @@ def get_range(dataset: str) -> cycle:
     return rng
 
 
+def get_cycles(dataset: str) -> cycle:
+    return cycle(get_range(dataset))
+
+
 def repeat_cycles(n: int, dataset: str) -> np.ndarray:
-    # Use mnultiple cycles to iterate over multiple next()
+    # Use multiple cycles to iterate over multiple next()
     # while keeping track of each individual cycle
-    cycles = cycle(get_range(dataset))
+    cycles = get_cycles(dataset)
     cycled_indices = np.repeat(cycles, n)
     return cycled_indices
