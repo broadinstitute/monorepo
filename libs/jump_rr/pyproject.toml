@@ -7,8 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.9,<3.11"
-broad-babel = "^0.1.11"
-# copairs = {git = "https://github.com/cytomining/copairs.git", rev = "v0.4.0-alpha"}
+broad-babel = "^0.1.15"
 numpy = "*"
 fastcluster = "^1.2.6"
 pyarrow = "^14.0.1"
@@ -24,8 +23,7 @@ ptxcompiler-cu11 = {version = "^0.7.0.post1", source = "nvidia"}
 cubinlinker-cu11 = {version = "^0.3.0.post1", source = "nvidia"}
 statsmodels = "0.14.1"
 tqdm = "^4.66.2"
-cachier = "^3.0.0"
-
+pathos = "^0.3.2"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
