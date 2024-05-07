@@ -2,6 +2,7 @@
   - [Tools](#Tools)
     - [Libraries](#Libraries)
     - [To be integrated](#To%20be%20integrated)
+  - [JUMP Information Central](#JUMP%20Information%20Central)
   - [Contributing](#Contributing)
 
 
@@ -38,6 +39,13 @@ Documentation under construction. This is intended to concentrate all the shared
 ### To be integrated
 
 -   [copairs](https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/tree/master): Find pairs and compute metrics between them.
+
+
+<a id="JUMP%20Information%20Central"></a>
+
+## JUMP Information Central
+
+JUMP Cell Painting is one of our main projects, it is the creation of a data-driven approach to drug discovery based on cellular imaging, image analysis, and high dimensional data analytics You can find general information [here](https://jump-cellpainting.broadinstitute.org/), and details on how to make use of it [here](https://broad.io/jump).
 
 
 <a id="Contributing"></a>
