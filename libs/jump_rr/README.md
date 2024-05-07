@@ -39,7 +39,7 @@ Use the following datasets to explore morphological similarities between gene an
 |-------- |------------------------------------------ |----------------------------------------------------- |----------------------------------------------------------------- |------------------- |
 | ORF      | [broad.io/orf](https://broad.io/orf)       | [broad.io/orf\_feature](https://broad.io/orf_feature) | [broad.io/orf\_gallery](https://broad.io/orf_gallery)             | Gene overexpression |
 | CRISPR   | [broad.io/crispr](https://broad.io/crispr) | WIP                                                   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)       | Gene knock-out      |
-| Compound | WIP                                        | WIP                                                   | [broad.io/compounds\_gallery](https://broad.io/compounds_gallery) | Chemical compounds  |
+| Compound | WIP                                        | WIP                                                   | [broad.io/compound\_gallery](https://broad.io/compound_gallery) | Chemical compounds  |
 
 Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which increase sample replicability.
 
