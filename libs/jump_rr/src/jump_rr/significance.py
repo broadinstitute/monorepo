@@ -92,8 +92,8 @@ def partition_by_trt(
     """
     meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
     pos_partition, neg_partition = df.select(
-        pl.c, poscons:bool=Falseol(meta_cols),
-        pl.all().exclude("^Metadata.*$").ca, poscons:bool=Falsest(pl.Float32),
+        pl.col(meta_cols),
+        pl.all().exclude("^Metadata.*$").cast(pl.Float32),
     ).partition_by("Metadata_pert_type", include_key=False)
 
     neg_partition = neg_partition.drop(column)
@@ -191,7 +191,7 @@ def calculate_pvals(
     return corrected
 
 
-def add_pert_type(profiles: pl.DataFrame, poscons:bool=False) -> pl.DataFrame:
+def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame:
     """
     Add metadata with perturbation type from the JCP2022 ID.
     poscons: Ensure all outputs are trt or negcon. Drop nulls.
@@ -205,13 +205,14 @@ def add_pert_type(profiles: pl.DataFrame, poscons:bool=False) -> pl.DataFrame:
             output_column="JCP2022,pert_type",
         )
         profiles = profiles.with_columns(
-            pl.col("Metadata_JCP2022")
-            .replace(jcp_to_pert_type)
-            .alias(pert_type)
+            pl.col("Metadata_JCP2022").replace(jcp_to_pert_type).alias(pert_type)
         )
+
+    profiles = profiles.filter(pl.col(pert_type) != "null")
     if not poscons:
-        profiles = profiles.filter(pl.col(pert_type)!="null")
-        profiles = profiles.with_columns(pl.when(pl.col(pert_type)))
+        profiles = profiles.with_columns(
+            pl.when(pl.col(pert_type) != "negcon").then("trt").alias(pert_type)
+        )
     return profiles
 
 
