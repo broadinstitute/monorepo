@@ -61,9 +61,7 @@ def median_values(med_vals, group_by: list[str] or None = None):
 ## Paths
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
 output_dir = Path("./databases")
-# precor_file = "full_profiles_cc_adj_mean_corr.parquet"
-# datasets = ("crispr", "orf")
-datasets = ("crispr",)
+datasets = ("crispr", "orf")
 for dset in datasets:
     precor_path = dir_path / f"{dset}_interpretable.parquet"
 
