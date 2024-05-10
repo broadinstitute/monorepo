@@ -39,7 +39,7 @@ def get_range(dataset: str) -> range:
     0-8 if CRISPR; 1-9 if ORF, 1-6 if compounds
     """
     offset = dataset != "crispr"
-    max_offset = (dataset == "compounds") * (-3)
+    max_offset = (dataset == "compound") * (-3)
     rng = range(offset, 9 + offset + max_offset)
     return rng
 

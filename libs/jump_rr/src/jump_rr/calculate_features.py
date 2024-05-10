@@ -14,7 +14,7 @@
 
 """
 Select the perturbations with highest and lowest feature values
-for CRISPR (TODO waiting for data) and ORF datasets using a GPU,
+for CRISPR and ORF datasets using a GPU,
 then wrangle information and produce an explorable data frame.
 
 This is intended for use on a server with GPUs and high RAM to analyse
