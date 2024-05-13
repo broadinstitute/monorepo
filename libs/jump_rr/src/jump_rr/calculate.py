@@ -33,6 +33,7 @@ from jump_rr.concensus import (
 )
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_bottom_top_indices
+from jump_rr.replicability import add_replicability
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -53,6 +54,7 @@ jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
 match_col = "Match"  # Highest matches
+match_jcp_col = "Match JCP"
 match_url_col = f"{match_col} Example"  # URL with image examples
 dist_col = "Similarity"  # Metric name
 std_outname = "Gene/Compound"  # Standard item name
@@ -89,7 +91,7 @@ for dataset in datasets:
     jcp_df = pl.DataFrame(
         {
             jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
-            match_col: jcp_ids[ys].astype("<U15"),
+            match_jcp_col: jcp_ids[ys].astype("<U15"),
             dist_col: cosine_sim[xs, ys].get(),
             url_col: [  # Secuentially produce multiple images
                 format_val("img", (img_src, img_src))
@@ -109,10 +111,16 @@ for dataset in datasets:
     uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])
     jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, dataset)
 
+    # %% Add replicability
+    jcp_df = add_replicability(jcp_df, left_on=jcp_short, right_on=jcp_col)
+    jcp_df = add_replicability(
+        jcp_df, left_on=match_jcp_col, right_on=jcp_col, suffix=" Match"
+    )
+
     jcp_translated = jcp_df.with_columns(
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
-        pl.col(match_col).replace(jcp_std_mapper),
-        pl.col(match_col).replace(jcp_external_mapper).alias(ext_links_col),
+        pl.col(match_jcp_col).replace(jcp_std_mapper).alias(match_col),
+        pl.col(match_jcp_col).replace(jcp_external_mapper).alias(ext_links_col),
     )
 
     if dist_as_sim:  # Convert cosine distance to similarity
@@ -131,6 +139,8 @@ for dataset in datasets:
         dist_col,
         ext_links_col,
         jcp_short,
+        match_jcp_col,
+        "corrected_p_value",
     ]
     matches_translated = matches.select(order)
 
@@ -140,4 +150,3 @@ for dataset in datasets:
     matches_translated.write_parquet(final_output, compression="zstd")
 
     # - TODO add Average precision metrics
-    # - STOP add differentiating features when compared to their controls
