@@ -25,7 +25,7 @@ flowchart LR
     orf -- No -->  F[(broad.io/orf)]
     orf -- Yes -->  G[(broad.io/orf_feature)]
     crispr -- No -->  H[(broad.io/crispr)]
-    crispr -- Yes --> I[(WIP)]
+    crispr -- Yes --> I[(broad.io/crispr_feature)]
 ```
 
 
