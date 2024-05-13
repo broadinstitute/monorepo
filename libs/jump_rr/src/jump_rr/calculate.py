@@ -141,6 +141,7 @@ for dataset in datasets:
         jcp_short,
         match_jcp_col,
         "corrected_p_value",
+        "corrected_p_value Match",
     ]
     matches_translated = matches.select(order)
 
