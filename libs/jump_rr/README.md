@@ -41,21 +41,22 @@ Use the following datasets to explore morphological similarities between gene an
 | CRISPR   | [broad.io/crispr](https://broad.io/crispr) | [broad.io/crispr\_feature](https://broad.io/crispr)   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)     | Gene knock-out      |
 | Compound | WIP                                        | WIP                                                   | [broad.io/compound\_gallery](https://broad.io/compound_gallery) | Chemical compounds  |
 
-Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which increase sample replicability.
+Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
 
 
 <a id="Overview"></a>
 
 # Overview
 
-This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that are to be accessed by biologists using [datasette-lite](https://github.com/simonw/datasette-lite).
+This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that we make accesible through the browser using [datasette-lite](https://github.com/simonw/datasette-lite).
 
 
 <a id="Data%20accessibility"></a>
 
 # Data accessibility
 
-The raw morphological profiles are currently in a local server. It will be provided independently and this section updated in the future.
+-   You can fetch the raw morphological profiles (before any non-image processing step) on the [Cell Painting Gallery](https://cellpainting-gallery.s3.amazonaws.com/index.html#cpg0016-jump-assembled/source_all/workspace/profiles) (CPG) under the &ldquo;profiles.parquet&rdquo; names.
+-   [This](https://github.com/broadinstitute/monorepo/tree/452543be5f17a626a3964b8b90984a9502952a06/libs/jump_rr/tools/download_profiles.org) file points to the gist indicating the data used to produce the final tables.
 
 
 <a id="Installation"></a>
@@ -69,7 +70,7 @@ You do not need to install this unless you want to re-do the similarity calculat
 
 ## pip
 
-Use this if you want to analyse data.
+Use this if you want to re-analyse data. Several of the anyalyses require GPUs.
 
 ```python
 pip install jump_rr
