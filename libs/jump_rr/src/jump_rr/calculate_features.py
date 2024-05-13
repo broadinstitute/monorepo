@@ -38,6 +38,7 @@ from jump_rr.concensus import (
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
 from jump_rr.parse_features import get_feature_groups
+from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type
 from jump_rr.translate import get_mappers
 
@@ -67,7 +68,6 @@ for dset in datasets:
 
     ## Parameters
     n_vals_used = 50  # Number of top and bottom matches used
-    # dset = "orf"
 
     ## Column names
     jcp_short = "JCP2022"  # Shortened input data frame
@@ -96,9 +96,6 @@ for dset in datasets:
 
     # Find top and bottom $n_values_used
 
-    # xs, ys = get_bottom_top_indices(vals, n_vals_used, skip_first=False)
-    # %%
-    #
     # Calculate or read likelihood estimates
     # TODO check that both groupings return matrices in the same orientation
     # Note that this is cached. To uncache (takes ~5 mins for ORF) run
@@ -138,6 +135,8 @@ for dset in datasets:
     uniq = tuple(df.get_column(jcp_short).unique())
     jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, dset)
 
+    df = add_replicability(df, left_on=jcp_short, right_on=jcp_col)
+
     jcp_translated = df.with_columns(
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
         pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
@@ -150,6 +149,7 @@ for dset in datasets:
         "Channel",
         "Suffix",
         "Statistic",
+        "corrected_p_value",
         std_outname,
         url_col,
         "Median",
@@ -160,9 +160,3 @@ for dset in datasets:
     # Output
     output_dir.mkdir(parents=True, exist_ok=True)
     sorted_df.write_parquet(output_dir / f"{dset}_features.parquet", compression="zstd")
-
-    # Procedure
-    # 1. Group all features by JCP_ID
-    # 2. Get the stats for all groups
-    # 2a. Compare JCPX samples with JCP(Average)
-    # 3. Use
