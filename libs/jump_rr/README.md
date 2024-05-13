@@ -35,7 +35,7 @@ flowchart LR
 
 Use the following datasets to explore morphological similarities between gene and/or compounds.
 
-| Dataset  | Perturbation simile                        | Feature ranking                                       | Gallery                                                         | Description         |
+| Dataset  | Matches                                    | Feature ranking                                       | Gallery                                                         | Description         |
 |-------- |------------------------------------------ |----------------------------------------------------- |--------------------------------------------------------------- |------------------- |
 | ORF      | [broad.io/orf](https://broad.io/orf)       | [broad.io/orf\_feature](https://broad.io/orf_feature) | [broad.io/orf\_gallery](https://broad.io/orf_gallery)           | Gene overexpression |
 | CRISPR   | [broad.io/crispr](https://broad.io/crispr) | [broad.io/crispr\_feature](https://broad.io/crispr)   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)     | Gene knock-out      |
@@ -48,7 +48,7 @@ Note that the feature databases are based on interpretable features. The The per
 
 # Overview
 
-This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that we make accesible through the browser using [datasette-lite](https://github.com/simonw/datasette-lite).
+This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that we make accessible through the browser using [datasette-lite](https://github.com/simonw/datasette-lite).
 
 
 <a id="Data%20accessibility"></a>
