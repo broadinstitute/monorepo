@@ -19,12 +19,17 @@ def get_formatter(kind: str) -> str:
     return formatters[kind]
 
 
-def format_val(kind: str, input_value: str or int or list):
+def format_val(kind: str, input_value: str or int or list or None) -> str:
     # Apply html formating for Datasette hyperlinks and visualisation
-    if isinstance(input_value, str) or isinstance(input_value, int):
+
+    if input_value is None:
+        return ""
+    elif isinstance(input_value, str) or isinstance(input_value, int):
         input_value = [input_value]
 
-    return get_formatter(kind).format(*input_value)
+    result = get_formatter(kind).format(*input_value)
+
+    return result
 
 
 def add_url_col(

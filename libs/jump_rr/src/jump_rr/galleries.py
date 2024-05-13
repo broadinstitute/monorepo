@@ -30,11 +30,11 @@ from s3fs import S3FileSystem
 # %% Setup Local
 ## Paths
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
-platetype_filepath = (
-    ("crispr", "harmonized_no_sphering_profiles"),
-    ("orf", "transformed_inf_eff_filtered"),
-    ("compounds", "mad_int_featselect_scanorama"),
-)
+# platetype_filepath = (
+#     ("crispr", "harmonized_no_sphering_profiles"),
+#     ("orf", "transformed_inf_eff_filtered"),
+#     ("compounds", "mad_int_featselect_scanorama"),
+# )
 output_dir = Path("./databases")
 
 ## Column names
@@ -46,20 +46,15 @@ ext_links_col = "External resources"  # Link to external resources (e.g., NCBI)
 
 # %% Processing starts
 
-platetype_paths = [
-    (plate_type, dir_path / plate_type / f"{filename}.parquet")
-    for plate_type, filename in platetype_filepath
-]
 
-
-def generate_gallery(plate_type: str, profiles_path: str or Path, write: bool = True):
+def generate_gallery(dset: str, profiles_path: str or Path, write: bool = True):
     # %% Load Metadata
     df = pl.scan_parquet(profiles_path)
 
     # %% Translate genes names to standard
     uniq_jcp = tuple(df.select("Metadata_JCP2022").unique().collect().to_numpy()[:, 0])
     jcp_std_mapper, jcp_external_mapper = get_mappers(
-        uniq_jcp, plate_type, format_output=False
+        uniq_jcp, dset, format_output=False
     )
 
     df = df.with_columns(  # Format existing columns into #foci urls
@@ -68,18 +63,18 @@ def generate_gallery(plate_type: str, profiles_path: str or Path, write: bool = 
                 get_formatter("url_flat"),
                 *[pl.col(f"Metadata_{x}") for x in ("Source", "Plate", "Well")],
                 foci,
-            ).alias(f"Foci {foci}")
-            for foci in get_range(plate_type)
+            ).alias(f"Site {foci}")
+            for foci in get_range(dset)
         ]
     )
     df = df.with_columns(  # Wrap the urls into html
         [
             pl.format(
                 get_formatter("img_flat"),
-                pl.col(f"Foci {foci}"),
-                pl.col(f"Foci {foci}"),
-            ).alias(f"Foci {foci}")
-            for foci in get_range(plate_type)
+                pl.col(f"Site {foci}"),
+                pl.col(f"Site {foci}"),
+            ).alias(f"Site {foci}")
+            for foci in get_range(dset)
         ]
     )
     df = df.with_columns(
@@ -92,17 +87,17 @@ def generate_gallery(plate_type: str, profiles_path: str or Path, write: bool = 
         ]
     )
 
-    order = [pl.col(x) for x in (std_outname, ext_links_col, jcp_col, "^Foci.*$")]
+    order = [pl.col(x) for x in (std_outname, ext_links_col, jcp_col, "^Site.*$")]
     df = df.select(order).collect()
 
     # %% Write results
     if write:
         output_dir.mkdir(parents=True, exist_ok=True)
-        final_output = output_dir / f"{plate_type}_gallery.parquet"
+        final_output = output_dir / f"{dset}_gallery.parquet"
         df.write_parquet(final_output, compression="zstd")
     return df
 
 
 # No need for threading, as this is very fast
-for plate_type, filepath in platetype_paths:
-    generate_gallery(plate_type, filepath, write=True)
+for dset in ("orf", "crispr", "compound"):
+    generate_gallery(dset, dir_path / f"{dset}.parquet", write=True)

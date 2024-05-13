@@ -26,6 +26,7 @@ from math import sqrt
 from pathlib import Path
 from time import perf_counter
 
+from broad_babel.query import get_mapper
 from cachier import cachier
 
 try:
@@ -190,12 +191,39 @@ def calculate_pvals(
     return corrected
 
 
+def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame:
+    """
+    Add metadata with perturbation type from the JCP2022 ID.
+    poscons: Ensure all outputs are trt or negcon. Drop nulls.
+    """
+    pert_type = "Metadata_pert_type"
+    if "Metadata_pert_type" not in profiles.select(pl.col("^Metadata.*$")).columns:
+        # Add perturbation type metadata (new profiles exclude it)
+        jcp_to_pert_type = get_mapper(
+            profiles.get_column("Metadata_JCP2022"),
+            input_column="JCP2022",
+            output_column="JCP2022,pert_type",
+        )
+        profiles = profiles.with_columns(
+            pl.col("Metadata_JCP2022").replace(jcp_to_pert_type).alias(pert_type)
+        )
+
+    profiles = profiles.filter(pl.col(pert_type) != "null")
+    if not poscons:
+        profiles = profiles.with_columns(
+            pl.when(pl.col(pert_type) != "negcon").then("trt").alias(pert_type)
+        )
+    return profiles
+
+
 @cachier()
 def pvals_from_path(path: str, *args, **kwargs):
     """
+    Use the path to cache pvals
     Locally cached version of pvals. To clean cache run <function>.clean_cache().
     """
     profiles = pl.read_parquet(path)
+    profiles = add_pert_type(profiles)
     return calculate_pvals(profiles, *args, **kwargs)
 
 

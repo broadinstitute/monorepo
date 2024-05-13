@@ -17,6 +17,7 @@ def get_feature_groups(cols: tuple[str]) -> pl.DataFrame:
     Apply regular expressions
     Convert to format MASK,FEATURE,CHANNEL(opt),SUFFIX, merging channels
     where necessary
+    NOTE: CURRENTLY UNUSED in favour of processing all features
     """
     masks = "|".join(("Cells", "Nuclei", "Cytoplasm", "Image"))
     channels = "|".join(

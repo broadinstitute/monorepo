@@ -12,6 +12,6 @@ Iterate over each row and save every ={URL}= as a file named ={NAME}.parquet=.
 #+begin_src bash
 while IFS="," read -r NAME URL; do
     FILEPATH="${OUTDIR}/${NAME}"
-    wget "${URL}" -O "${FILEPATH}.parquet"
+    wget --no-clobber "${URL}" -O "${FILEPATH}.parquet"
 done < <(wget -O - -nv "${NAME_URL_CSV}")
 #+end_src
