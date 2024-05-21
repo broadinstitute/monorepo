@@ -1,7 +1,7 @@
 #+title: Generate All Databases
 #+PROPERTY: header-args :tangle yes
 
-This notebook shows how to generate all jump_rr databases from an existing installation.
+This notebook shows how to generate all =jump_rr= databases from an existing installation.
 
 #+begin_src bash :tangle yes
 bash ./download_profiles.bash

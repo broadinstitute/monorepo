@@ -8,10 +8,10 @@ import polars as pl
 @cache
 def get_formatter(kind: str) -> str:
     formatters = dict(
-        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}}',
+        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"NCBI"}}',
         url='"https://phenaid.ardigen.com/static-jumpcpexplorer/' 'images/{}_{{}}.jpg"',
         img='{{"img_src": {}, "href": {}, "width": 200}}',
-        external_flat='{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}',
+        external_flat='{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"NCBI"}',
         url_flat='"https://phenaid.ardigen.com/static-jumpcpexplorer/'
         'images/{}/{}/{}_{}.jpg"',
         img_flat='{"img_src": {}, "href": {}, "width": 200}',

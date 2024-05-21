@@ -25,8 +25,6 @@ from jump_rr.translate import get_mappers
 from pyarrow.dataset import dataset
 from s3fs import S3FileSystem
 
-
-
 # %% Setup Local
 ## Paths
 dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
@@ -41,7 +39,7 @@ output_dir = Path("./databases")
 jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
-ext_links_col = "External resources"  # Link to external resources (e.g., NCBI)
+ext_links_col = "NCBI"  # Link to external resources (e.g., NCBI)
 
 
 # %% Processing starts
