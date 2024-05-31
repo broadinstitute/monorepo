@@ -159,7 +159,7 @@ def calculate_pvals(
     seed: int = 42,
 ):
     """
-    Calculate the pvalues of all features against a sample of their negative controls.
+    Calculate the pvalues of each feature against a sample of their negative controls.
     1. Calculate the p value of all features
     2. then adjust the p value to account for multiple testing
     """
