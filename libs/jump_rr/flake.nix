@@ -26,7 +26,12 @@
             pkgs = import nixpkgs {
               system = system;
               config.allowUnfree = true;
+              # overlays = [
+              #   # (final: prev: { cudaPackages = prev.cudaPackages.override { cudaVersion = "12.4"; }; })
+              #   (final: prev: { cudaPackages = prev.cudaPackages.override { cudaVersion = "12.2"; }; })
+              # ];
             };
+
 
             mpkgs = import inputs.nixpkgs_master {
               system = system;
@@ -51,10 +56,12 @@
                   packages = with pkgs; [
                     poetry
                     python310
+                    # python310Packages.cupy
                   ];
                   enterShell = ''
                     export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
-                    poetry install -vv --with dev
+                    export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
+                    # poetry install -vv --with dev
                   '';
                 }
               ];
