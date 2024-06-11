@@ -54,8 +54,9 @@
                   enterShell = ''
                     export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
                     if [ ! -d ".venv" ]; then
-                       poetry install -vv --with dev --no-root
+                       poetry install -vv --with dev
                     fi
+                    source .venv/bin/activate
                   '';
                 }
               ];
