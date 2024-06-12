@@ -11,8 +11,8 @@ import pooch
 DB_FILE = pooch.retrieve(
     # Temporarily  using URL out due to Zenodo API change
     # https://github.com/zenodo/zenodo/issues/2506
-    url=("https://zenodo.org/records/11166927/files/" "babel.db"),
-    known_hash="md5:2b6df8e1417ded0fdfbd176eb4614702",
+    url=("https://zenodo.org/records/11623418/files/" "babel.db"),
+    known_hash="md5:7b23bfafbbfc9920a47e304e7096ef9c",
 )
 TABLE = "babel"
 
