@@ -7,6 +7,7 @@ from itertools import cycle
 import numpy as np
 import polars as pl
 from jump_rr.formatters import add_url_col
+from jump_rr.parse_features import get_feature_groups
 
 # Names
 jcp_short = "JCP2022"  # Shortened input data frame
@@ -32,6 +33,16 @@ def get_concensus_meta_urls(
 
     return med, meta, urls
 
+def get_group_median(med, group_by: list[str] or None = None):
+    """Group columns by their names"""
+    med_vals = med.select(pl.exclude("^Metadata.*$"))
+    if group_by is None:
+        feature_meta = get_feature_groups(tuple(med_vals.columns))
+    features = pl.concat((feature_meta, med_vals.transpose()), how="horizontal")
+
+    grouped = features.group_by(feature_meta.columns)
+
+    return grouped.median()
 
 def get_range(dataset: str) -> range:
     """

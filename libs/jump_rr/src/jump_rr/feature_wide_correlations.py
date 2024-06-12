@@ -26,7 +26,7 @@ from jump_rr.concensus import get_group_median
 dir_path = Path("/ssd/data/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 # datasets = ("orf", "crispr")
-datasets = ("crispr", "orf")
+datasets = ("crispr", "orf", "compound")
 for dset in datasets:
     precor_path = dir_path / f"{dset}_interpretable.parquet"
     prof = pl.read_parquet(precor_path)
@@ -34,6 +34,6 @@ for dset in datasets:
 
     arr = cp.array(med.select(pl.col("^column.*$")), dtype=cp.float32 )
 
-    corr = pl.DataFrame( cp.corrcoef(arr).get())
+    corr = pl.DataFrame(cp.corrcoef(arr).get())
     corr = pl.concat((med.select(pl.exclude("^column.*$")), corr), how="horizontal")
     corr.write_parquet(output_dir / f"{dset}_feature_wide.parquet", compression="zstd")

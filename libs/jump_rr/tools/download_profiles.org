@@ -11,10 +11,12 @@ mkdir -p "${OUTDIR}"
 Iterate over each row and save every ={URL}= as a file named ={NAME}.parquet=.
 #+begin_src bash
 while IFS="," read -r NAME URL; do
-    # Trim quotes
-    FILEPATH=$(sed 's/"//g' <<< "${OUTDIR}/${NAME}")
-    URL_TR=$(sed 's/"//g' <<< "${URL}")
+    # Remove quotes
+    FILEPATH="${OUTDIR}/${NAME}"
 
-    wget --no-clobber $URL_TR -O ${FILEPATH}.parquet
-    done < <(wget -O - -nv "${NAME_URL_CSV}")
+    # echo $line
+    echo $FILEPATH
+    wget --no-clobber $URL -O ${FILEPATH}.parquet
+    # done < <(wget -O - -nv -q "${NAME_URL_CSV}")
+    done < <(wget -O - -nv -q $NAME_URL_CSV | csvtool cat -)
 #+end_src
