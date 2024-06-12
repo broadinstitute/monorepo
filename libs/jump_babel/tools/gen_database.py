@@ -140,6 +140,8 @@ manual_mapper = {
     "JCP2022_050797": "poscon",  # "Quinidine",
     "JCP2022_064022": "poscon",  # "NVS-PAK1-1",
     "JCP2022_085227": "poscon",  # "Aloxistatin",
+    "JCP2022_800001": "negcon",  # "no-guide",
+    "JCP2022_800002": "negcon",  # "non-targeting",
     "JCP2022_900001": "null",  # "BAD CONSTRUCT",
     "JCP2022_999999": "null",  # "UNTREATED",
     "JCP2022_UNKNOWN": "null",  # "UNKNOWN",
