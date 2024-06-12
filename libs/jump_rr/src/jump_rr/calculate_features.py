@@ -34,33 +34,19 @@ from jump_rr.concensus import (
     get_concensus_meta_urls,
     get_cycles,
     repeat_cycles,
+    get_group_median
 )
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
-from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
-# %% group by feature
-
-
-def median_values(med_vals, group_by: list[str] or None = None):
-    """Group columns by their names"""
-    if group_by is None:
-        feature_meta = get_feature_groups(tuple(med_vals.columns))
-    features = pl.concat((feature_meta, med_vals.transpose()), how="horizontal")
-
-    grouped = features.group_by(feature_meta.columns)
-
-    return grouped.median()
-
-
 # %% Setup
 ## Paths
-dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
+dir_path = Path("/ssd/data/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = ("crispr", "orf")
 for dset in datasets:
@@ -90,9 +76,8 @@ for dset in datasets:
     med, meta, urls = get_concensus_meta_urls(
         precor.filter(pl.col("Metadata_pert_type") != "negcon")
     )
-    med_vals = med.select(pl.exclude("^Metadata.*$"))
 
-    feat_med = median_values(med_vals)
+    feat_med = get_group_median(med_vals)
 
     # Find top and bottom $n_values_used
 
