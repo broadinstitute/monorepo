@@ -7,7 +7,7 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = ">=3.10,<3.11"
-broad-babel = "^0.1.15"
+broad-babel = "^0.1.17"
 numpy = "*"
 fastcluster = "^1.2.6"
 pyarrow = ">=16.1.0"

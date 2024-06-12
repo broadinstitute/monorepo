@@ -449,13 +449,13 @@ crt = ["awscrt (==0.20.9)"]
 
 [[package]]
 name = "broad-babel"
-version = "0.1.16"
+version = "0.1.17"
 description = "A translator of Broad and JUMP ids to more conventional names."
 optional = false
 python-versions = "<4.0,>=3.10"
 files = [
-    {file = "broad_babel-0.1.16-py3-none-any.whl", hash = "sha256:f7f3c810bfee89883fdcf5a39a0d286b63892b172a2f807ff7872ccba7e2aaef"},
-    {file = "broad_babel-0.1.16.tar.gz", hash = "sha256:71c30a66626f0f097fe1ab95be5ad82e4e1c48008d4499d9a4681853f3b695e9"},
+    {file = "broad_babel-0.1.17-py3-none-any.whl", hash = "sha256:0e527c7e3d794307b9d3cb737ed144a4c1a65dea4576a8abd750428e645ccb3a"},
+    {file = "broad_babel-0.1.17.tar.gz", hash = "sha256:7afc76e9a776fa3ead1ca69b9a60d4382604bf614c4888955c6ece30e7eb006c"},
 ]
 
 [package.dependencies]
@@ -3815,4 +3815,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "2fdb9b17d649dc9bc27346eb85bdf44a8334d059ce34a59affb273d7cc4a0136"
+content-hash = "7e56bfd2056dea4e0f9182ed90490c7315096497e928cb5a727e451c76916103"
