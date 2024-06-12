@@ -33,8 +33,7 @@ def map_back(k , n):
 
 dir_path = Path("/ssd/data/shared/morphmap_profiles/")
 output_dir = Path("./databases")
-# datasets = ("crispr", "orf", "compound")
-datasets = ("crispr", "orf")
+datasets = ("CRISPR", "ORF")
 for dset in datasets:
     precor_path = dir_path / f"{dset}_interpretable.parquet"
     prof = pl.read_parquet(precor_path)

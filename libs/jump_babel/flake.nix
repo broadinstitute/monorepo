@@ -53,6 +53,7 @@
                   ];
                   enterShell = ''
                     export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+                    export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
                     if [ ! -d ".venv" ]; then
                        poetry install -vv --with dev
                     fi
