@@ -91,21 +91,23 @@ def partition_by_trt(
     for negative controls.
     """
     meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
-    pos_partition, neg_partition = df.select(
+    partitions = df.select(
         pl.col(meta_cols),
         pl.all().exclude("^Metadata.*$").cast(pl.Float32),
-    ).partition_by("Metadata_pert_type", include_key=False)
+    ).partition_by("Metadata_pert_type")
 
-    neg_partition = neg_partition.drop(column)
+    partitions = {v.head(1).get_column("Metadata_pert_type")[0]:
+                  v.select(pl.exclude("Metadata_pert_type"))  for v in partitions}
+    partitions['negcon'] = partitions['negcon'].drop(column)
     if negcons_per_plate:  # Sample $negcons_per_plate elements from each plate
-        neg_partition = neg_partition.filter(
+        partitions['negcon'] = partitions['negcon'].filter(
             pl.int_range(0, pl.count()).shuffle(seed=seed).over("Metadata_Plate")
             < negcons_per_plate
         )
 
-    ids_plates = dict(pos_partition.group_by(column).agg("Metadata_Plate").iter_rows())
+    ids_plates = dict(partitions['trt'].group_by(column).agg("Metadata_Plate").iter_rows())
 
-    ids_prof = pos_partition.drop("Metadata_pert_type", "Metadata_Plate").partition_by(
+    ids_prof = partitions['trt'].drop("Metadata_pert_type", "Metadata_Plate").partition_by(
         column, as_dict=True, maintain_order=False, include_key=False
     )
 
@@ -113,7 +115,7 @@ def partition_by_trt(
     id_trt_negcon = {
         id_: (
             ids_prof[id_],
-            neg_partition.filter(pl.col("Metadata_Plate").is_in(plates)).drop(
+            partitions['negcon'].filter(pl.col("Metadata_Plate").is_in(plates)).drop(
                 "Metadata_Plate"
             ),
         )
@@ -122,7 +124,7 @@ def partition_by_trt(
     return id_trt_negcon
 
 
-def get_p_value(a, b, negcons_per_plate: int = 2, seed: int = 42):
+def get_p_value(a, b, seed: int = 42):
     """
     Calculate the p value of two matrices in a column fashion.
     TODO check if we should sample independently or if we can sample once and used all features from a given sample set.
@@ -152,6 +154,43 @@ def get_p_value(a, b, negcons_per_plate: int = 2, seed: int = 42):
 
     return np.nan_to_num(p, nan=1.0)
 
+
+def calculate_mw(
+    profiles: pl.DataFrame,
+    negcons_per_plate: int = 2,
+    seed: int = 42,
+):
+    """
+    Calculate the pvalues of each feature against a sample of their negative controls.
+    1. Calculate the MW test
+    2. then adjust the p value to account for multiple testing
+    """
+    partitioned = partition_by_trt(profiles, seed=seed)
+    features = tuple(
+        list(partitioned.values())[0][0]
+        .select(pl.all().exclude("^Metadata.*$"))
+        .columns
+    )
+
+    print("Calculating p values")
+    timer = perf_counter()
+
+    n_items = len(partitioned)
+    p_values = np.ones((n_items, len(features)), dtype=np.float32)
+    for i, k in tqdm(enumerate(partitioned.keys()), total=n_items):
+        p_values[i, :] = get_p_value(
+            *partitioned[k],
+            negcons_per_plate=negcons_per_plate,
+            seed=seed,
+        )
+    print(f"{perf_counter()-timer}")
+
+    print("FDR correction")
+    timer = perf_counter()
+    corrected = pl.DataFrame([multipletests(x, method="fdr_bh")[1] for x in p_values])
+    print(f"{perf_counter()-timer}")
+
+    return corrected
 
 def calculate_pvals(
     profiles: pl.DataFrame,
@@ -204,6 +243,11 @@ def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame
             input_column="JCP2022",
             output_column="JCP2022,pert_type",
         )
+        # 
+        # CRISPR controls # TODO move patch to broad_babel
+        for k in ("JCP2022_800001", "JCP2022_800002"):
+            jcp_to_pert_type[k] = "negcon"
+
         profiles = profiles.with_columns(
             pl.col("Metadata_JCP2022").replace(jcp_to_pert_type).alias(pert_type)
         )
@@ -211,7 +255,10 @@ def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame
     profiles = profiles.filter(pl.col(pert_type) != "null")
     if not poscons:
         profiles = profiles.with_columns(
-            pl.when(pl.col(pert_type) != "negcon").then("trt").alias(pert_type)
+            pl.when(pl.col(pert_type) != "negcon").
+            then(pl.lit( "trt" ))
+            .otherwise(pl.lit( "negcon" ))
+            .alias(pert_type)
         )
     return profiles
 
