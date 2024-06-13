@@ -58,17 +58,19 @@ for dset in datasets:
     melted = corr.with_columns(pl.Series(corr.columns).alias(f"{name} A")).melt(id_vars=f"{name} A", variable_name = f"{name} B", value_name="Pearson Corr")
     for feat in ("Full Feat A", "Full Feat B"):
         melted=melted.with_columns(pl.col(feat).replace(mapper).str.split_exact("~", 3).alias("Feat_A")).unnest("Feat_A")
-        melted = melted.rename({f"field_{x}": f"{feat[-1]} {y}" for x,y in enumerate(("Object","Feat"," Channel", "Suffix"))})
+        melted = melted.rename({f"field_{x}": f"{feat[-1]} {y}" for x,y in enumerate(("Object","Feat","Channel", "Suffix"))})
 
     # Select upper diag to avoid repeats
     index_mat = np.arange(len(corr)**2).reshape((len(corr),len(corr)))
     idx_for_uniq = index_mat[np.triu_indices(len(corr), k=1)]
     uniq = melted.with_row_count().filter(pl.col("row_nr").is_in(idx_for_uniq)).select(pl.exclude("row_nr"))
+    w_equals =  uniq.with_columns([ ( pl.col(f"A {subfeat}")==pl.col(f"B {subfeat}") ).alias(f"Equal {subfeat}") for subfeat in ("Object", "Feat", "Channel")])
+    dropped_subfeats = w_equals.select(pl.exclude("^[AB] .*$"))
     # Save all the non-repeated p values
-    uniq.write_parquet(output_dir / f"{dset}_feature_correlation.parquet", compression="zstd")
+    dropped_subfeats.write_parquet(output_dir / f"{dset}_feature_correlation.parquet", compression="zstd")
 
 
     # save the edges for biologists to explore the most interesting correlations
     nsaved=10000
-    sorted_edges = uniq.sort(by="Pearson Corr").with_row_count().filter(( pl.col("row_nr")<nsaved ) | ( pl.col("row_nr") > len(uniq)- nsaved )).select(pl.exclude("row_nr"))
+    sorted_edges = dropped_subfeats.sort(by="Pearson Corr").with_row_count().filter(( pl.col("row_nr")<nsaved ) | ( pl.col("row_nr") > len(uniq)- nsaved )).select(pl.exclude("row_nr"))
     sorted_edges.write_parquet(output_dir / f"{dset}_selected_edges.parquet",compression="zstd")
