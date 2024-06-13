@@ -23,6 +23,8 @@ import cupy as cp
 import cupyx.scipy.spatial as spatial
 import polars as pl
 from jump_rr.concensus import get_group_median
+from jump_rr.parse_features import get_feature_groups
+from polars.selectors import numeric, string
 
 def map_back(k , n):
     # Map from a linear index to an upper triangle 
@@ -33,44 +35,40 @@ def map_back(k , n):
 
 dir_path = Path("/ssd/data/shared/morphmap_profiles/")
 output_dir = Path("./databases")
-datasets = ("CRISPR", "ORF")
+datasets = ("crispr", "orf")
 for dset in datasets:
     precor_path = dir_path / f"{dset}_interpretable.parquet"
     prof = pl.read_parquet(precor_path)
-    med = get_group_median(prof)
 
-    arr = cp.array(med.select(pl.col("^column.*$")), dtype=cp.float32 )
-    features = med.select(pl.exclude("^column.*$"))
+    # Get the mapper that will be used later
+    feats = tuple( prof.select(numeric()).columns )
+    mapper = {k:'~'.join(v) for k,v in zip(feats, get_feature_groups(feats).iter_rows())}
+
+    med = prof.group_by(by="Metadata_JCP2022").median()
+    arr = cp.array(med.select(numeric()), dtype=cp.float32 )
      
     # Calculate the Perason correlation coefficient of all vs all features
-    corr_cp = cp.corrcoef(arr)
+    corr_cp = cp.corrcoef(arr, rowvar=False)
     corr = pl.DataFrame(corr_cp.get())
-    corr = pl.concat(( features, corr ), how="horizontal")
+    corr.columns = prof.select(numeric()).columns
     corr.write_parquet(output_dir / f"{dset}_feature_wide.parquet", compression="zstd")
     
+    # %% Add the grouped features
+    name="Full Feat"
+    melted = corr.with_columns(pl.Series(corr.columns).alias(f"{name} A")).melt(id_vars=f"{name} A", variable_name = f"{name} B", value_name="Pearson Corr")
+    for feat in ("Full Feat A", "Full Feat B"):
+        melted=melted.with_columns(pl.col(feat).replace(mapper).str.split_exact("~", 3).alias("Feat_A")).unnest("Feat_A")
+        melted = melted.rename({f"field_{x}": f"{feat[-1]} {y}" for x,y in enumerate(("Object","Feat"," Channel", "Suffix"))})
 
-    # Get the 100 highest (+anti)correlated features across all of JUMP
-    upper_tri = np.triu_indices(len(corr_cp), k=1) 
-    flat = corr_cp[upper_tri]
-    bottom_sorted = flat.argpartition(100)
-    bottom_idx = bottom_sorted[:100]
-    top_sorted = flat.argpartition(-100)
-    top_idx = top_sorted[-100:]
-    top = flat[top_idx]
-    bottom = flat[bottom_idx]
-
-    names = features.select(pl.concat_str(pl.all())).to_numpy()
-    bottom_coords = list(map(lambda x: map_back(x, len(corr_cp)), bottom_idx ) )
-    top_coords = list(map(lambda x: map_back(x, len(corr_cp)), top_idx ) )
+    # Select upper diag to avoid repeats
+    index_mat = np.arange(len(corr)**2).reshape((len(corr),len(corr)))
+    idx_for_uniq = index_mat[np.triu_indices(len(corr), k=1)]
+    uniq = melted.with_row_count().filter(pl.col("row_nr").is_in(idx_for_uniq)).select(pl.exclude("row_nr"))
+    # Save all the non-repeated p values
+    uniq.write_parquet(output_dir / f"{dset}_feature_correlation.parquet", compression="zstd")
 
 
-    a, b = map(list, names[np.concatenate((bottom_coords,top_coords))][...,0].T )
-    highest_correlated = pl.DataFrame(
-       {"correlation":cp.concatenate((bottom,top )).get(),
-        "feature_A": a,
-        "feature_B": b,
-        } ,
-    )
-
-    highest_correlated.write_csv(output_dir / f"{dset}_feature_correlations.csv")
-
+    # save the edges for biologists to explore the most interesting correlations
+    nsaved=10000
+    sorted_edges = uniq.sort(by="Pearson Corr").with_row_count().filter(( pl.col("row_nr")<nsaved ) | ( pl.col("row_nr") > len(uniq)- nsaved )).select(pl.exclude("row_nr"))
+    sorted_edges.write_parquet(output_dir / f"{dset}_selected_edges.parquet",compression="zstd")
