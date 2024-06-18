@@ -1,5 +1,7 @@
+
 #!/usr/bin/env jupyter
 """
+jump_portrait version >=0.0.18
 Workflow 1: Fetch one image for a given item and a control
 """
 from jump_portrait.fetch import get_jump_image, get_sample
@@ -25,7 +27,6 @@ controls = True  # Fetch controls in plates alongside (GC)OI?
 download_item_images(item_name, channels, corrections=corrections, controls=controls)
 
 """
-jump_portrait version >=0.0.17
 Workflow 3: Fetch bright field channel
 Note that this is hacky and may not work for all sources.
 """

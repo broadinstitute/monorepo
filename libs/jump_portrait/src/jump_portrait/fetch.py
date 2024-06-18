@@ -21,6 +21,8 @@ import numpy as np
 import polars as pl
 import pooch
 from broad_babel import query
+from jump_portrait.utils import batch_processing, parallel
+from tqdm import tqdm
 
 from jump_portrait.s3 import (
     build_s3_image_path,
@@ -29,7 +31,6 @@ from jump_portrait.s3 import (
     get_corrected_image,
 )
 from broad_babel.data import get_table
-from jump_portrait.utils import batch_processing, parallel
 
 
 def format_cellpainting_s3() -> str:
