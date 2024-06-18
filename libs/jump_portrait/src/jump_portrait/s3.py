@@ -148,6 +148,13 @@ def build_s3_image_path(
     """ """
     if correction is None:
         correction = "Orig"
+
+    use_bf_channel = None
+    # Special case to fetch bright field images
+    if channel == "bf":
+        use_bf_channel = True
+        channel, correction = "DNA", "Orig"
+
     index_suffix = correction + channel
 
     directory = row["_".join(("PathName", index_suffix))]
@@ -160,6 +167,15 @@ def build_s3_image_path(
         replacement = r"\1/\2_compressed/" + row['Metadata_Plate'] + "/"
         directory = re.sub(pattern, replacement, directory)
         filename = os.path.splitext(filename)[0] + ".png"
+    if use_bf_channel: # Replace the image with the bright field channel
+        channel_ids = [int(v[-5]) for k,v in row.items() if k.startswith("FileName_Orig")]
+        # the one channel not present  
+        bf_id = list(set(range(1, 7)).difference(channel_ids))[0]
+        filename_as_lst = list(filename)
+        filename_as_lst[-5] = str(bf_id)
+        filename_as_lst[-11] = "4" # I found that C06 finishes with A04
+        filename = "".join(filename_as_lst)
+
 
     final_path = S3Path.from_uri(directory) / filename
 
