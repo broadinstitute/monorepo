@@ -19,14 +19,14 @@ def open_tsv_files(output_path: Path, redownload=False):
 def get_compound_annotations(output_dir: str):
     output_path = Path(output_dir)
     drugs, genes, edges, categories = open_tsv_files(output_path)
-    edges.drug_concept_id.fillna("", inplace=True)
+    edges["drug_concept_id"] = edges["drug_concept_id"].fillna("")
     edges = edges.query('drug_concept_id.str.match("chembl:")').copy()
     edges['drug_concept_id'] = edges.drug_concept_id.str[len('chembl:'):]
 
     # from https://www.dgidb.org/interaction_types
     # "DGIdb assigns this (n/a) label to any drug-gene interaction for which
     # the interaction type is not specified by the reporting source."
-    edges['interaction_types'].fillna('unknown', inplace=True)
+    edges['interaction_types'] = edges['interaction_types'].fillna('unknown')
 
     edges = edges[['drug_concept_id', 'gene_name', 'interaction_types']]
     edges = edges.dropna().drop_duplicates()
