@@ -3,7 +3,7 @@ This is documentation on how to onboard a new user to a NixOS server, replace  <
 Eventually we would want to automate the process, probably replacing many components with [[https://github.com/dustinlyons/nixos-config][this]], as they provide scripts that automate the process as much as possible.
 
 * Set up remote connections
-** Install [[https://tailscale.com/download][tailscale]]
+** NEW USER: Install [[https://tailscale.com/download][tailscale]]
 Set up in the networtk that is associated to <machine_name>.
 ** homes/
 - copy and adjust homes/<username>
@@ -37,7 +37,6 @@ Then enable home manager
 For this new user the packages are to be added on =homes/<username>packages.nix=. Feel free to check [[https://github.com/afermg/clouds/tree/master/homes/amunoz/packages.nix#L5-L86][this]] section of the config for an example of the type of packages.
 
 ** [[https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent][Generate]] and copy the public ssh key to =home/<username>/id_rsa.pub= and then link it at =machines/<machine_name>/default.nix=.
-
 ** Apply new configuration
 Move to the folder and run
 #+begin_src shell
