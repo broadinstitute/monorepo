@@ -37,7 +37,6 @@ except Exception:
 import numpy as np
 import polars as pl
 from jump_rr.parse_features import get_feature_groups
-from pathos.multiprocessing import Pool
 from scipy.stats import combine_pvalues, mannwhitneyu, t, ttest_ind
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
@@ -79,6 +78,7 @@ def sample_ids(
     return result
 
 
+@cachier()
 def partition_parquet_by_trt(
     path: str,
     dataset: str,
@@ -103,7 +103,6 @@ def partition_by_trt(
     and then further split into two dataframes, one for positive controls and one
     for negative controls.
     """
-    print("Partitioning started")
     meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
     partitions = df.select(
         pl.col(meta_cols),
@@ -241,34 +240,10 @@ def calculate_pvals(
     print("Calculating p values")
     timer = perf_counter()
 
-    # n_items = len(partitioned)
-    # p_values = np.ones((n_items, len(features)), dtype=np.float32)
-    # for i, k in enumerate(partitioned.keys()):
-    #     p_values[i, :] = get_p_value(
-    #         *partitioned[k],
-    #         negcons_per_plate=negcons_per_plate,
-    #         seed=seed,
-    #     )
-
-    # with Pool() as p:
-    #     pvals = p.map(
-    #         # lambda x: get_p_value(*x, negcons_per_plate=negcons_per_plate, seed=seed),
-    #         lambda x: get_t_test_pval(*x, seed=seed),
-    #         partitioned.values(),
-    #     )
     pvals = [get_pvalue_mwu(a, b) for a, b in partitioned.values()]
     print(f"P values calculated in {perf_counter()-timer}")
 
     print("Performing FDR correction")
-    # timer = perf_counter()
-    # with Pool() as p:
-    #     corrected = p.map(
-    #         lambda x: multipletests(
-    #             x,
-    #             method="fdr_bh",
-    #         )[1],
-    #         pvals,
-    #     )
     timer = perf_counter()
     corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
     print(f"{perf_counter()-timer}")
@@ -278,7 +253,7 @@ def calculate_pvals(
     corrected = pl.DataFrame(corrected)
     print(f"{perf_counter()-timer}")
 
-    return (tuple(partitioned.keys()), corrected)
+    return corrected
 
 
 def add_pert_type(
@@ -312,13 +287,19 @@ def add_pert_type(
     return profiles
 
 
+@cachier()
 def pvals_from_path(path: str, dataset: str, *args, **kwargs):
     """
     Use the path to cache pvals
     Locally cached version of pvals. To clean cache run <function>.clean_cache().
     """
     partitioned = partition_parquet_by_trt(path, dataset)
-    return calculate_pvals(partitioned, *args, **kwargs)
+
+    pvals = calculate_pvals(partitioned, *args, **kwargs)
+
+    return pl.DataFrame(
+        pvals, schema={k: pl.string for k in list(partitioned.values())[0][0].columns}
+    ).with_columns(Metadata_JCP2022=pl.Series(partitioned.keys()))
 
 
 def correct_group_feature_pvals(
@@ -344,11 +325,9 @@ def correct_group_feature_pvals(
     np_pvals = agg.drop(groups.columns).to_numpy()
 
     timer = perf_counter()
-    with Pool() as p:
-        fully_grouped_pvals = p.map(
-            lambda x: np.nan_to_num(combine_pvalues(x).pvalue, nan=1.0),
-            np_pvals.flatten(),
-        )
+    fully_grouped_pvals = [
+        np.nan_to_num(combine_pvalues(x).pvalue, nan=1.0) for x in np_pvals.flatten()
+    ]
 
     print(f"{perf_counter()-timer}")
 
@@ -369,7 +348,7 @@ def correct_group_feature_pvals(
     return final
 
 
-@cachier
+@cachier()
 def get_grouped_corrected_pvals(
     profiles_path: str,
     *args,
