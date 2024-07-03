@@ -36,10 +36,11 @@ from jump_rr.concensus import (
     get_group_median,
     repeat_cycles,
 )
-from jump_rr.formatters import format_val
+
+# from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
 from jump_rr.replicability import add_replicability
-from jump_rr.significance import add_pert_type
+from jump_rr.significance import add_pert_type, pvals_from_path
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -67,7 +68,7 @@ for dset in datasets:
 
     # %% Loading
     precor = pl.read_parquet(precor_path)
-    precor = add_pert_type(precor)
+    precor = add_pert_type(precor, dataset=dset)
 
     # %% Split data into med (concensus), meta and urls
 
@@ -84,11 +85,10 @@ for dset in datasets:
 
     # Calculate or read likelihood estimates
     # TODO check that both groupings return matrices in the same orientation
-    # Note that this is cached. To uncache (takes ~5 mins for ORF) run
+    # Note that this is cached. To uncache (used to take ~5 mins for ORF) run
     # pvals_from_path.clear_cache()
-    from jump_rr.significance import pvals_from_path
 
-    corrected_pvals = pvals_from_path(precor_path)
+    corrected_pvals = pvals_from_path(precor_path, dataset=dset)
     median_vals = cp.array(feat_med.select(pl.col("^column.*$")).to_numpy())
 
     # FIXME pvals_from_path and get_group_median() do not return the same number of features

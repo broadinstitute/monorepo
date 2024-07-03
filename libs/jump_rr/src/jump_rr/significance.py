@@ -38,7 +38,7 @@ import numpy as np
 import polars as pl
 from jump_rr.parse_features import get_feature_groups
 from pathos.multiprocessing import Pool
-from scipy.stats import combine_pvalues, t
+from scipy.stats import combine_pvalues, mannwhitneyu, t, ttest_ind
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
 
@@ -79,8 +79,21 @@ def sample_ids(
     return result
 
 
+def partition_parquet_by_trt(
+    path: str,
+    dataset: str,
+    column: str = "Metadata_JCP2022",
+    negcons_per_plate: int = 2,
+    seed: int = 42,
+) -> dict[str, tuple[pl.DataFrame, pl.DataFrame]]:
+    profiles = pl.read_parquet(path)
+    profiles = add_pert_type(profiles, dataset=dataset)
+    return partition_by_trt(profiles, dataset, column, negcons_per_plate, seed)
+
+
 def partition_by_trt(
     df: pl.DataFrame,
+    dataset: str,
     column: str = "Metadata_JCP2022",
     negcons_per_plate: int = 2,
     seed: int = 42,
@@ -90,6 +103,7 @@ def partition_by_trt(
     and then further split into two dataframes, one for positive controls and one
     for negative controls.
     """
+    print("Partitioning started")
     meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
     partitions = df.select(
         pl.col(meta_cols),
@@ -163,6 +177,14 @@ def get_p_value(a, b, seed: int = 42):
     return np.nan_to_num(p, nan=1.0)
 
 
+def get_pvalue_mwu(a, b, axis=0):
+    """
+    Wrapper over scipy ttest_ind
+    """
+
+    return mannwhitneyu(a, b, axis=axis).pvalue
+
+
 def calculate_mw(
     profiles: pl.DataFrame,
     negcons_per_plate: int = 2,
@@ -202,25 +224,15 @@ def calculate_mw(
 
 
 def calculate_pvals(
-    profiles: pl.DataFrame,
+    partitioned: list[str, tuple[pl.DataFrame, pl.DataFrame]],
     negcons_per_plate: int = 2,
     seed: int = 42,
-):
+) -> tuple[tuple, np.ndarray]:
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
     1. Calculate the p value of all features
     2. then adjust the p value to account for multiple testing
     """
-    print("Starting partitioning")
-    timer = perf_counter()
-    partitioned = partition_by_trt(profiles, seed=seed)
-    print(f"Partitioned finished in {perf_counter()-timer}")
-    # features = tuple(
-    #     list(partitioned.values())[0][0]
-    #     .select(pl.all().exclude("^Metadata.*$"))
-    #     .columns
-    # )
-
     # Remove perturbations that have an excessive number of o
     #
     partitioned = {
@@ -238,25 +250,40 @@ def calculate_pvals(
     #         seed=seed,
     #     )
 
-    with Pool() as p:
-        corrected = p.map(
-            lambda x: multipletests(
-                get_p_value(*x, negcons_per_plate=negcons_per_plate, seed=seed),
-                method="fdr_bh",
-            )[1],
-            partitioned.values(),
-        )
+    # with Pool() as p:
+    #     pvals = p.map(
+    #         # lambda x: get_p_value(*x, negcons_per_plate=negcons_per_plate, seed=seed),
+    #         lambda x: get_t_test_pval(*x, seed=seed),
+    #         partitioned.values(),
+    #     )
+    pvals = [get_pvalue_mwu(a, b) for a, b in partitioned.values()]
+    print(f"P values calculated in {perf_counter()-timer}")
+
+    print("Performing FDR correction")
+    # timer = perf_counter()
+    # with Pool() as p:
+    #     corrected = p.map(
+    #         lambda x: multipletests(
+    #             x,
+    #             method="fdr_bh",
+    #         )[1],
+    #         pvals,
+    #     )
+    timer = perf_counter()
+    corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
     print(f"{perf_counter()-timer}")
 
-    print("FDR correction")
+    print(f"FDR correction performed in {-perf_counter()-timer}")
     timer = perf_counter()
     corrected = pl.DataFrame(corrected)
     print(f"{perf_counter()-timer}")
 
-    return corrected
+    return (tuple(partitioned.keys()), corrected)
 
 
-def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame:
+def add_pert_type(
+    profiles: pl.DataFrame, dataset: str, poscons: bool = False
+) -> pl.DataFrame:
     """
     Add metadata with perturbation type from the JCP2022 ID.
     poscons: Ensure all outputs are trt or negcon. Drop nulls.
@@ -265,14 +292,10 @@ def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame
     if "Metadata_pert_type" not in profiles.select(pl.col("^Metadata.*$")).columns:
         # Add perturbation type metadata (new profiles exclude it)
         jcp_to_pert_type = get_mapper(
-            profiles.get_column("Metadata_JCP2022"),
-            input_column="JCP2022",
-            output_column="JCP2022,pert_type",
+            dataset,
+            input_column="plate_type",
+            output_columns="JCP2022,pert_type",
         )
-        #
-        # CRISPR controls # TODO move patch to broad_babel
-        for k in ("JCP2022_800001", "JCP2022_800002"):
-            jcp_to_pert_type[k] = "negcon"
 
         profiles = profiles.with_columns(
             pl.col("Metadata_JCP2022").replace(jcp_to_pert_type).alias(pert_type)
@@ -289,15 +312,13 @@ def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame
     return profiles
 
 
-@cachier()
-def pvals_from_path(path: str, *args, **kwargs):
+def pvals_from_path(path: str, dataset: str, *args, **kwargs):
     """
     Use the path to cache pvals
     Locally cached version of pvals. To clean cache run <function>.clean_cache().
     """
-    profiles = pl.read_parquet(path)
-    profiles = add_pert_type(profiles)
-    return calculate_pvals(profiles, *args, **kwargs)
+    partitioned = partition_parquet_by_trt(path, dataset)
+    return calculate_pvals(partitioned, *args, **kwargs)
 
 
 def correct_group_feature_pvals(

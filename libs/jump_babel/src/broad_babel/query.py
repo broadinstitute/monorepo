@@ -96,7 +96,7 @@ def get_mapper(
     assert len(output_columns.split(","))==2, "Incorrect number of output columns"
 
     input_column = input_column.removeprefix("Metadata_")
-    output_columns = input_column.removeprefix("Metadata_")
+    output_columns = ",".join(x.removeprefix("Metadata") for x in output_columns.split(","))
     return dict(
         run_query(
             query,
