@@ -97,13 +97,13 @@ def get_mapper(
 
     input_column = input_column.removeprefix("Metadata_")
     output_columns = input_column.removeprefix("Metadata_")
-    # return dict(
-    tmp = run_query(
+    return dict(
+        run_query(
             query,
             input_column=input_column,
             output_columns=output_columns,
         )
-    # )
+    )
 
 
 def broad_to_standard(query: str or t.List[str]) -> str or t.Dict[str, str]:
