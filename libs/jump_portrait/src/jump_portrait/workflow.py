@@ -20,6 +20,7 @@ Workflow 2: Fetch all images for a given item and their controls
 """
 
 item_name = "MYT1"  # Item or Compound of interest - (GC)OI
+# channels = ["bf"]  # Standard channels are ER, AGP, Mito DNA and RNA
 channels = ["DNA"]  # Standard channels are ER, AGP, Mito DNA and RNA
 corrections = ["Orig"]  # Can also be "Illum"
 controls = True  # Fetch controls in plates alongside (GC)OI?
