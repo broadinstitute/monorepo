@@ -33,8 +33,8 @@ import polars as pl
 from jump_rr.concensus import (
     get_concensus_meta_urls,
     get_cycles,
+    get_group_median,
     repeat_cycles,
-    get_group_median
 )
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
@@ -77,7 +77,8 @@ for dset in datasets:
         precor.filter(pl.col("Metadata_pert_type") != "negcon")
     )
 
-    feat_med = get_group_median(med_vals)
+    # feat_med = get_group_median(med_vals)
+    feat_med = get_group_median(med)
 
     # Find top and bottom $n_values_used
 
@@ -89,7 +90,12 @@ for dset in datasets:
 
     corrected_pvals = pvals_from_path(precor_path)
     median_vals = cp.array(feat_med.select(pl.col("^column.*$")).to_numpy())
+
+    # FIXME pvals_from_path and get_group_median() do not return the same number of features
+    # WORKAROUND: select the intersection in their features
+
     vals = cp.array(corrected_pvals.drop(feature_names))
+
     xs, ys = get_edge_indices(
         vals.T,
         n_vals_used,
@@ -109,11 +115,11 @@ for dset in datasets:
             "Statistic": vals[xs, ys].get(),
             "Median": median_vals[xs, ys].get(),
             jcp_short: med[jcp_col][ys],
-            url_col: [  # Use indices to fetch matches
-                format_val("img", (img_src, img_src))
-                for url, idx in zip(url_vals[ys], cycled_indices[ys])
-                if (img_src := next(url).format(next(idx)))
-            ],
+            # url_col: [  # Use indices to fetch matches
+            #     format_val("img", (img_src, img_src))
+            #     for url, idx in zip(url_vals[ys], cycled_indices[ys])
+            #     if (img_src := next(url).format(next(idx)))
+            # ],
         }
     )
 

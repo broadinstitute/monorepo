@@ -36,7 +36,7 @@ except Exception:
 
 import numpy as np
 import polars as pl
-from parse_features import get_feature_groups
+from jump_rr.parse_features import get_feature_groups
 from pathos.multiprocessing import Pool
 from scipy.stats import combine_pvalues, t
 from statsmodels.stats.multitest import multipletests
@@ -96,28 +96,36 @@ def partition_by_trt(
         pl.all().exclude("^Metadata.*$").cast(pl.Float32),
     ).partition_by("Metadata_pert_type")
 
-    partitions = {v.head(1).get_column("Metadata_pert_type")[0]:
-                  v.select(pl.exclude("Metadata_pert_type"))  for v in partitions}
-    partitions['negcon'] = partitions['negcon'].drop(column)
+    partitions = {
+        v.head(1).get_column("Metadata_pert_type")[0]: v.select(
+            pl.exclude("Metadata_pert_type")
+        )
+        for v in partitions
+    }
+    partitions["negcon"] = partitions["negcon"].drop(column)
     if negcons_per_plate:  # Sample $negcons_per_plate elements from each plate
-        partitions['negcon'] = partitions['negcon'].filter(
+        partitions["negcon"] = partitions["negcon"].filter(
             pl.int_range(0, pl.count()).shuffle(seed=seed).over("Metadata_Plate")
             < negcons_per_plate
         )
 
-    ids_plates = dict(partitions['trt'].group_by(column).agg("Metadata_Plate").iter_rows())
+    ids_plates = dict(
+        partitions["trt"].group_by(column).agg("Metadata_Plate").iter_rows()
+    )
 
-    ids_prof = partitions['trt'].drop("Metadata_pert_type", "Metadata_Plate").partition_by(
-        column, as_dict=True, maintain_order=False, include_key=False
+    ids_prof = (
+        partitions["trt"]
+        .drop("Metadata_pert_type", "Metadata_Plate")
+        .partition_by(column, as_dict=True, maintain_order=False, include_key=False)
     )
 
     # TODO is there a better way to return only float values?
     id_trt_negcon = {
         id_: (
             ids_prof[id_],
-            partitions['negcon'].filter(pl.col("Metadata_Plate").is_in(plates)).drop(
-                "Metadata_Plate"
-            ),
+            partitions["negcon"]
+            .filter(pl.col("Metadata_Plate").is_in(plates))
+            .drop("Metadata_Plate"),
         )
         for id_, plates in ids_plates.items()
     }
@@ -192,6 +200,7 @@ def calculate_mw(
 
     return corrected
 
+
 def calculate_pvals(
     profiles: pl.DataFrame,
     negcons_per_plate: int = 2,
@@ -202,29 +211,46 @@ def calculate_pvals(
     1. Calculate the p value of all features
     2. then adjust the p value to account for multiple testing
     """
+    print("Starting partitioning")
+    timer = perf_counter()
     partitioned = partition_by_trt(profiles, seed=seed)
-    features = tuple(
-        list(partitioned.values())[0][0]
-        .select(pl.all().exclude("^Metadata.*$"))
-        .columns
-    )
+    print(f"Partitioned finished in {perf_counter()-timer}")
+    # features = tuple(
+    #     list(partitioned.values())[0][0]
+    #     .select(pl.all().exclude("^Metadata.*$"))
+    #     .columns
+    # )
 
+    # Remove perturbations that have an excessive number of o
+    #
+    partitioned = {
+        k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
+    }
     print("Calculating p values")
     timer = perf_counter()
 
-    n_items = len(partitioned)
-    p_values = np.ones((n_items, len(features)), dtype=np.float32)
-    for i, k in tqdm(enumerate(partitioned.keys()), total=n_items):
-        p_values[i, :] = get_p_value(
-            *partitioned[k],
-            negcons_per_plate=negcons_per_plate,
-            seed=seed,
+    # n_items = len(partitioned)
+    # p_values = np.ones((n_items, len(features)), dtype=np.float32)
+    # for i, k in enumerate(partitioned.keys()):
+    #     p_values[i, :] = get_p_value(
+    #         *partitioned[k],
+    #         negcons_per_plate=negcons_per_plate,
+    #         seed=seed,
+    #     )
+
+    with Pool() as p:
+        corrected = p.map(
+            lambda x: multipletests(
+                get_p_value(*x, negcons_per_plate=negcons_per_plate, seed=seed),
+                method="fdr_bh",
+            )[1],
+            partitioned.values(),
         )
     print(f"{perf_counter()-timer}")
 
     print("FDR correction")
     timer = perf_counter()
-    corrected = pl.DataFrame([multipletests(x, method="fdr_bh")[1] for x in p_values])
+    corrected = pl.DataFrame(corrected)
     print(f"{perf_counter()-timer}")
 
     return corrected
@@ -243,7 +269,7 @@ def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame
             input_column="JCP2022",
             output_column="JCP2022,pert_type",
         )
-        # 
+        #
         # CRISPR controls # TODO move patch to broad_babel
         for k in ("JCP2022_800001", "JCP2022_800002"):
             jcp_to_pert_type[k] = "negcon"
@@ -255,9 +281,9 @@ def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame
     profiles = profiles.filter(pl.col(pert_type) != "null")
     if not poscons:
         profiles = profiles.with_columns(
-            pl.when(pl.col(pert_type) != "negcon").
-            then(pl.lit( "trt" ))
-            .otherwise(pl.lit( "negcon" ))
+            pl.when(pl.col(pert_type) != "negcon")
+            .then(pl.lit("trt"))
+            .otherwise(pl.lit("negcon"))
             .alias(pert_type)
         )
     return profiles
