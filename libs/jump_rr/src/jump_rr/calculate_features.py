@@ -50,6 +50,8 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 dir_path = Path("/ssd/data/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = ("crispr", "orf")
+from jump_rr.significance import partition_parquet_by_trt
+
 for dset in datasets:
     precor_path = dir_path / f"{dset}_interpretable.parquet"
 
@@ -81,8 +83,6 @@ for dset in datasets:
     # feat_med = get_group_median(med_vals)
     feat_med = get_group_median(med)
 
-    # Find top and bottom $n_values_used
-
     # Calculate or read likelihood estimates
     # TODO check that both groupings return matrices in the same orientation
     # Note that this is cached. To uncache (used to take ~5 mins for ORF) run
@@ -96,6 +96,7 @@ for dset in datasets:
 
     vals = cp.array(corrected_pvals.drop(feature_names))
 
+    # Find top and bottom $n_values_used
     xs, ys = get_edge_indices(
         vals.T,
         n_vals_used,

@@ -298,7 +298,7 @@ def pvals_from_path(path: str, dataset: str, *args, **kwargs):
     pvals = calculate_pvals(partitioned, *args, **kwargs)
 
     return pl.DataFrame(
-        pvals, schema={k: pl.string for k in list(partitioned.values())[0][0].columns}
+        pvals, schema={k: pl.Utf8 for k in list(partitioned.values())[0][0].columns}
     ).with_columns(Metadata_JCP2022=pl.Series(partitioned.keys()))
 
 
@@ -334,11 +334,9 @@ def correct_group_feature_pvals(
     print("Perform the correction for grouped features")
     second_grouping_matrix = np.reshape(fully_grouped_pvals, np_pvals.shape)
     timer = perf_counter()
-    with Pool() as p:
-        second_correction = p.map(
-            lambda x: multipletests(x, method="fdr_bh")[1],
-            second_grouping_matrix.T,
-        )
+    second_correction = [
+        multipletests(x, method="fdr_bh")[1] for x in second_grouping_matrix.T
+    ]
     print(f"{perf_counter()-timer}")
     corrected_p_value = pl.DataFrame(
         np.transpose(second_correction), schema=agg.columns[3:]
@@ -348,25 +346,9 @@ def correct_group_feature_pvals(
     return final
 
 
-@cachier()
-def get_grouped_corrected_pvals(
-    profiles_path: str,
-    *args,
-    **kwargs,
-):
-    print("Calculating corrected p-values")
-    print("Partition data into treatment and negative control")
-    timer = perf_counter()
-    corrected_pvals = pvals_from_path(profiles_path, *args, **kwargs)
-    corrected_grouped_pvals = calculate_pvals(corrected_pvals)
-    print(f"{perf_counter()-timer}")
-
-    return corrected_grouped_pvals
-
-
 # Autogenerates the parquet file if run from command line
 if __name__ == "__main__":
-    dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
+    dir_path = Path("/ssd/data/shared/morphmap_profiles/")
     precor_file = "full_profiles_cc_adj_mean_corr.parquet"
     precor_path = dir_path / "orf" / precor_file
     corrected_pvals = pvals_from_path(precor_path, overwrite=True)
