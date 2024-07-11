@@ -36,65 +36,8 @@ def provide_mapper(
     }
     return {k: v for k, v in standard_col_mapper.items() if k in df.columns}
 
-
-# def merge_on_null(left: str, right: str) -> pl.Expr:
-#     return (
-#         pl.struct((left, right))
-#         .map_elements(lambda cols: cols[left] or cols[right])
-#         .alias(left)
-#     )
-
-
-# def get_target_plate_urls():
-#     target_1_urls = [
-#         (
-#             "https://github.com/jump-cellpainting/JUMP-Target/raw/"
-#             f"bd046851a28fb2257ef4c57c5ea4d496f1a08642/JUMP-Target-1_{x}_metadata.tsv"
-#         )
-#         for x in plates_order[:3]
-#     ]
-
-#     target_2_url = (
-#         "https://github.com/jump-cellpainting/JUMP-Target/raw/"
-#         "bd046851a28fb2257ef4c57c5ea4d496f1a08642/JUMP-Target-2_compound_metadata.tsv"
-#     )
-#     return (*target_1_urls, target_2_url)
-
-
-# %% Add file
-
-# targets = [pl.read_csv(url, separator="\t") for url in get_target_plate_urls()]
-# for i, plate_type in enumerate(plates_order):
-#     targets[i] = targets[i].with_columns(pl.lit(plate_type).alias(plate_col))
-
-# %%
-
-
-# Add column names
-
-# targets_combined = pl.concat(
-#     [
-#         target.rename(provide_mapper(target, std_col, brd_col)).select(
-#             std_col,
-#             brd_col,
-#             "pert_type",
-#             "control_type",
-#             plate_col,
-#         )
-#         for target in targets
-#     ]
-# ).unique()
-
-
-# Consolidate controls into a single column
-# targets_combined_control = (
-#     targets_combined.with_columns(merge_on_null("pert_type", "control_type"))
-#     .drop("control_type")
-#     .unique()
-# )
-
-
 # ORF + CRISPR + COMPOUNDS
+
 df_all = []
 for dataset in plates_order[:3]:
     table = get_table(dataset).rename(provide_mapper(get_table(dataset), std_col))
@@ -120,12 +63,6 @@ df_all_pert = df_all.join(
 
 # Combine pert_type and broad sample from both sources
 # Note that this picks a single broad_sample per JCP
-# NOTE: Wea re not merging from target data
-# pert_target_all = all_target_pert.with_columns(
-#     merge_on_null(brd_col, f"{brd_col}_right"),
-#     merge_on_null(pert_col, "pert_type"),
-#     # merge_on_null(plate_col, f"{plate_col}_right"),
-# ).drop("pert_type", f"{brd_col}_right", f"{plate_col}_right")
 
 # We keep this list here because it is manually-curated, and not everything
 # was contained in the original datasets. The positive controls
