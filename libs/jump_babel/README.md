@@ -105,3 +105,5 @@ It is also possible to use fuzzy querying by changing the operator argument and 
 
 ## Additional documentation
 Metadata sources and additional documentation is available [here](./docs). 
+
+Note that Babel only contains metadata of JUMP compounds and genes, and may not contain sample information from other projects (e.g., LINCS). A more comprehensive table to map "broad ids" to standard chemical ids (e.g., SMILES, InChiKey) can be found [here](https://repo-hub.broadinstitute.org/repurposing#download-data). 
