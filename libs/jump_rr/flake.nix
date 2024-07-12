@@ -60,7 +60,7 @@
                     # export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
                     export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
                     if [ ! -d ".venv" ]; then
-                       poetry install -vv --with dev --no-root
+                       poetry install -vv --with dev
                     fi
                     source .venv/bin/activate
                   '';
