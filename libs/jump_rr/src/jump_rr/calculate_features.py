@@ -47,7 +47,7 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 
 # %% Setup
 ## Paths
-dir_path = Path("/ssd/data/shared/morphmap_profiles/")
+dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = ("crispr", "orf")
 from jump_rr.significance import partition_parquet_by_trt
