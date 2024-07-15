@@ -21,13 +21,13 @@ pathos = "^0.3.2"
 cachier = "^3.0.0"
 s3fs = "^2024.3.1"
 # dask-cuda = "^24.6.0"
-ruff = "<0.2.0"
 babel = "^2.15.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
 jupytext = "^1.15.2"
 ipdb = "^0.13.13"
+ruff = "<0.2.0"
 ruff-lsp = "^0.0.50"
 
 
