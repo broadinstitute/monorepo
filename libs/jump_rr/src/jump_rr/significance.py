@@ -226,14 +226,13 @@ def calculate_pvals(
     partitioned: list[str, tuple[pl.DataFrame, pl.DataFrame]],
     negcons_per_plate: int = 2,
     seed: int = 42,
-) -> tuple[tuple, np.ndarray]:
+) -> pl.DataFrame:
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
     1. Calculate the p value of all features
     2. then adjust the p value to account for multiple testing
     """
-    # Remove perturbations that have an excessive number of o
-    #
+    # Remove perturbations that have an excessive number of entries (usually controls/errors)
     partitioned = {
         k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
     }
@@ -288,7 +287,7 @@ def add_pert_type(
 
 
 @cachier()
-def pvals_from_path(path: str, dataset: str, *args, **kwargs):
+def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
     """
     Use the path to cache pvals
     Locally cached version of pvals. To clean cache run <function>.clean_cache().
@@ -297,9 +296,10 @@ def pvals_from_path(path: str, dataset: str, *args, **kwargs):
 
     pvals = calculate_pvals(partitioned, *args, **kwargs)
 
-    return pl.DataFrame(
-        pvals, schema={k: pl.Utf8 for k in list(partitioned.values())[0][0].columns}
-    ).with_columns(Metadata_JCP2022=pl.Series(partitioned.keys()))
+    return pvals
+    # return pl.DataFrame(
+    #     pvals, schema={k: pl.Utf8 for k in list(partitioned.values())[0][0].columns}
+    # ).with_columns(Metadata_JCP2022=pl.Series(partitioned.keys()))
 
 
 def correct_group_feature_pvals(
