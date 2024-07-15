@@ -33,12 +33,11 @@ import polars as pl
 from jump_rr.concensus import (
     get_concensus_meta_urls,
     get_cycles,
-    get_group_median,
     repeat_cycles,
 )
-
-# from jump_rr.formatters import format_val
+from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
+from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type, pvals_from_path
 from jump_rr.translate import get_mappers
@@ -50,7 +49,6 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = ("crispr", "orf")
-from jump_rr.significance import partition_parquet_by_trt
 
 for dset in datasets:
     precor_path = dir_path / f"{dset}_interpretable.parquet"
@@ -76,30 +74,28 @@ for dset in datasets:
 
     # Note that we remove the negcons from these analysis, as they are used to
     # produce p values on significance.py
-    med, meta, urls = get_concensus_meta_urls(
+    med, _, urls = get_concensus_meta_urls(
         precor.filter(pl.col("Metadata_pert_type") != "negcon")
     )
 
-    # feat_med = get_group_median(med_vals)
-    feat_med = get_group_median(med)
-
-    # Calculate or read likelihood estimates
-    # TODO check that both groupings return matrices in the same orientation
-    # Note that this is cached. To uncache (used to take ~5 mins for ORF) run
-    # pvals_from_path.clear_cache()
-
+    # This function also performs a filter to remove controls (as there are too many)
     corrected_pvals = pvals_from_path(precor_path, dataset=dset)
-    median_vals = cp.array(feat_med.select(pl.col("^column.*$")).to_numpy())
+    # Ensure that the perturbation numbers match
+    filtered_med = med.filter(
+        pl.col(jcp_col).is_in(corrected_pvals.get_column(jcp_col))
+    )
+    median_vals = cp.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
 
-    # FIXME pvals_from_path and get_group_median() do not return the same number of features
-    # WORKAROUND: select the intersection in their features
+    phenact = cp.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
 
-    vals = cp.array(corrected_pvals.drop(feature_names))
-
-    # Find top and bottom $n_values_used
+    # Find bottom $n_values_used
     xs, ys = get_edge_indices(
-        vals.T,
+        phenact.T,
         n_vals_used,
+    )
+
+    decomposed_feats = get_feature_groups(
+        tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns)
     )
 
     url_vals = urls.get_column(url_col).to_numpy()
@@ -110,17 +106,17 @@ for dset in datasets:
     df = pl.DataFrame(
         {
             **{
-                col: np.repeat(feat_med.get_column(col), n_vals_used)
-                for col in feat_med.select(pl.all().exclude("^column.*$")).columns
+                col: np.repeat(vals, n_vals_used)
+                for col, vals in decomposed_feats.to_dict().items()
             },
-            "Statistic": vals[xs, ys].get(),
+            "Phenotypic Activity": phenact[xs, ys].get(),
             "Median": median_vals[xs, ys].get(),
             jcp_short: med[jcp_col][ys],
-            # url_col: [  # Use indices to fetch matches
-            #     format_val("img", (img_src, img_src))
-            #     for url, idx in zip(url_vals[ys], cycled_indices[ys])
-            #     if (img_src := next(url).format(next(idx)))
-            # ],
+            url_col: [  # Use indices to fetch matches
+                format_val("img", (img_src, img_src))
+                for url, idx in zip(url_vals[ys], cycled_indices[ys])
+                if (img_src := next(url).format(next(idx)))
+            ],
         }
     )
 
@@ -140,12 +136,13 @@ for dset in datasets:
         "Feature",
         "Channel",
         "Suffix",
-        "Statistic",
-        "corrected_p_value",
+        "Phenotypic Activity",
         std_outname,
         url_col,
         "Median",
+        "corrected_p_value",
         jcp_short,
+        ext_links_col,
     ]
     sorted_df = jcp_translated.select(order)
 

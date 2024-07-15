@@ -6,7 +6,7 @@ import polars as pl
 
 
 @cache
-def get_feature_groups(cols: tuple[str]) -> pl.DataFrame:
+def get_feature_groups(feature_fullnames: tuple[str]) -> pl.DataFrame:
     """
     Group features in a consistent manner
     apples with apples, oranges with oranges
@@ -48,7 +48,7 @@ def get_feature_groups(cols: tuple[str]) -> pl.DataFrame:
     std = re.compile(f"({masks})_(\S+)_(Orig)?({channels})(_.*)?")
     chless = re.compile(f"({masks})_({chless_feats})_?([a-zA-Z]+)?(.*)?")
 
-    results = [(std.findall(x) or chless.findall(x))[0] for x in cols]
+    results = [(std.findall(x) or chless.findall(x))[0] for x in feature_fullnames]
     results = [
         (x[0], "".join(x[1:3]), "", x[3])
         if len(x) < 5

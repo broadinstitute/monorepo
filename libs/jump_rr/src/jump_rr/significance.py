@@ -223,10 +223,10 @@ def calculate_mw(
 
 
 def calculate_pvals(
-    partitioned: list[str, tuple[pl.DataFrame, pl.DataFrame]],
+    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
     negcons_per_plate: int = 2,
     seed: int = 42,
-) -> pl.DataFrame:
+) -> tuple[tuple[str], pl.DataFrame]:
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
     1. Calculate the p value of all features
@@ -244,15 +244,11 @@ def calculate_pvals(
 
     print("Performing FDR correction")
     timer = perf_counter()
+    # SPEEDUP Bottleneck ~20mins?
     corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
-    print(f"{perf_counter()-timer}")
+    print(f"FDR correction performed in {perf_counter()-timer}")
 
-    print(f"FDR correction performed in {-perf_counter()-timer}")
-    timer = perf_counter()
-    corrected = pl.DataFrame(corrected)
-    print(f"{perf_counter()-timer}")
-
-    return corrected
+    return (tuple(partitioned.keys()), corrected)
 
 
 def add_pert_type(
@@ -294,12 +290,11 @@ def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
     """
     partitioned = partition_parquet_by_trt(path, dataset)
 
-    pvals = calculate_pvals(partitioned, *args, **kwargs)
+    ids, pvals = calculate_pvals(partitioned, *args, **kwargs)
 
-    return pvals
-    # return pl.DataFrame(
-    #     pvals, schema={k: pl.Utf8 for k in list(partitioned.values())[0][0].columns}
-    # ).with_columns(Metadata_JCP2022=pl.Series(partitioned.keys()))
+    return pl.DataFrame(
+        pvals, schema={k: pl.Float32 for k in list(partitioned.values())[0][0].columns}
+    ).with_columns(Metadata_JCP2022=pl.Series(ids))
 
 
 def correct_group_feature_pvals(
@@ -347,8 +342,8 @@ def correct_group_feature_pvals(
 
 
 # Autogenerates the parquet file if run from command line
-if __name__ == "__main__":
-    dir_path = Path("/ssd/data/shared/morphmap_profiles/")
-    precor_file = "full_profiles_cc_adj_mean_corr.parquet"
-    precor_path = dir_path / "orf" / precor_file
-    corrected_pvals = pvals_from_path(precor_path, overwrite=True)
+# if __name__ == "__main__":
+#     dir_path = Path("/ssd/data/shared/morphmap_profiles/")
+#     precor_file = "full_profiles_cc_adj_mean_corr.parquet"
+#     precor_path = dir_path / "orf" / precor_file
+#     corrected_pvals = pvals_from_path(precor_path, overwrite=True)

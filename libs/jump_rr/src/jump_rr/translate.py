@@ -17,7 +17,7 @@ def get_mappers(
     mapper_values = run_query(
         query=ids,
         input_column=input_col,
-        output_column=",".join((input_col, *output_cols)),
+        output_columns=",".join((input_col, *output_cols)),
         predicate=f"AND plate_type = '{plate_type}'",
     )
 
