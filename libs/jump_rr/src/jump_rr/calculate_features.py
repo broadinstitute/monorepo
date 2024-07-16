@@ -26,8 +26,6 @@ Steps:
 - Build DataFrame
 - Add reproducibility metric (Phenotypic activity)
 """
-import json
-from importlib.resources import files
 from pathlib import Path
 
 import cupy as cp
@@ -40,7 +38,7 @@ from jump_rr.concensus import (
 )
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
-from jump_rr.metadata import get_col_desc
+from jump_rr.metadata import write_metadata
 from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type, pvals_from_path
@@ -145,12 +143,5 @@ for dset in datasets:
         output_dir / f"{dset}_features.parquet", compression="zstd"
     )
 
-
-with open(
-    str(files("jump_rr") / ".." / ".." / "metadata" / f"{dset}_feature.json")
-) as f:
-    data = json.load(f)
-    data["databases"]["data"]["tables"]["content"]["columns"] = {
-        x: get_col_desc(x) for x in jcp_translated.columns
-    }
-    json.dump(data, f)
+    # Update metadata
+    write_metadata(dset, "feature", jcp_translated.columns)

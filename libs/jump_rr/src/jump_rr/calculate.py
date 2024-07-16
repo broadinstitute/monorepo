@@ -125,7 +125,7 @@ for dataset in datasets:
 
     if dist_as_sim:  # Convert cosine distance to similarity
         jcp_translated = jcp_translated.with_columns(
-            (1 - pl.col(dist_col)).alias(dist_col)  # .round(3).cast(str))
+            (1 - pl.col(dist_col)).alias(dist_col)
         )
 
     matches = jcp_translated.rename({url_col: f"{std_outname} Example"})
