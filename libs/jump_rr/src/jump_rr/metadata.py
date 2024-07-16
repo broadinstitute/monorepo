@@ -84,11 +84,13 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
     data = {
         "databases": {
             "data": {
+                "source": "JUMP Consortium",
+                "source_url": "http://broad.io/jump",
                 "tables": {
                     "content": {
                         "title": f"{dset.upper()} {table_type_to_suffix(table_type)}"
                     }
-                }
+                },
             }
         }
     }
