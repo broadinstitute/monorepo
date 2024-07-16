@@ -1,1 +1,23 @@
-{"databases": {"data": {"tables": {"content": {"columns": {"Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey.", "Match": " Values with the highest correlation or anti-correlation relative to 'Gene/Compound'.", "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.", "Match example image": "Sample image of the matched perturbation. It cycles over the available images.", "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations\u2019 profiles are anti-correlated.", "Match resources": "Like 'Resources' but for the matched perturbation.", "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.", "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.", "Phenotypic activity": "P-value indicating that the perturbation profile is significantly different from its control. It is corrected using post-FDR Benjamini/Hochberg. ", "Phenotypic activity Match": "P-value indicating that the Match's profile is significantly different from its control."}}}}}}
+{
+    "databases": {
+        "data": {
+            "tables": {
+                "content": {
+                    "title": "ORF None ",
+                    "columns": {
+                        "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey.",
+                        "Match": " Values with the highest correlation or anti-correlation relative to 'Gene/Compound'.",
+                        "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
+                        "Match example image": "Sample image of the matched perturbation. It cycles over the available images.",
+                        "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations\u2019 profiles are anti-correlated.",
+                        "Match resources": "Like 'Resources' but for the matched perturbation.",
+                        "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Phenotypic activity": "P-value indicating that the perturbation profile is significantly different from its control. It is corrected using post-FDR Benjamini/Hochberg. ",
+                        "Phenotypic activity Match": "P-value indicating that the Match's profile is significantly different from its control."
+                    }
+                }
+            }
+        }
+    }
+}

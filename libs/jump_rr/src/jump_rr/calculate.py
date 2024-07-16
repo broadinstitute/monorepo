@@ -74,7 +74,7 @@ for dset in datasets:
     df = pl.read_parquet(profiles_path)
 
     # %% add build url from individual wells
-    med, mrys, urls = get_concensus_meta_urls(df, url_colname="Metadata_placeholder")
+    med, _, urls = get_concensus_meta_urls(df, url_colname="Metadata_placeholder")
     urls = urls.rename({"Metadata_placeholder": url_col})
 
     vals = cp.array(med.select(pl.all().exclude("^Metadata.*$")).to_numpy())
@@ -115,9 +115,18 @@ for dset in datasets:
     jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, dset)
 
     # %% Add replicability
-    jcp_df = add_replicability(jcp_df, left_on=jcp_short, right_on=jcp_col)
     jcp_df = add_replicability(
-        jcp_df, left_on=match_jcp_col, right_on=jcp_col, suffix=" Match"
+        jcp_df,
+        left_on=jcp_short,
+        right_on=jcp_col,
+        replicability_col=rep_col,
+    )
+    jcp_df = add_replicability(
+        jcp_df,
+        left_on=match_jcp_col,
+        right_on=jcp_col,
+        suffix=" Match",
+        replicability_col=match_rep_col,
     )
 
     jcp_translated = jcp_df.with_columns(
@@ -144,10 +153,11 @@ for dset in datasets:
         rep_col,
         match_rep_col,
     ]
+    matches_translated = jcp_translated.select(order)
 
     # %% Save results
     output_dir.mkdir(parents=True, exist_ok=True)
     final_output = output_dir / f"{dset}.parquet"
-    jcp_translated.write_parquet(final_output, compression="zstd")
+    matches_translated.write_parquet(final_output, compression="zstd")
 
     write_metadata(dset, "matches", order)

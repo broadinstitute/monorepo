@@ -63,7 +63,7 @@ def get_col_desc(key: str) -> str:
 
 
 def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
-    """Writes metadata file to customize datasette.
+    """Writes metadata file to customize Datasette.
 
     Parameters
     ----------
@@ -80,7 +80,18 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
     FIXME: Add docs.
 
     """
-    data = {"databases": {"data": {"tables": {"content": {}}}}}
+
+    data = {
+        "databases": {
+            "data": {
+                "tables": {
+                    "content": {
+                        "title": f"{dset.upper()} {table_type_to_suffix(table_type)} "
+                    }
+                }
+            }
+        }
+    }
     with open(
         str(files("jump_rr") / ".." / ".." / "metadata" / f"{dset}_{table_type}.json"),
         "w",
@@ -88,4 +99,15 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
         data["databases"]["data"]["tables"]["content"]["columns"] = {
             x: get_col_desc(x) for x in colnames
         }
-        json.dump(data, f)
+        json.dump(data, f, indent=4)
+
+
+def table_type_to_suffix(table_type: str):
+    """
+    Convert a table type to a title suffix.
+    """
+    match table_type:
+        case "Matches":
+            return ""
+        case "feature":
+            return "Feature Ranking"
