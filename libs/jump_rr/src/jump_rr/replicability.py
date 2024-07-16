@@ -37,7 +37,9 @@ def add_replicability(
     replicability_col: str = "Phenotypic Activity",
 ) -> pl.DataFrame:
     """
-    Return the dataframe with a column
+    Return the dataframe with a column indicating replicability. This is fetched from publicly available datasets.
+    Note that this function seems to provide a distinct number of values for ORF with respect to CRISPR. This pa
+    probably means that there are some missing entries that are being dropped when merging tables..
     """
     jcps = profiles.get_column(left_on)
     data = df_from_jcp(jcps[0]).rename({"corrected_p_value": replicability_col})

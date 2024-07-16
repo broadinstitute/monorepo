@@ -138,4 +138,3 @@ for dset in datasets:
     jcp_translated.write_parquet(
         output_dir / f"{dset}_features.parquet", compression="zstd"
     )
-    print(dset, jcp_translated.shape)
