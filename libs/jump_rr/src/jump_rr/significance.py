@@ -36,9 +36,8 @@ except Exception:
 
 import numpy as np
 import polars as pl
-from parse_features import get_feature_groups
-from pathos.multiprocessing import Pool
-from scipy.stats import combine_pvalues, t
+from jump_rr.parse_features import get_feature_groups
+from scipy.stats import combine_pvalues, mannwhitneyu, t, ttest_ind
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
 
@@ -79,8 +78,22 @@ def sample_ids(
     return result
 
 
+@cachier()
+def partition_parquet_by_trt(
+    path: str,
+    dataset: str,
+    column: str = "Metadata_JCP2022",
+    negcons_per_plate: int = 2,
+    seed: int = 42,
+) -> dict[str, tuple[pl.DataFrame, pl.DataFrame]]:
+    profiles = pl.read_parquet(path)
+    profiles = add_pert_type(profiles, dataset=dataset)
+    return partition_by_trt(profiles, dataset, column, negcons_per_plate, seed)
+
+
 def partition_by_trt(
     df: pl.DataFrame,
+    dataset: str,
     column: str = "Metadata_JCP2022",
     negcons_per_plate: int = 2,
     seed: int = 42,
@@ -96,28 +109,36 @@ def partition_by_trt(
         pl.all().exclude("^Metadata.*$").cast(pl.Float32),
     ).partition_by("Metadata_pert_type")
 
-    partitions = {v.head(1).get_column("Metadata_pert_type")[0]:
-                  v.select(pl.exclude("Metadata_pert_type"))  for v in partitions}
-    partitions['negcon'] = partitions['negcon'].drop(column)
+    partitions = {
+        v.head(1).get_column("Metadata_pert_type")[0]: v.select(
+            pl.exclude("Metadata_pert_type")
+        )
+        for v in partitions
+    }
+    partitions["negcon"] = partitions["negcon"].drop(column)
     if negcons_per_plate:  # Sample $negcons_per_plate elements from each plate
-        partitions['negcon'] = partitions['negcon'].filter(
+        partitions["negcon"] = partitions["negcon"].filter(
             pl.int_range(0, pl.count()).shuffle(seed=seed).over("Metadata_Plate")
             < negcons_per_plate
         )
 
-    ids_plates = dict(partitions['trt'].group_by(column).agg("Metadata_Plate").iter_rows())
+    ids_plates = dict(
+        partitions["trt"].group_by(column).agg("Metadata_Plate").iter_rows()
+    )
 
-    ids_prof = partitions['trt'].drop("Metadata_pert_type", "Metadata_Plate").partition_by(
-        column, as_dict=True, maintain_order=False, include_key=False
+    ids_prof = (
+        partitions["trt"]
+        .drop("Metadata_pert_type", "Metadata_Plate")
+        .partition_by(column, as_dict=True, maintain_order=False, include_key=False)
     )
 
     # TODO is there a better way to return only float values?
     id_trt_negcon = {
         id_: (
             ids_prof[id_],
-            partitions['negcon'].filter(pl.col("Metadata_Plate").is_in(plates)).drop(
-                "Metadata_Plate"
-            ),
+            partitions["negcon"]
+            .filter(pl.col("Metadata_Plate").is_in(plates))
+            .drop("Metadata_Plate"),
         )
         for id_, plates in ids_plates.items()
     }
@@ -153,6 +174,14 @@ def get_p_value(a, b, seed: int = 42):
     p = (1 - t.cdf((np.abs(t_stat).get()), df)) ** 2  # TODO cupy remove scipy dep
 
     return np.nan_to_num(p, nan=1.0)
+
+
+def get_pvalue_mwu(a, b, axis=0):
+    """
+    Wrapper over scipy ttest_ind
+    """
+
+    return mannwhitneyu(a, b, axis=axis).pvalue
 
 
 def calculate_mw(
@@ -192,45 +221,63 @@ def calculate_mw(
 
     return corrected
 
+
 def calculate_pvals(
-    profiles: pl.DataFrame,
-    negcons_per_plate: int = 2,
-    seed: int = 42,
-):
+    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
+) -> tuple[tuple[str], pl.DataFrame]:
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
     1. Calculate the p value of all features
     2. then adjust the p value to account for multiple testing
     """
-    partitioned = partition_by_trt(profiles, seed=seed)
-    features = tuple(
-        list(partitioned.values())[0][0]
-        .select(pl.all().exclude("^Metadata.*$"))
-        .columns
-    )
-
+    # Remove perturbations that have an excessive number of entries (usually controls/errors)
+    partitioned = {
+        k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
+    }
     print("Calculating p values")
     timer = perf_counter()
 
-    n_items = len(partitioned)
-    p_values = np.ones((n_items, len(features)), dtype=np.float32)
-    for i, k in tqdm(enumerate(partitioned.keys()), total=n_items):
-        p_values[i, :] = get_p_value(
-            *partitioned[k],
-            negcons_per_plate=negcons_per_plate,
-            seed=seed,
-        )
-    print(f"{perf_counter()-timer}")
+    pvals = [get_pvalue_mwu(a, b) for a, b in partitioned.values()]
+    print(f"P values calculated in {perf_counter()-timer}")
 
-    print("FDR correction")
+    print("Performing FDR correction")
     timer = perf_counter()
-    corrected = pl.DataFrame([multipletests(x, method="fdr_bh")[1] for x in p_values])
-    print(f"{perf_counter()-timer}")
+    # SPEEDUP Bottleneck ~20mins?
+    corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
+    print(f"FDR correction performed in {perf_counter()-timer}")
 
-    return corrected
+    return (tuple(partitioned.keys()), corrected)
 
 
-def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame:
+def calculate_pvals_pathos(
+    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
+):
+    partitioned = {
+        k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
+    }
+    print("Calculating p values")
+    timer = perf_counter()
+
+    pvals = [get_pvalue_mwu(a, b) for a, b in partitioned.values()]
+    print(f"P values calculated in {perf_counter()-timer}")
+
+    print("Performing FDR correction")
+    timer = perf_counter()
+    # SPEEDUP Bottleneck ~20mins-12hrs?
+    from pathos.multiprocessing import Pool
+
+    with Pool() as p:
+        # corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
+        corrected = p.map(lambda x: multipletests(x, method="fdr_bh")[1])
+
+    print(f"FDR correction performed in {perf_counter()-timer}")
+
+    return (tuple(partitioned.keys()), corrected)
+
+
+def add_pert_type(
+    profiles: pl.DataFrame, dataset: str, poscons: bool = False
+) -> pl.DataFrame:
     """
     Add metadata with perturbation type from the JCP2022 ID.
     poscons: Ensure all outputs are trt or negcon. Drop nulls.
@@ -239,14 +286,10 @@ def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame
     if "Metadata_pert_type" not in profiles.select(pl.col("^Metadata.*$")).columns:
         # Add perturbation type metadata (new profiles exclude it)
         jcp_to_pert_type = get_mapper(
-            profiles.get_column("Metadata_JCP2022"),
-            input_column="JCP2022",
-            output_column="JCP2022,pert_type",
+            dataset,
+            input_column="plate_type",
+            output_columns="JCP2022,pert_type",
         )
-        # 
-        # CRISPR controls # TODO move patch to broad_babel
-        for k in ("JCP2022_800001", "JCP2022_800002"):
-            jcp_to_pert_type[k] = "negcon"
 
         profiles = profiles.with_columns(
             pl.col("Metadata_JCP2022").replace(jcp_to_pert_type).alias(pert_type)
@@ -255,92 +298,24 @@ def add_pert_type(profiles: pl.DataFrame, poscons: bool = False) -> pl.DataFrame
     profiles = profiles.filter(pl.col(pert_type) != "null")
     if not poscons:
         profiles = profiles.with_columns(
-            pl.when(pl.col(pert_type) != "negcon").
-            then(pl.lit( "trt" ))
-            .otherwise(pl.lit( "negcon" ))
+            pl.when(pl.col(pert_type) != "negcon")
+            .then(pl.lit("trt"))
+            .otherwise(pl.lit("negcon"))
             .alias(pert_type)
         )
     return profiles
 
 
 @cachier()
-def pvals_from_path(path: str, *args, **kwargs):
+def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
     """
     Use the path to cache pvals
     Locally cached version of pvals. To clean cache run <function>.clean_cache().
     """
-    profiles = pl.read_parquet(path)
-    profiles = add_pert_type(profiles)
-    return calculate_pvals(profiles, *args, **kwargs)
+    partitioned = partition_parquet_by_trt(path, dataset)
 
+    ids, pvals = calculate_pvals(partitioned, *args, **kwargs)
 
-def correct_group_feature_pvals(
-    corrected: pl.DataFrame,
-) -> pl.DataFrame:
-    """
-    1. Group features based on their hierarchy and compute combined p-value per group using
-    2. then correct the p values from step 5 (fdr_bh)
-
-    # TODO double-check if the statistics work for features that originate from the same cell
-    """
-
-    # %% Group pvalues
-
-    groups = get_feature_groups(corrected.select(pl.all().exclude("^Metadata.*$")))
-    parsed = pl.concat((corrected.transpose(), groups), how="horizontal")
-    agg = parsed.group_by(groups.columns).agg(pl.all())
-    # TODO think of if/how to deal with features that come empty
-
-    # Combine p values and fill nans
-    print("Combine p values using parsed features")
-
-    np_pvals = agg.drop(groups.columns).to_numpy()
-
-    timer = perf_counter()
-    with Pool() as p:
-        fully_grouped_pvals = p.map(
-            lambda x: np.nan_to_num(combine_pvalues(x).pvalue, nan=1.0),
-            np_pvals.flatten(),
-        )
-
-    print(f"{perf_counter()-timer}")
-
-    print("Perform the correction for grouped features")
-    second_grouping_matrix = np.reshape(fully_grouped_pvals, np_pvals.shape)
-    timer = perf_counter()
-    with Pool() as p:
-        second_correction = p.map(
-            lambda x: multipletests(x, method="fdr_bh")[1],
-            second_grouping_matrix.T,
-        )
-    print(f"{perf_counter()-timer}")
-    corrected_p_value = pl.DataFrame(
-        np.transpose(second_correction), schema=agg.columns[3:]
-    )
-
-    final = pl.concat((agg.select(groups.columns), corrected_p_value), how="horizontal")
-    return final
-
-
-@cachier
-def get_grouped_corrected_pvals(
-    profiles_path: str,
-    *args,
-    **kwargs,
-):
-    print("Calculating corrected p-values")
-    print("Partition data into treatment and negative control")
-    timer = perf_counter()
-    corrected_pvals = pvals_from_path(profiles_path, *args, **kwargs)
-    corrected_grouped_pvals = calculate_pvals(corrected_pvals)
-    print(f"{perf_counter()-timer}")
-
-    return corrected_grouped_pvals
-
-
-# Autogenerates the parquet file if run from command line
-if __name__ == "__main__":
-    dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
-    precor_file = "full_profiles_cc_adj_mean_corr.parquet"
-    precor_path = dir_path / "orf" / precor_file
-    corrected_pvals = pvals_from_path(precor_path, overwrite=True)
+    return pl.DataFrame(
+        pvals, schema={k: pl.Float32 for k in list(partitioned.values())[0][0].columns}
+    ).with_columns(Metadata_JCP2022=pl.Series(ids))

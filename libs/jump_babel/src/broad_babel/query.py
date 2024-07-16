@@ -96,14 +96,14 @@ def get_mapper(
     assert len(output_columns.split(","))==2, "Incorrect number of output columns"
 
     input_column = input_column.removeprefix("Metadata_")
-    output_columns = input_column.removeprefix("Metadata_")
-    # return dict(
-    tmp = run_query(
+    output_columns = ",".join(x.removeprefix("Metadata") for x in output_columns.split(","))
+    return dict(
+        run_query(
             query,
             input_column=input_column,
             output_columns=output_columns,
         )
-    # )
+    )
 
 
 def broad_to_standard(query: str or t.List[str]) -> str or t.Dict[str, str]:

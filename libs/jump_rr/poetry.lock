@@ -449,20 +449,22 @@ crt = ["awscrt (==0.20.9)"]
 
 [[package]]
 name = "broad-babel"
-version = "0.1.17"
+version = "0.1.22"
 description = "A translator of Broad and JUMP ids to more conventional names."
 optional = false
-python-versions = "<4.0,>=3.10"
-files = [
-    {file = "broad_babel-0.1.17-py3-none-any.whl", hash = "sha256:0e527c7e3d794307b9d3cb737ed144a4c1a65dea4576a8abd750428e645ccb3a"},
-    {file = "broad_babel-0.1.17.tar.gz", hash = "sha256:7afc76e9a776fa3ead1ca69b9a60d4382604bf614c4888955c6ece30e7eb006c"},
-]
+python-versions = "^3.10"
+files = []
+develop = false
 
 [package.dependencies]
-adbc-driver-sqlite = ">=0.8.0,<0.9.0"
-polars = ">=0.19.19,<0.20.0"
-pooch = ">=1.7.0,<2.0.0"
-pyarrow = ">=16.1.0,<17.0.0"
+adbc-driver-sqlite = "^0.8.0"
+polars = "^0.19.19"
+pooch = "^1.7.0"
+pyarrow = "^16.1.0"
+
+[package.source]
+type = "directory"
+url = "../jump_babel"
 
 [[package]]
 name = "cachier"
@@ -3815,4 +3817,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10,<3.11"
-content-hash = "7e56bfd2056dea4e0f9182ed90490c7315096497e928cb5a727e451c76916103"
+content-hash = "adf1b2ec0bf92a5af814b8113b5d98771182c8d7b5b7f7e7f006edaf991323d6"

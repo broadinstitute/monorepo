@@ -14,9 +14,7 @@ jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 
 
-def get_concensus_meta_urls(
-    prof: pl.DataFrame, url_colname: str = "Metadata_image"
-) -> tuple:
+def get_concensus_meta_urls(prof: pl.DataFrame, url_colname: str) -> tuple:
     """
     Returns the data frame as the aggregated median values, metadata and urls.
     Metadata and urls are composed of cycling iterators for the contents that were grouped during concensus.
@@ -33,6 +31,7 @@ def get_concensus_meta_urls(
 
     return med, meta, urls
 
+
 def get_group_median(med, group_by: list[str] or None = None):
     """Group columns by their names"""
     med_vals = med.select(pl.exclude("^Metadata.*$"))
@@ -43,6 +42,7 @@ def get_group_median(med, group_by: list[str] or None = None):
     grouped = features.group_by(feature_meta.columns)
 
     return grouped.median()
+
 
 def get_range(dataset: str) -> range:
     """

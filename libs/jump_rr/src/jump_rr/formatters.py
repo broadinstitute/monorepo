@@ -56,9 +56,9 @@ def add_url_col(
     FIXME: Add docs.
 
     """
-    assert url_colname.startswith(
-        "Metadata"
-    ), "New URL column must start with 'Metadata'"
+    # assert url_colname.startswith(
+    #     "Metadata"
+    # ), "New URL column must start with 'Metadata'"
 
     prof = prof.with_columns(
         pl.concat_str(
