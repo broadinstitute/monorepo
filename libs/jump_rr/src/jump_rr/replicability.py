@@ -35,6 +35,7 @@ def add_replicability(
     left_on: str,
     right_on: str = "Metadata_JCP2022",
     replicability_col: str = "Phenotypic Activity",
+    **kwargs,
 ) -> pl.DataFrame:
     """
     Return the dataframe with a column indicating replicability. This is fetched from publicly available datasets.
@@ -49,6 +50,7 @@ def add_replicability(
         how="left",
         left_on=left_on,
         right_on=right_on,
+        **kwargs,
     )
 
 

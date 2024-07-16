@@ -19,19 +19,21 @@ from importlib.resources import files
 _DESCRIPTIONS = {
     "Channel": "Image channel, which shows the stain for DNA, Mito (mitochondria), RNA, AGP (actin, Golgi, plasma membrane) or ER (Endoplasmic Reticulum).",
     "Resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
+    "Match resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
     "Feature": "Morphological feature obtained from CellProfiler. This value is the result after data normalization. Its units are the number of standard deviations from the median.",
     "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey.",
     "Gene/Compound example image": " Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
     "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
     "Cell region": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
     "Match": " Values with the highest correlation or anti-correlation relative to 'Gene/Compound'.",
-    "Match Example": "Sample image of the matched perturbation. It cycles over the available images.",
+    "Match example image": "Sample image of the matched perturbation. It cycles over the available images.",
     "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
     "Match resources": "Like 'Resources' but for the matched perturbation.",
     "Median": "Median value of the feature for the perturbation when aggregating all replicates.",
     "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
     "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations’ profiles are anti-correlated.",
     "Phenotypic activity": "P-value indicating that the perturbation profile is significantly different from its control. It is corrected using post-FDR Benjamini/Hochberg. ",
+    "Phenotypic activity Match": "P-value indicating that the Match's profile is significantly different from its control.",
     "Feature significance": "P-value indicating that the feature is significantly different from the feature in the controls. It is corrected using post-FDR Benjamini/Hochberg.",
     "Suffix": "Suffix associated with a CellProfiler feature.",
     "Match phenotypic activity": "P-value indicating that the feature is significantly different from the feature in the controls (for the match). It is corrected using post-FDR Benjamini/Hochberg.",
@@ -80,7 +82,8 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
     """
     data = {"databases": {"data": {"tables": {"content": {}}}}}
     with open(
-        str(files("jump_rr") / ".." / ".." / "metadata" / f"{dset}_{table_type}.json")
+        str(files("jump_rr") / ".." / ".." / "metadata" / f"{dset}_{table_type}.json"),
+        "w",
     ) as f:
         data["databases"]["data"]["tables"]["content"]["columns"] = {
             x: get_col_desc(x) for x in colnames
