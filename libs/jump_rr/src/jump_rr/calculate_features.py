@@ -61,9 +61,7 @@ jcp_short = "JCP2022 ID"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
-url_col = (
-    "Gene/Compound example image"  # Must start with "Metadata" for URL grouping to work
-)
+url_col = "Gene/Compound example image"
 rep_col = "Phenotypic activity"  # Column containing reproducibility
 val_col = "Median"  # Value col
 stat_col = "Feature significance"
