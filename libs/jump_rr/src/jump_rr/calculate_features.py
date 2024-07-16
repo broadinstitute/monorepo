@@ -26,6 +26,8 @@ Steps:
 - Build DataFrame
 - Add reproducibility metric (Phenotypic activity)
 """
+import json
+from importlib.resources import files
 from pathlib import Path
 
 import cupy as cp
@@ -38,6 +40,7 @@ from jump_rr.concensus import (
 )
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
+from jump_rr.metadata import get_col_desc
 from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type, pvals_from_path
@@ -60,7 +63,9 @@ jcp_short = "JCP2022 ID"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
-url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
+url_col = (
+    "Gene/Compound example image"  # Must start with "Metadata" for URL grouping to work
+)
 rep_col = "Phenotypic activity"  # Column containing reproducibility
 val_col = "Median"  # Value col
 stat_col = "Feature significance"
@@ -77,7 +82,8 @@ for dset in datasets:
     # Note that we remove the negcons from these analysis, as they are used to
     # produce p values on significance.py
     med, _, urls = get_concensus_meta_urls(
-        precor.filter(pl.col("Metadata_pert_type") != "negcon")
+        precor.filter(pl.col("Metadata_pert_type") != "negcon"),
+        url_colname=url_col,
     )
 
     # This function also performs a filter to remove controls (as there are too many)
@@ -138,3 +144,13 @@ for dset in datasets:
     jcp_translated.write_parquet(
         output_dir / f"{dset}_features.parquet", compression="zstd"
     )
+
+
+with open(
+    str(files("jump_rr") / ".." / ".." / "metadata" / f"{dset}_feature.json")
+) as f:
+    data = json.load(f)
+    data["databases"]["data"]["tables"]["content"]["columns"] = {
+        x: get_col_desc(x) for x in jcp_translated.columns
+    }
+    json.dump(data, f)
