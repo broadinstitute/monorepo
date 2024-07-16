@@ -86,7 +86,7 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
             "data": {
                 "tables": {
                     "content": {
-                        "title": f"{dset.upper()} {table_type_to_suffix(table_type)} "
+                        "title": f"{dset.upper()} {table_type_to_suffix(table_type)}"
                     }
                 }
             }
@@ -107,7 +107,7 @@ def table_type_to_suffix(table_type: str):
     Convert a table type to a title suffix.
     """
     match table_type:
-        case "Matches":
-            return ""
+        case "matches":
+            return "Matches"
         case "feature":
             return "Feature Ranking"
