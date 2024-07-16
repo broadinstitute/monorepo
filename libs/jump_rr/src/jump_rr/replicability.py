@@ -22,7 +22,7 @@ def match_jcp(jcp: str) -> str:
 
 
 @cachier()
-def df_from_jcp(jcp: str):
+def df_from_jcp(jcp: str) -> pl.DataFrame:
     filename = match_jcp(jcp)
     base_url = "https://github.com/jump-cellpainting/2024_Chandrasekaran_Morphmap/raw/c47ad6c953d70eb9e6c9b671c5fe6b2c82600cfc/03.retrieve-annotations/output/{}"
     url = base_url.format(filename)
@@ -32,22 +32,21 @@ def df_from_jcp(jcp: str):
 
 def add_replicability(
     profiles: pl.DataFrame,
-    left_on: str = "JCP2022",
+    left_on: str,
     right_on: str = "Metadata_JCP2022",
-    **kwargs,
+    replicability_col: str = "Phenotypic Activity",
 ) -> pl.DataFrame:
     """
     Return the dataframe with a column
     """
     jcps = profiles.get_column(left_on)
-    data = df_from_jcp(jcps[0])
+    data = df_from_jcp(jcps[0]).rename({"corrected_p_value": replicability_col})
 
     return profiles.join(
-        data.select(pl.col(right_on), pl.col("corrected_p_value")),
+        data.select(pl.col(right_on), pl.col(replicability_col)),
         how="left",
         left_on=left_on,
         right_on=right_on,
-        **kwargs,
     )
 
 

@@ -224,8 +224,6 @@ def calculate_mw(
 
 def calculate_pvals(
     partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
-    negcons_per_plate: int = 2,
-    seed: int = 42,
 ) -> tuple[tuple[str], pl.DataFrame]:
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
@@ -246,6 +244,32 @@ def calculate_pvals(
     timer = perf_counter()
     # SPEEDUP Bottleneck ~20mins?
     corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
+    print(f"FDR correction performed in {perf_counter()-timer}")
+
+    return (tuple(partitioned.keys()), corrected)
+
+
+def calculate_pvals_pathos(
+    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
+):
+    partitioned = {
+        k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
+    }
+    print("Calculating p values")
+    timer = perf_counter()
+
+    pvals = [get_pvalue_mwu(a, b) for a, b in partitioned.values()]
+    print(f"P values calculated in {perf_counter()-timer}")
+
+    print("Performing FDR correction")
+    timer = perf_counter()
+    # SPEEDUP Bottleneck ~20mins-12hrs?
+    from pathos.multiprocessing import Pool
+
+    with Pool() as p:
+        # corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
+        corrected = p.map(lambda x: multipletests(x, method="fdr_bh")[1])
+
     print(f"FDR correction performed in {perf_counter()-timer}")
 
     return (tuple(partitioned.keys()), corrected)
@@ -295,55 +319,3 @@ def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
     return pl.DataFrame(
         pvals, schema={k: pl.Float32 for k in list(partitioned.values())[0][0].columns}
     ).with_columns(Metadata_JCP2022=pl.Series(ids))
-
-
-def correct_group_feature_pvals(
-    corrected: pl.DataFrame,
-) -> pl.DataFrame:
-    """
-    1. Group features based on their hierarchy and compute combined p-value per group using
-    2. then correct the p values from step 5 (fdr_bh)
-
-    # TODO double-check if the statistics work for features that originate from the same cell
-    """
-
-    # %% Group pvalues
-
-    groups = get_feature_groups(corrected.select(pl.all().exclude("^Metadata.*$")))
-    parsed = pl.concat((corrected.transpose(), groups), how="horizontal")
-    agg = parsed.group_by(groups.columns).agg(pl.all())
-    # TODO think of if/how to deal with features that come empty
-
-    # Combine p values and fill nans
-    print("Combine p values using parsed features")
-
-    np_pvals = agg.drop(groups.columns).to_numpy()
-
-    timer = perf_counter()
-    fully_grouped_pvals = [
-        np.nan_to_num(combine_pvalues(x).pvalue, nan=1.0) for x in np_pvals.flatten()
-    ]
-
-    print(f"{perf_counter()-timer}")
-
-    print("Perform the correction for grouped features")
-    second_grouping_matrix = np.reshape(fully_grouped_pvals, np_pvals.shape)
-    timer = perf_counter()
-    second_correction = [
-        multipletests(x, method="fdr_bh")[1] for x in second_grouping_matrix.T
-    ]
-    print(f"{perf_counter()-timer}")
-    corrected_p_value = pl.DataFrame(
-        np.transpose(second_correction), schema=agg.columns[3:]
-    )
-
-    final = pl.concat((agg.select(groups.columns), corrected_p_value), how="horizontal")
-    return final
-
-
-# Autogenerates the parquet file if run from command line
-# if __name__ == "__main__":
-#     dir_path = Path("/ssd/data/shared/morphmap_profiles/")
-#     precor_file = "full_profiles_cc_adj_mean_corr.parquet"
-#     precor_path = dir_path / "orf" / precor_file
-#     corrected_pvals = pvals_from_path(precor_path, overwrite=True)

@@ -1,12 +1,15 @@
 #!/usr/bin/env jupyter
 import re
 from functools import cache
+from itertools import cycle
 
 import polars as pl
 
 
 @cache
-def get_feature_groups(feature_fullnames: tuple[str]) -> pl.DataFrame:
+def get_feature_groups(
+    feature_fullnames: tuple[str], feature_names: tuple[str]
+) -> pl.DataFrame:
     """
     Group features in a consistent manner
     apples with apples, oranges with oranges
@@ -59,7 +62,7 @@ def get_feature_groups(feature_fullnames: tuple[str]) -> pl.DataFrame:
     # Select Mask, Feature and Channel features
     feature_meta = pl.DataFrame(
         [x for x in results],
-        schema=[("Mask", str), ("Feature", str), ("Channel", str), ("Suffix", str)],
+        schema=[(col, str) for col in feature_names],
     )
 
     return feature_meta

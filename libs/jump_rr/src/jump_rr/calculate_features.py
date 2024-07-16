@@ -23,7 +23,8 @@ This is intended for use on a server with GPUs and high RAM to analyse
 Steps:
 - Group feature names using regular expression
 - Get median from the grouped subfeatures
-- Build dataframe
+- Build DataFrame
+- Add reproducibility metric (Phenotypic activity)
 """
 from pathlib import Path
 
@@ -50,21 +51,22 @@ dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = ("crispr", "orf")
 
+## Parameters
+n_vals_used = 50  # Number of top and bottom matches used
+feat_decomposition = ("Cell Region", "Feature", "Channel", "Suffix")
+
+## Column names
+jcp_short = "JCP2022 ID"  # Shortened input data frame
+jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
+std_outname = "Gene/Compound"  # Standard item name
+ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
+url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
+rep_col = "Phenotypic activity"  # Column containing reproducibility
+val_col = "Median"  # Value col
+stat_col = "Feature significance"
+
 for dset in datasets:
     precor_path = dir_path / f"{dset}_interpretable.parquet"
-
-    ## Parameters
-    n_vals_used = 50  # Number of top and bottom matches used
-
-    ## Column names
-    jcp_short = "JCP2022"  # Shortened input data frame
-    jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
-    match_col = "Match"  # Highest matches
-    match_url_col = f"{match_col} Example"  # URL with image examples
-    std_outname = "Gene/Compound"  # Standard item name
-    ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
-    url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
-    feature_names = ("Mask", "Feature", "Channel")
 
     # %% Loading
     precor = pl.read_parquet(precor_path)
@@ -95,7 +97,8 @@ for dset in datasets:
     )
 
     decomposed_feats = get_feature_groups(
-        tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns)
+        tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
+        feat_decomposition,
     )
 
     url_vals = urls.get_column(url_col).to_numpy()
@@ -109,8 +112,8 @@ for dset in datasets:
                 col: np.repeat(vals, n_vals_used)
                 for col, vals in decomposed_feats.to_dict().items()
             },
-            "Phenotypic Activity": phenact[xs, ys].get(),
-            "Median": median_vals[xs, ys].get(),
+            stat_col: phenact[xs, ys].get(),
+            val_col: median_vals[xs, ys].get(),
             jcp_short: med[jcp_col][ys],
             url_col: [  # Use indices to fetch matches
                 format_val("img", (img_src, img_src))
@@ -130,22 +133,9 @@ for dset in datasets:
         pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
     )
 
-    # Reorder columns
-    order = [
-        "Mask",
-        "Feature",
-        "Channel",
-        "Suffix",
-        "Phenotypic Activity",
-        std_outname,
-        url_col,
-        "Median",
-        "corrected_p_value",
-        jcp_short,
-        ext_links_col,
-    ]
-    sorted_df = jcp_translated.select(order)
-
     # Output
     output_dir.mkdir(parents=True, exist_ok=True)
-    sorted_df.write_parquet(output_dir / f"{dset}_features.parquet", compression="zstd")
+    jcp_translated.write_parquet(
+        output_dir / f"{dset}_features.parquet", compression="zstd"
+    )
+    print(dset, jcp_translated.shape)
