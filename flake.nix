@@ -3,9 +3,9 @@
 
   outputs = { self }: {
     templates = {
-      trivial = {
+      portrait = {
         path = ./libs/jump_portrait;
-        description = "A very basic flake";
+        description = "JUMP portrait development template";
       };
 
     };
