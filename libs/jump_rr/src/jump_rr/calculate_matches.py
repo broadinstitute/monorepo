@@ -160,4 +160,4 @@ for dset in datasets:
     final_output = output_dir / f"{dset}.parquet"
     matches_translated.write_parquet(final_output, compression="zstd")
 
-    write_metadata(dset, "matches", order)
+    write_metadata(dset, "matches", (*order, "(*)"))

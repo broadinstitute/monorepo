@@ -50,11 +50,10 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 ## Paths
 dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
-datasets = ("crispr", "orf")
-
-## Parameters
-n_vals_used = 50  # Number of top and bottom matches used
-feat_decomposition = ("Cell Region", "Feature", "Channel", "Suffix")
+datasets = (
+    "crispr",
+    "orf",
+)
 
 ## Column names
 jcp_short = "JCP2022 ID"  # Shortened input data frame
@@ -75,12 +74,12 @@ for dset in datasets:
 
     # %% Split data into med (concensus), meta and urls
 
-    # Note that we remove the negcons from these analysis, as they are used to
-    # produce p values on significance.py
+    # Note that we remove the negcons from these analysis, as they are used to produce p values on significance.py
     med, _, urls = get_concensus_meta_urls(
         precor.filter(pl.col("Metadata_pert_type") != "negcon"),
-        url_colname=url_col,
+        url_colname="Metadata_placeholder",
     )
+    urls = urls.rename({"Metadata_placeholder": url_col})
 
     # This function also performs a filter to remove controls (as there are too many)
     corrected_pvals = pvals_from_path(precor_path, dataset=dset)
@@ -142,4 +141,4 @@ for dset in datasets:
     )
 
     # Update metadata
-    write_metadata(dset, "feature", jcp_translated.columns)
+    write_metadata(dset, "feature", (*jcp_translated.columns, "(*)"))

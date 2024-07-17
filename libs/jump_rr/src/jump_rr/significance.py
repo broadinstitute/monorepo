@@ -23,11 +23,11 @@ Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vig
 """
 
 from math import sqrt
-from pathlib import Path
 from time import perf_counter
 
 from broad_babel.query import get_mapper
 from cachier import cachier
+from pathos.multiprocessing import Pool
 
 try:
     import cupy as cp
@@ -36,8 +36,7 @@ except Exception:
 
 import numpy as np
 import polars as pl
-from jump_rr.parse_features import get_feature_groups
-from scipy.stats import combine_pvalues, mannwhitneyu, t, ttest_ind
+from scipy.stats import mannwhitneyu, t
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
 
@@ -237,39 +236,16 @@ def calculate_pvals(
     print("Calculating p values")
     timer = perf_counter()
 
-    pvals = [get_pvalue_mwu(a, b) for a, b in partitioned.values()]
+    with Pool() as p:
+        pvals = p.map(lambda a, b: get_pvalue_mwu(a, b), partitioned.values())
     print(f"P values calculated in {perf_counter()-timer}")
 
     print("Performing FDR correction")
     timer = perf_counter()
     # SPEEDUP Bottleneck ~20mins?
-    corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
-    print(f"FDR correction performed in {perf_counter()-timer}")
-
-    return (tuple(partitioned.keys()), corrected)
-
-
-def calculate_pvals_pathos(
-    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
-):
-    partitioned = {
-        k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
-    }
-    print("Calculating p values")
-    timer = perf_counter()
-
-    pvals = [get_pvalue_mwu(a, b) for a, b in partitioned.values()]
-    print(f"P values calculated in {perf_counter()-timer}")
-
-    print("Performing FDR correction")
-    timer = perf_counter()
-    # SPEEDUP Bottleneck ~20mins-12hrs?
-    from pathos.multiprocessing import Pool
-
+    # corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
     with Pool() as p:
-        # corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
-        corrected = p.map(lambda x: multipletests(x, method="fdr_bh")[1])
-
+        corrected = p.map(lambda x: multipletests(x, method="fdr_bh")[1], pvals)
     print(f"FDR correction performed in {perf_counter()-timer}")
 
     return (tuple(partitioned.keys()), corrected)
