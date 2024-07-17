@@ -22,29 +22,7 @@
           config.allowUnfree = true;
         };
 
-      in rec {
-        apps = rec{
-          ipstack = {
-            type = "app";
-            program = "${packages.default}/bin/ipstack";
-          };
-          default = ipstack;
-        };
-        packages = rec {
-          ipstack = dream2nix.lib.evalModules {
-            packageSets.nixpkgs = pkgs;
-            modules = [
-              ./nix/default.nix
-              {
-                paths.projectRoot = ./.;
-                paths.projectRootFile = "flake.nix";
-                paths.package = ./.;
-              }
-            ];
-          };
-          default = ipstack;
-        };
-
+      in  {
         devShells =
           let
             python_with_pkgs = (pkgs.python310.withPackages(pp: []));
@@ -55,9 +33,9 @@
                 NIX_LD = runCommand "ld.so" {} ''
                   ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
                 '';
-                NIX_LD_LIBRARY_PATH = lib.makeLibraryPath [
-                  pkgs.zlib
-                ];
+                # NIX_LD_LIBRARY_PATH = lib.makeLibraryPath [
+                #   pkgs.zlib
+                # ];
                 packages = [
                   rye
                 ];
@@ -69,11 +47,12 @@
                   unset SOURCE_DATE_EPOCH
                 '';
                 shellHook = ''
-                  export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+                  # export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
                   export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
                   runHook venvShellHook
                   export PYTHONPATH=${python_with_pkgs}/${python_with_pkgs.sitePackages}:$PYTHONPATH
                   rye sync
+                  source .venv/bin/activate
               '';
               };
             };
