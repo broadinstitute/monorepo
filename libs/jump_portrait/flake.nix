@@ -1,67 +1,82 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
+    dream2nix.url = "github:nix-community/dream2nix";
+    nixpkgs.follows = "dream2nix/nixpkgs";
     nixpkgs_master.url = "github:NixOS/nixpkgs/master";
+    flake-utils.url = "github:numtide/flake-utils";
     systems.url = "github:nix-systems/default";
     devenv.url = "github:cachix/devenv";
   };
 
-  nixConfig = {
-    extra-trusted-public-keys = "devenv.cachix.org-1:w1cLUi8dv3hnoSPGAuibQv+f9TZLr6cv/Hm9XgU50cw=";
-    extra-substituters = "https://devenv.cachix.org";
-  };
+  outputs = { self, nixpkgs, devenv, systems, dream2nix, ... } @ inputs:
+    inputs.flake-utils.lib.eachDefaultSystem (system:
+      let
 
-  outputs = { self, nixpkgs, devenv, systems, ... } @ inputs:
-    let
-      forEachSystem = nixpkgs.lib.genAttrs (import systems);
-    in
-    {
-      packages = forEachSystem (system: {
-        devenv-up = self.devShells.${system}.default.config.procfileScript;
-      });
+        pkgs = import nixpkgs {
+          system = system;
+          config.allowUnfree = true;
+        };
 
-      devShells = forEachSystem
-        (system:
+        mpkgs = import inputs.nixpkgs_master {
+          system = system;
+          config.allowUnfree = true;
+        };
+
+      in rec {
+        apps = rec{
+          ipstack = {
+            type = "app";
+            program = "${packages.default}/bin/ipstack";
+          };
+          default = ipstack;
+        };
+        packages = rec {
+          ipstack = dream2nix.lib.evalModules {
+            packageSets.nixpkgs = pkgs;
+            modules = [
+              ./nix/default.nix
+              {
+                paths.projectRoot = ./.;
+                paths.projectRootFile = "flake.nix";
+                paths.package = ./.;
+              }
+            ];
+          };
+          default = ipstack;
+        };
+
+        devShells =
           let
-            pkgs = import nixpkgs {
-              system = system;
-              config.allowUnfree = true;
-            };
-
-            mpkgs = import inputs.nixpkgs_master {
-              system = system;
-              config.allowUnfree = true;
-            };
+            python_with_pkgs = (pkgs.python310.withPackages(pp: []));
           in
-          {
-            default = devenv.lib.mkShell {
-              inherit inputs pkgs;
-              modules = [
-                {
-                  stdenv = pkgs.clangStdenv;
-                  env.NIX_LD = nixpkgs.lib.fileContents "${pkgs.stdenv.cc}/nix-support/dynamic-linker";
-                  env.NIX_LD_LIBRARY_PATH = nixpkgs.lib.makeLibraryPath (with pkgs; [
-                  # Add needed packages here
-                  pkgs.libz # for numpy
-                  pkgs.stdenv.cc.cc
-                  pkgs.libGL
-                  ]);
-                  # https://devenv.sh/reference/options/
-                  packages = with pkgs; [
-                    poetry
-                    python310
-                  ];
-                  enterShell = ''
-                    export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
-                    export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
-                    if [ ! -d ".venv" ]; then
-                       poetry install -vv --with dev
-                    fi
-                    source .venv/bin/activate
-                  '';
-                }
-              ];
+            with pkgs;
+            {
+              default = pkgs.mkShell {
+                NIX_LD = runCommand "ld.so" {} ''
+                  ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
+                '';
+                NIX_LD_LIBRARY_PATH = lib.makeLibraryPath [
+                  pkgs.zlib
+                ];
+                packages = [
+                  rye
+                ];
+                venvDir = "./.venv";
+                postVenvCreation = ''
+                  unset SOURCE_DATE_EPOCH
+                '';
+                postShellHook = ''
+                  unset SOURCE_DATE_EPOCH
+                '';
+                shellHook = ''
+                  export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+                  export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
+                  runHook venvShellHook
+                  export PYTHONPATH=${python_with_pkgs}/${python_with_pkgs.sitePackages}:$PYTHONPATH
+                  rye sync
+              '';
+              };
             };
-          });
-    };
+      }
+    );
 }
