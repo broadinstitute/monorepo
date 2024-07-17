@@ -96,13 +96,14 @@ def partition_by_trt(
     column: str = "Metadata_JCP2022",
     negcons_per_plate: int = 2,
     seed: int = 42,
-) -> dict[str, tuple[pl.DataFrame, pl.DataFrame]]:
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     """
     Partition a dataframe by using identifier column (by default Metadata_JCP2022)
     and then further split into two dataframes, one for positive controls and one
     for negative controls.
     """
     meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
+    # TODO Refactor these sections to increase performance
     partitions = df.select(
         pl.col(meta_cols),
         pl.all().exclude("^Metadata.*$").cast(pl.Float32),
@@ -134,10 +135,11 @@ def partition_by_trt(
     # TODO is there a better way to return only float values?
     id_trt_negcon = {
         id_: (
-            ids_prof[id_],
+            ids_prof[id_].to_numpy(),
             partitions["negcon"]
             .filter(pl.col("Metadata_Plate").is_in(plates))
-            .drop("Metadata_Plate"),
+            .drop("Metadata_Plate")
+            .to_numpy(),
         )
         for id_, plates in ids_plates.items()
     }
@@ -222,7 +224,7 @@ def calculate_mw(
 
 
 def calculate_pvals(
-    partitioned: dict[str, tuple[pl.DataFrame, pl.DataFrame]],
+    partitioned: dict[str, tuple[np.ndarray, np.ndarray]],
 ) -> tuple[tuple[str], pl.DataFrame]:
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
@@ -233,20 +235,24 @@ def calculate_pvals(
     partitioned = {
         k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
     }
-    print("Calculating p values")
+    print("Calculating and adjusting p values")
     timer = perf_counter()
-
-    with Pool() as p:
-        pvals = p.map(lambda a, b: get_pvalue_mwu(a, b), partitioned.values())
-    print(f"P values calculated in {perf_counter()-timer}")
-
-    print("Performing FDR correction")
-    timer = perf_counter()
-    # SPEEDUP Bottleneck ~20mins?
-    # corrected = [multipletests(x, method="fdr_bh")[1] for x in pvals]
-    with Pool() as p:
-        corrected = p.map(lambda x: multipletests(x, method="fdr_bh")[1], pvals)
-    print(f"FDR correction performed in {perf_counter()-timer}")
+    if False:  # Unthreaded by default
+        timer = perf_counter()
+        with Pool() as p:
+            corrected = p.map(
+                lambda x: multipletests(get_pvalue_mwu(*x), method="fdr_bh")[1],
+                partitioned.values(),
+            )
+        print(f"Threaded: {perf_counter()-timer}")
+    else:
+        timer = perf_counter()
+        corrected = [
+            multipletests(get_pvalue_mwu(a, b), method="fdr_bh")[1]
+            for a, b in tqdm(partitioned.values())
+        ]
+        print(f"Linear: {perf_counter()-timer}")
+        # print(f"FDR correction performed in {perf_counter()-timer}")
 
     return (tuple(partitioned.keys()), corrected)
 
@@ -282,16 +288,20 @@ def add_pert_type(
     return profiles
 
 
-@cachier()
 def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
     """
     Use the path to cache pvals
     Locally cached version of pvals. To clean cache run <function>.clean_cache().
     """
+    timer = perf_counter()
     partitioned = partition_parquet_by_trt(path, dataset)
+    print(f"Partitioning took {perf_counter()-timer}")
 
     ids, pvals = calculate_pvals(partitioned, *args, **kwargs)
-
     return pl.DataFrame(
-        pvals, schema={k: pl.Float32 for k in list(partitioned.values())[0][0].columns}
+        pvals,
+        schema={
+            k: pl.Float32
+            for k in pl.scan_parquet(path).select(pl.exclude("^Metadata.*$")).columns
+        },
     ).with_columns(Metadata_JCP2022=pl.Series(ids))

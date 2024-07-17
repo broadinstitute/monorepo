@@ -34,7 +34,7 @@ def add_replicability(
     profiles: pl.DataFrame,
     left_on: str,
     right_on: str = "Metadata_JCP2022",
-    replicability_col: str = "Phenotypic Activity",
+    replicability_col: str = "Phenotypic activity",
     **kwargs,
 ) -> pl.DataFrame:
     """

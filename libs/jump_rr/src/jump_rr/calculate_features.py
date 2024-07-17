@@ -51,9 +51,13 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = (
-    "crispr",
     "orf",
+    "crispr",
 )
+
+## Parameters
+n_vals_used = 50  # Number of top and bottom matches used
+feat_decomposition = ("Cell region", "Feature", "Channel", "Suffix")
 
 ## Column names
 jcp_short = "JCP2022 ID"  # Shortened input data frame
@@ -66,6 +70,7 @@ val_col = "Median"  # Value col
 stat_col = "Feature significance"
 
 for dset in datasets:
+    print(f"Processing {dset} dataset")
     precor_path = dir_path / f"{dset}_interpretable.parquet"
 
     # %% Loading
@@ -127,7 +132,7 @@ for dset in datasets:
     uniq = tuple(df.get_column(jcp_short).unique())
     jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, dset)
 
-    df = add_replicability(df, left_on=jcp_short, right_on=jcp_col)
+    df = add_replicability(df, left_on=jcp_short, right_on=jcp_col, replicability_col=rep_col)
 
     jcp_translated = df.with_columns(
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
