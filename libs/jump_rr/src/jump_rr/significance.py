@@ -288,6 +288,7 @@ def add_pert_type(
     return profiles
 
 
+@cachier()
 def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
     """
     Use the path to cache pvals

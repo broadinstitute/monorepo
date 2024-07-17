@@ -138,6 +138,18 @@ for dset in datasets:
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
         pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
     )
+    # Reorder columns
+    order = [
+        *decomposed_feats.columns,
+        stat_col,
+        std_outname,
+        url_col,
+        val_col,
+        rep_col,
+        jcp_short,
+        ext_links_col,
+    ]
+    sorted_df = jcp_translated.select(order)
 
     # Output
     output_dir.mkdir(parents=True, exist_ok=True)
