@@ -2,7 +2,7 @@
 These are the full links that correspond to the README's shortlinks. Keeping them here makes it easier to bulk-edit and serves as a quick reference to bypass broad.io's clunky web interface.
 
 * shortlink:fulllink
-crispr: https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/1112766577/files/crispr.parquet/content#/data/content
+crispr: https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/12766577/files/crispr.parquet/content#/data/content
 crispr_feature: https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_feature.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/12766577/files/crispr_features.parquet/content#/data/content
 orf:
 https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/orf_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/12766577/files/orf.parquet/content#/data/content
