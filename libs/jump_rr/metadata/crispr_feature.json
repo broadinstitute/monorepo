@@ -1,1 +1,26 @@
-{"databases": {"data": {"tables": {"content": {"title": "CRISPR Feature Ranking"}}}}}
+{
+    "databases": {
+        "data": {
+            "source": "JUMP Consortium",
+            "source_url": "http://broad.io/jump",
+            "tables": {
+                "content": {
+                    "title": "CRISPR Feature Ranking",
+                    "columns": {
+                        "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations\u2019 profiles are anti-correlated. Ranges from -1 to 1.",
+                        "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
+                        "Match example image": "Sample image of the perturbation\u2019s match. It cycles over the available images for every occurrence of the perturbation.",
+                        "Phenotypic activity": "Adjusted p-value (*) indicating the statistical significance of the difference between the perturbation's morphological profile and its corresponding control profile. Lower values suggest stronger phenotypic effects. ",
+                        "Phenotypic activity Match": "P-value indicating that the feature is significantly different from the feature in the controls (for the match). ",
+                        "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
+                        "Match": "Perturbations with the highest correlation or anti-correlation relative to 'Gene/Compound'.",
+                        "Match resources": "Like 'Resources' but for the matched perturbation.",
+                        "(*)": "Benjamini-Hochberg FDR correction"
+                    }
+                }
+            }
+        }
+    }
+}

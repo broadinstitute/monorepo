@@ -19,24 +19,24 @@ from importlib.resources import files
 _DESCRIPTIONS = {
     "Channel": "Image channel, which shows the stain for DNA, Mito (mitochondria), RNA, AGP (actin, Golgi, plasma membrane) or ER (Endoplasmic Reticulum).",
     "Resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
-    "Match resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
-    "Feature": "Morphological feature obtained from CellProfiler. This value is the result after data normalization. Its units are the number of standard deviations from the median.",
-    "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey.",
-    "Gene/Compound example image": " Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
+    "Feature": "Morphological feature obtained from CellProfiler. This value is the result after data normalization. Its units are the number of median absolute deviations (MAD) from the median.",
+    "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
+    "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
     "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
     "Cell region": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
-    "Match": " Values with the highest correlation or anti-correlation relative to 'Gene/Compound'.",
-    "Match example image": "Sample image of the matched perturbation. It cycles over the available images.",
+    "Match": "Perturbations with the highest correlation or anti-correlation relative to 'Gene/Compound'.",
+    "Match Example": "Sample image of the matched perturbation. It cycles over the available images.",
     "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
     "Match resources": "Like 'Resources' but for the matched perturbation.",
     "Median": "Median value of the feature for the perturbation when aggregating all replicates.",
-    "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
-    "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations’ profiles are anti-correlated.",
-    "Phenotypic activity": "P-value indicating that the perturbation profile is significantly different from its control. It is corrected using post-FDR Benjamini/Hochberg. ",
-    "Phenotypic activity Match": "P-value indicating that the Match's profile is significantly different from its control.",
-    "Feature significance": "P-value indicating that the feature is significantly different from the feature in the controls. It is corrected using post-FDR Benjamini/Hochberg.",
+    "Match example image": "Sample image of the perturbation’s match. It cycles over the available images for every occurrence of the perturbation.",
+    "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations’ profiles are anti-correlated. Ranges from -1 to 1.",
     "Suffix": "Suffix associated with a CellProfiler feature.",
-    "Match phenotypic activity": "P-value indicating that the feature is significantly different from the feature in the controls (for the match). It is corrected using post-FDR Benjamini/Hochberg.",
+    "Phenotypic activity": "Adjusted p-value (*) indicating the statistical significance of the difference between the perturbation's morphological profile and its corresponding control profile. Lower values suggest stronger phenotypic effects. ",
+    "Feature significance": "Adjusted p-value (*) indicating the statistical significance of the difference between a specific morphological feature in the perturbed condition compared to the control condition. Lower values suggest a stronger effect of the perturbation on that particular feature.",
+    "Phenotypic activity Match": "P-value indicating that the feature is significantly different from the feature in the controls (for the match). ",
+    "Match differential activity": "P-value indicating the statistical significance of the difference between the perturbation's morphological profile and its closest match's profile. Lower values suggest stronger dissimilarity between the perturbation and its best match.",  # <2024-07-17 Wed> This is currently unused
+    "(*)": "Benjamini-Hochberg FDR correction",
 }
 
 
@@ -99,7 +99,7 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
         "w",
     ) as f:
         data["databases"]["data"]["tables"]["content"]["columns"] = {
-            x: get_col_desc(x) for x in colnames
+            x: get_col_desc(x) for x in (*colnames, "(*)")
         }
         json.dump(data, f, indent=4)
 
