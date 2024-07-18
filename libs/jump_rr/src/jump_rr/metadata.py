@@ -27,7 +27,7 @@ _DESCRIPTIONS = {
     "Match": "Perturbations with the highest correlation or anti-correlation relative to 'Gene/Compound'.",
     "Match Example": "Sample image of the matched perturbation. It cycles over the available images.",
     "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
-    "Match resources": "Like 'Resources' but for the matched perturbation.",
+    "Match resources": "External links that provide further information on the matched perturbation (e.g., NCBI, ChEMBL).",
     "Median": "Median value of the feature for the perturbation when aggregating all replicates.",
     "Match example image": "Sample image of the perturbation’s match. It cycles over the available images for every occurrence of the perturbation.",
     "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations’ profiles are anti-correlated. Ranges from -1 to 1.",
