@@ -81,6 +81,9 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
 
     """
 
+    prefix = ""
+    if dset == "matches":
+        prefix = "Only top 50 matches for each perturbation are shown. "
     data = {
         "databases": {
             "data": {
@@ -88,7 +91,7 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
                 "source_url": "http://broad.io/jump",
                 "tables": {
                     "content": {
-                        "description_html": f"Source data: <a>https://raw.githubusercontent.com/jump-cellpainting/datasets/1c245002cbcaea9156eea56e61baa52ad8307db3/profile_index.csv</a>",
+                        "description_html": f"{prefix}<a href = https://raw.githubusercontent.com/jump-cellpainting/datasets/1c245002cbcaea9156eea56e61baa52ad8307db3/profile_index.csv> Data sources </a>",
                         "title": f"{dset.upper()} {table_type_to_suffix(table_type)}",
                     }
                 },
@@ -103,10 +106,6 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
             x: get_col_desc(x) for x in (*colnames, "(*)")
         }
 
-        if dset == "matches":
-            data["databases"]["data"]["tables"]["content"]["columns"][
-                "Note:"
-            ] = "Only top 50 matches for each perturbation are shown."
         json.dump(data, f, indent=4)
 
 
