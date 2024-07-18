@@ -5,7 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/profile_index.csv> Data sources </a>",
+                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/profile_index.csv> Data sources.</a>",
                     "title": "CRISPR Feature Ranking",
                     "columns": {
                         "Cell region": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",

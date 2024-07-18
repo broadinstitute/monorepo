@@ -81,8 +81,7 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
 
     """
 
-    prefix = ""
-    if dset == "Matches":
+    if table_type == "matches":
         prefix = "Only top 50 matches for each perturbation are shown. "
     data = {
         "databases": {
