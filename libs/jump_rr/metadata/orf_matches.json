@@ -5,7 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "<a href = https://raw.githubusercontent.com/jump-cellpainting/datasets/1c245002cbcaea9156eea56e61baa52ad8307db3/profile_index.csv> Data sources </a>",
+                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/profile_index.csv> Data sources </a>",
                     "title": "ORF Matches",
                     "columns": {
                         "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
