@@ -15,22 +15,23 @@ Current problems:
 - Control info is murky, requires using broad_babel
 
 """
+
 from functools import cache
 
 import numpy as np
 import polars as pl
 import pooch
 from broad_babel import query
-from jump_portrait.utils import batch_processing, parallel
+from broad_babel.data import get_table
 from tqdm import tqdm
 
 from jump_portrait.s3 import (
     build_s3_image_path,
+    get_corrected_image,
     get_image_from_s3uri,
     read_parquet_s3,
-    get_corrected_image,
 )
-from broad_babel.data import get_table
+from jump_portrait.utils import batch_processing, parallel
 
 
 def format_cellpainting_s3() -> str:
@@ -116,12 +117,9 @@ def get_jump_image(
     if compressed:
         correction = None
 
-    result = get_corrected_image(first_row,
-                                 channel,
-                                 correction,
-                                 apply_correction,
-                                 compressed,
-                                 staging)
+    result = get_corrected_image(
+        first_row, channel, correction, apply_correction, compressed, staging
+    )
     return result
 
 
@@ -141,7 +139,7 @@ def get_item_location_metadata(
     jcp_ids = query.run_query(
         query=item_name,
         input_column=input_column,
-        output_column="JCP2022,standard_key",
+        output_columns="JCP2022,standard_key",
         operator=operator,
     )
     jcp_item = {x[0]: x[1] for x in jcp_ids}
@@ -156,7 +154,7 @@ def get_item_location_metadata(
             for x in map(
                 lambda x: x[0],
                 query.run_query(
-                    query="negcon", input_column="pert_type", output_column="JCP2022"
+                    query="negcon", input_column="pert_type", output_columns="JCP2022"
                 ),
             )
             if x is not None
