@@ -19,6 +19,7 @@ dependencies = [
     "jupyter>=1.0.0",
     "numpy<2.0.0",
 ]
+license = { text = "MIT" }
 
 [project.optional-dependencies]
 dev = [
@@ -27,7 +28,7 @@ dev = [
 "jupytext~=1.15.0",
 "ruff-lsp~=0.0.48",
 "ruff~=0.3.2",
-"ipdb~=0.13.13",
+"ipdb>=0.13.13",
 ]
 
 [build-system]

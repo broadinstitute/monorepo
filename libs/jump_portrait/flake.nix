@@ -33,11 +33,12 @@
                 NIX_LD = runCommand "ld.so" {} ''
                   ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
                 '';
-                # NIX_LD_LIBRARY_PATH = lib.makeLibraryPath [
-                #   pkgs.zlib
-                # ];
+                NIX_LD_LIBRARY_PATH = lib.makeLibraryPath [
+                  pkgs.zlib
+                ];
                 packages = [
-                  rye
+                  mpkgs.rye
+                  uv
                 ];
                 venvDir = "./.venv";
                 postVenvCreation = ''
@@ -47,7 +48,7 @@
                   unset SOURCE_DATE_EPOCH
                 '';
                 shellHook = ''
-                  # export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+                  export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
                   export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
                   runHook venvShellHook
                   export PYTHONPATH=${python_with_pkgs}/${python_with_pkgs.sitePackages}:$PYTHONPATH
