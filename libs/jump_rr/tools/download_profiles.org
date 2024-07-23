@@ -1,22 +1,22 @@
 #+title: Download Profiles
-#+PROPERTY: header-args :session profiles :tangle yes
+#+PROPERTY: header-args :session profiles :tangle yes :results silent
 
 Download all the databases including "interpretable" and non-interpretable features. We use a public gist that contains the source of all profiles and an identifier for each.
 #+begin_src bash
 NAME_URL_CSV="https://raw.githubusercontent.com/jump-cellpainting/datasets/1c245002cbcaea9156eea56e61baa52ad8307db3/profile_index.csv"
-OUTDIR="/ssd/data/shared/morphmap_profiles"
+OUTDIR="/datastore/shared/morphmap_profiles"
 mkdir -p "${OUTDIR}"
 #+end_src
 
+
 Iterate over each row and save every ={URL}= as a file named ={NAME}.parquet=.
 #+begin_src bash
-while IFS="," read -r NAME URL; do
-    # Remove quotes
-    FILEPATH="${OUTDIR}/${NAME}"
+  while IFS="," read -r NAME URL; do
+        # Remove quotes
+        FILEPATH="${OUTDIR}/${NAME}"
 
-    # echo $line
-    echo $FILEPATH
-    wget --no-clobber $URL -O ${FILEPATH}.parquet
-    # done < <(wget -O - -nv -q "${NAME_URL_CSV}")
-    done < <(wget -O - -nv -q $NAME_URL_CSV | csvtool cat -)
+        echo $FILEPATH
+        wget --no-clobber $URL -O ${FILEPATH}.parquet
+  done < <(wget -O - -nv -q $NAME_URL_CSV | csvtool drop 1 -)
 #+end_src
+
