@@ -56,7 +56,7 @@ This module provides tools to efficiently compare vectors of [JUMP](https://jump
 # Data accessibility
 
 -   You can fetch the raw morphological profiles (before any non-image processing step) on the [Cell Painting Gallery](https://cellpainting-gallery.s3.amazonaws.com/index.html#cpg0016-jump-assembled/source_all/workspace/profiles) (CPG) under the &ldquo;profiles.parquet&rdquo; names.
--   [This](https://github.com/broadinstitute/monorepo/tree/452543be5f17a626a3964b8b90984a9502952a06/libs/jump_rr/tools/download_profiles.org) file points to the gist points to the data used to produce the final tables.
+-   [This](https://github.com/broadinstitute/monorepo/tree/452543be5f17a626a3964b8b90984a9502952a06/libs/jump_rr/tools/download_profiles.org) file points to the gist points to the data used to produce the final tables, if you adjus `OUTPUT_DIR` you can download the files locally.
 
 
 <a id="Installation"></a>
