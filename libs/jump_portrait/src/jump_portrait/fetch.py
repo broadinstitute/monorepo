@@ -23,7 +23,6 @@ import polars as pl
 import pooch
 from broad_babel import query
 from broad_babel.data import get_table
-from tqdm import tqdm
 
 from jump_portrait.s3 import (
     build_s3_image_path,
@@ -357,3 +356,83 @@ def get_collage(
     concat = np.concatenate([np.concatenate(x, axis=0) for x in imgs], axis=1)
 
     return concat
+
+
+def get_gene_images(
+    gene: str,
+    channels: str = ("DNA",),
+    plate_type: str = "ORF",
+    input_column: str or None = None,
+    samples_per_plate: int = 1,
+) -> np.ndarray:
+    """Return a collage of images from a given gene. Returned matrices are arranged in two rows,
+    top row are the perturbations and bottom rows are their plate-per-plate controls.
+
+    Parameters
+    ----------
+    gene : str
+        input gene in standard format
+    channel : str
+        Channels to provide. Default is "DNA".
+    plate_type : str
+        plate type, can be "ORF", "CRISPR" or "Compound". Default is "ORF".
+    input_column : str
+        Column to pass to broad_babel, it must match one of broad_babel's fields.
+    sample_size : int or None
+        Default 5. Number of images to sample
+
+    Returns
+    -------
+    np.ndarray
+        Concatenated array of dimensions (CHANNELS,PLATES,SAMPLES_PER_PLATE,Y,X) in which the gene is present.
+
+    Examples
+    --------
+    FIXME: Add docs.
+
+    """
+    # Convenience variables
+    transient_col = "fullpath"
+    group_by_fields = (
+        "Metadata_Source",
+        "Metadata_Batch",
+        "Metadata_Plate",
+        "Metadata_PlateType",
+    )
+
+    # Find location
+    all_locations = get_item_location_info(gene, input_column=input_column)
+    subdf = all_locations.filter(
+        pl.col(input_column) == gene, pl.col("Metadata_PlateType") == plate_type
+    )
+    # Columns are reversed so joining columns generates PATH/FILE
+    subdf = subdf.select(reversed(subdf.columns)).with_columns(
+        [
+            pl.concat_str(f"^.*Orig{ch}.*$").alias(f"{transient_col}_{ch}")
+            for ch in channels
+        ]
+    )
+    regex = f"^{transient_col}.*$"
+    image_locations = subdf.group_by(group_by_fields).agg(pl.col(regex))
+
+    # Sample items
+    samples = (
+        image_locations.with_columns(pl.all().map_elements(len))
+        .get_column(f"{transient_col}_{channels[0]}")
+        .map_elements(lambda x: tuple(np.random.randint(x, size=samples_per_plate)))
+    )
+
+    base = samples.to_list()
+
+    paths = [
+        row[-len(channels) + i][k]
+        for i, _ in enumerate(channels)
+        for ids, row in zip(base, image_locations.iter_rows())
+        for k in ids
+    ]
+    shape = get_image_from_s3uri(paths[0]).shape
+    images = np.array([get_image_from_s3uri(x) for x in paths]).reshape(
+        (len(channels), len(base), samples_per_plate, *shape)
+    )
+
+    return images

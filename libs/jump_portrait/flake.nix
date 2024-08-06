@@ -48,7 +48,7 @@
                   unset SOURCE_DATE_EPOCH
                 '';
                 shellHook = ''
-                  export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH
+                  export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:"${pkgs.stdenv.cc.cc.lib}/lib"
                   export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
                   runHook venvShellHook
                   export PYTHONPATH=${python_with_pkgs}/${python_with_pkgs.sitePackages}:$PYTHONPATH

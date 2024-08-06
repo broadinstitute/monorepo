@@ -4,7 +4,7 @@ version = "0.0.19"
 description = "Tools to fetch and visualize JUMP images"
 authors = [{ name = "Alán Muñoz", email = "amunozgo@broadinstitute.org" }]
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.12"
 dependencies = [
     "boto3>=1.33.1",
     "broad-babel>=0.1.22",
