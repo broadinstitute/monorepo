@@ -28,12 +28,8 @@
               config.allowUnfree = true;
             };
 
-            mpkgs = import inputs.nixpkgs_master {
-              system = system;
-              config.allowUnfree = true;
-            };
           in
-          {
+            {
             default = devenv.lib.mkShell {
               inherit inputs pkgs;
               modules = [
