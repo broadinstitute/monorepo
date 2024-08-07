@@ -114,6 +114,7 @@ for dset in datasets:
     # %% Translate genes names to standard
     uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])
     jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, dset)
+    _, jcp_external_raw_mapper = get_mappers(uniq_jcp, dset, format_output=False)
 
     # %% Add replicability
     jcp_df = add_replicability(
@@ -167,3 +168,8 @@ for dset in datasets:
     matches_translated.write_parquet(final_output, compression="zstd")
 
     write_metadata(dset, "matches", (*order, "(*)"))
+
+    # Save cosine similarity matrix with JCP IDS
+    pl.DataFrame(
+        data=cosine_sim.get(), schema=med.get_column("Metadata_JCP2022").to_list()
+    ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
