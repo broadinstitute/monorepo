@@ -2,12 +2,14 @@
 #+PROPERTY: header-args :session download-profiles :tangle yes
 Requires jq to read json
 
-We use a public gist that contains the source of all profiles and an identifier for each.
+We use a public gist that contains the source of all profiles and an identifier for each. Once pooch adds S3 support this can be moved to python code.
 #+begin_src bash
-PREFIX="/dgx1nas1/storage/data/shared/morphmap_profiles"
-while IFS="," read -r NAME URL; do
-    FILEPATH="$PREFIX/${NAME}.parquet"
-    mkdir -p $(dirname $FILEPATH)
-    wget -c --output-document=$FILEPATH $URL
-done < <(wget -O - -nv "https://gist.githubusercontent.com/afermg/afa8486155f6ee4665e380e22e2f111b/raw/5da112e95eef3ff8d85251faeecaab64751c6ec5/jump_profiles.csv")
+    PREFIX="/shared/morphmap_profiles/datastore/shared/"
+    while IFS="," read -r NAME URL; do
+        FILEPATH="$PREFIX/${NAME}.parquet"
+        mkdir -p $(dirname $FILEPATH)
+        wget -c --output-document=$FILEPATH $URL
+    done < <(wget -O - -nv
+  "https://github.com/jump-cellpainting/datasets/blob/50cd2ab93749ccbdb0919d3adf9277c14b6343dd/manifests/profile_index.csv")
+    
 #+end_src
