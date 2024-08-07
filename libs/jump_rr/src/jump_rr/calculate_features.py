@@ -54,7 +54,7 @@ dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = (
     "orf",
-    # "crispr",
+    "crispr",
 )
 
 ## Parameters
@@ -155,6 +155,7 @@ for dset in datasets:
         url_col,
         val_col,
         rep_col,
+        "Synonyms",
         jcp_short,
         ext_links_col,
     ]

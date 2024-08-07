@@ -35,6 +35,7 @@ from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_bottom_top_indices
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
+from jump_rr.synonyms import get_synonym_mapper
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -133,6 +134,10 @@ for dset in datasets:
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
         pl.col(match_jcp_col).replace(jcp_std_mapper).alias(match_col),
         pl.col(match_jcp_col).replace(jcp_external_mapper).alias(ext_links_col),
+        pl.col(jcp_short)  # Add synonyms
+        .replace(jcp_external_raw_mapper)  # Map to NCBI ID
+        .replace(get_synonym_mapper())  # Map synonyms
+        .alias("Synonyms"),
     )
 
     if dist_as_sim:  # Convert cosine distance to similarity
@@ -148,6 +153,7 @@ for dset in datasets:
         match_url_col,
         dist_col,
         ext_links_col,
+        "Synonyms",
         jcp_short,
         match_jcp_col,
         rep_col,
