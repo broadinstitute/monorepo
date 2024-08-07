@@ -26,6 +26,7 @@ Steps:
 - Build DataFrame
 - Add reproducibility metric (Phenotypic activity)
 """
+
 from pathlib import Path
 
 import cupy as cp
@@ -42,6 +43,7 @@ from jump_rr.metadata import write_metadata
 from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type, pvals_from_path
+from jump_rr.synonyms import get_synonym_mapper
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
@@ -52,11 +54,11 @@ dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = (
     "orf",
-    "crispr",
+    # "crispr",
 )
 
 ## Parameters
-n_vals_used = 50  # Number of top and bottom matches used
+n_vals_used = 200  # Number of top and bottom matches used
 feat_decomposition = ("Cell region", "Feature", "Channel", "Suffix")
 
 ## Column names
@@ -95,7 +97,6 @@ for dset in datasets:
     median_vals = cp.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
 
     phenact = cp.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
-
     # Find bottom $n_values_used
     xs, ys = get_edge_indices(
         phenact.T,
@@ -131,6 +132,7 @@ for dset in datasets:
 
     uniq = tuple(df.get_column(jcp_short).unique())
     jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, dset)
+    _, jcp_external_raw_mapper = get_mappers(uniq, dset, format_output=False)
 
     df = add_replicability(
         df, left_on=jcp_short, right_on=jcp_col, replicability_col=rep_col
@@ -139,7 +141,12 @@ for dset in datasets:
     jcp_translated = df.with_columns(
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
         pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
+        pl.col(jcp_short)  # Add synonyms
+        .replace(jcp_external_raw_mapper)  # Map to NCBI ID
+        .replace(get_synonym_mapper())  # Map synonyms
+        .alias("Synonyms"),
     )
+
     # Reorder columns
     order = [
         *decomposed_feats.columns,
@@ -161,3 +168,13 @@ for dset in datasets:
 
     # Update metadata
     write_metadata(dset, "feature", (*jcp_translated.columns, "(*)"))
+
+    # Save phenotypic activity matrix in case it is of use to others
+    df = (
+        pl.DataFrame(
+            data=phenact.get(),
+            schema=filtered_med.select(pl.exclude("^Metadata.*$")).columns,
+        )
+        .with_columns(filtered_med.get_column("Metadata_JCP2022"))
+        .write_parquet(output_dir / f"{dset}_significance_full.parquet")
+    )
