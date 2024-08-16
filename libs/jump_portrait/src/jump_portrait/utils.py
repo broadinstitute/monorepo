@@ -1,10 +1,10 @@
 """General utilities"""
+
 from collections.abc import Callable, Iterable
 from itertools import chain
 from typing import Any
 
 from joblib import Parallel, cpu_count, delayed
-from tqdm import tqdm
 
 
 def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
@@ -84,7 +84,7 @@ def batch_processing(f: Callable):
     # This assumes parameters are packed in a tuple
     def batched_fn(item_list: Iterable, job_idx: int, *args, **kwargs):
         results = []
-        for item in (pbar := tqdm(item_list, position=job_idx)):
+        for item in item_list:
             # pbar.set_description(f"Processing {item}")
             results.append(f(*item, *args, **kwargs))
 
