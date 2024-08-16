@@ -16,11 +16,8 @@ Current problems:
 
 """
 
-from functools import cache
-
 import numpy as np
 import polars as pl
-import pooch
 from broad_babel import query
 from broad_babel.data import get_table
 
