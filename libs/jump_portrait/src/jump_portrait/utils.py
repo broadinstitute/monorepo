@@ -5,7 +5,7 @@ from itertools import chain
 from typing import Any
 
 from joblib import Parallel, cpu_count, delayed
-
+from tqdm import tqdm
 
 def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
     """Create slices of the given iterable.
@@ -41,6 +41,7 @@ def parallel(
     args: list[Any] = [],
     jobs: int = None,
     timeout: float = None,
+    print_progress: bool = True,
     **kwargs: dict[Any, Any],
 ) -> list[Any]:
     """Distribute process on iterable.
@@ -57,6 +58,8 @@ def parallel(
         Number of jobs to launch, by default None
     timeout: float, optional
         Timeout for worker processes.
+    print_progress: bool, optional
+        Whether to enable tqdm or not.
 
     Returns
     -------
@@ -72,7 +75,7 @@ def parallel(
         jobs = len(iterable)
     slices = slice_iterable(iterable, jobs)
     result = Parallel(n_jobs=jobs, timeout=timeout)(
-        delayed(func)(chunk, idx, *args, **kwargs)
+        delayed(func)(chunk, idx, print_progress, *args, **kwargs)
         for idx, chunk in enumerate([iterable[s] for s in slices])
     )
 
@@ -82,13 +85,34 @@ def parallel(
 
 def batch_processing(f: Callable):
     # This assumes parameters are packed in a tuple
-    def batched_fn(item_list: Iterable, job_idx: int, *args, **kwargs):
+    def batched_fn(item_list: Iterable, job_idx: int,
+                   print_progress:bool=True,
+                   *args, **kwargs):
         results = []
-        for item in item_list:
-            # pbar.set_description(f"Processing {item}")
+        for item in tqdm(item_list, position=0, leave=True,
+                         disable=not print_progress,
+                         desc=f"worker #{job_idx}"):
             results.append(f(*item, *args, **kwargs))
 
         if any([x is not None for x in results]):
             return results
 
+    return batched_fn
+
+
+def try_function(f: Callable):
+    '''
+    Wrap a function into an instance which will Try to call the function:
+        If it success, return a tuple of function parameters + its results
+        If it fails, return the function parameters
+    '''
+    # This assume parameters are packed in a tuple
+    def batched_fn(*item, **kwargs):
+        try:
+            result = (*item, f(*item, **kwargs))
+
+        except:
+            result = item
+
+        return result
     return batched_fn
