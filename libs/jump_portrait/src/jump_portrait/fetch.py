@@ -28,7 +28,7 @@ from jump_portrait.s3 import (
     read_parquet_s3,
 )
 from jump_portrait.utils import batch_processing, parallel, try_function
-from itertools import groupby
+from itertools import groupby, product, starmap
 
 def format_cellpainting_s3() -> str:
     return (
@@ -85,7 +85,7 @@ def get_jump_image(
     correction : str
         Whether or not to use corrected data. It does not by default.
     apply_correction : bool
-        When correction=="Illum" apply Illum correction on original image.
+        When apply_correction=="Illum" apply Illum correction on original image.
 
     Returns
     -------
@@ -119,39 +119,44 @@ def get_jump_image(
     return result
 
 
-def get_jump_image_iter(metadata: pl.DataFrame, channel: list[str],
+def get_jump_image_batch(metadata: pl.DataFrame, channel: list[str],
                         site: list[str], correction:str='Orig',
-                        print_progress: bool=True,
+                        verbose: bool=True,
                         ) -> (pl.DataFrame, list[tuple]):
     '''
-       Load jump image associated to metadata in a threaded fashion.
-        ----------
+    Load jump image associated to metadata in a threaded fashion.
+
     Parameters:
-        metadata(pl.DataFrame): must have the shape ("Metadata_Source",
-    "Metadata_Batch", "Metadata_Plate", "Metadata_Well")
-        channel(List[str]): list of channel desired
-            Must be in ['DNA', 'ER', 'AGP', 'Mito', 'RNA']
-        site(List[str]): list of site desired
-            For compound, must be in ['1' - '6']
-            For ORF, CRISPR, must be in ['1' - '9']
-        correction(str): Must be 'Illum' or 'Orig'
-        print_progress(bool): Whether to enable tqdm or not.
-        ----------
+    ----------
+    metadata : pl.DataFrame
+        must have the shape ("Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well")
+    channel : list of string
+        list of channel desired
+        Must be in ['DNA', 'ER', 'AGP', 'Mito', 'RNA']
+    site : list of string
+        list of site desired
+        - For compound, must be in ['1' - '6']
+        - For ORF, CRISPR, must be in ['1' - '9']
+    correction : str
+        Must be 'Illum' or 'Orig'
+    verbose : bool
+        Whether to enable tqdm or not.
+
     Return:
-        features(pl.DataFrame): DataFrame collecting the metadata, channel, site,
-    correction + the image
-        work_fail(List(tuple): List collecting tuple of metadata which
-    failed to load an image
+    ----------
+    features : pl.DataFrame
+        DataFrame collecting the metadata, channel, site, correction + the image
+    work_fail : list of tuple
+        List collecting tuple of metadata which failed to load an image
 
     '''
-    iterable = [(*metadata.row(i), ch, s, correction)
-               for i in range(metadata.shape[0]) for s in site for ch in channel]
+    iterable = list(starmap(lambda *x: (*x[0], *x[1:]), product(metadata.rows(), site, channel)))
     img_list = parallel(iterable, batch_processing(try_function(get_jump_image)),
-                        print_progress=print_progress)
+                        verbose=verbose)
      
     img_list = sorted(img_list, key=lambda x: len(x))
     fail_success = {k: list(g) for k, g in groupby(img_list, key=lambda x: len(x))}
-    if len(fail_success) == 1:
+    if len(fail_success):
         img_success = list(fail_success.values())[0]
         work_fail = []
     else:
