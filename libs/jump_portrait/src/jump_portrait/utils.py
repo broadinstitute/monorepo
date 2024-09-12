@@ -41,7 +41,7 @@ def parallel(
     args: list[Any] = [],
     jobs: int = None,
     timeout: float = None,
-    print_progress: bool = True,
+    verbose: bool = True,
     **kwargs: dict[Any, Any],
 ) -> list[Any]:
     """Distribute process on iterable.
@@ -58,7 +58,7 @@ def parallel(
         Number of jobs to launch, by default None
     timeout: float, optional
         Timeout for worker processes.
-    print_progress: bool, optional
+    verbose: bool, optional
         Whether to enable tqdm or not.
 
     Returns
@@ -75,7 +75,7 @@ def parallel(
         jobs = len(iterable)
     slices = slice_iterable(iterable, jobs)
     result = Parallel(n_jobs=jobs, timeout=timeout)(
-        delayed(func)(chunk, idx, print_progress, *args, **kwargs)
+        delayed(func)(chunk, idx, verbose, *args, **kwargs)
         for idx, chunk in enumerate([iterable[s] for s in slices])
     )
 
@@ -86,11 +86,11 @@ def parallel(
 def batch_processing(f: Callable):
     # This assumes parameters are packed in a tuple
     def batched_fn(item_list: Iterable, job_idx: int,
-                   print_progress:bool=True,
+                   verbose:bool=True,
                    *args, **kwargs):
         results = []
         for item in tqdm(item_list, position=0, leave=True,
-                         disable=not print_progress,
+                         disable=not verbose,
                          desc=f"worker #{job_idx}"):
             results.append(f(*item, *args, **kwargs))
 
@@ -106,7 +106,7 @@ def try_function(f: Callable):
         If it success, return a tuple of function parameters + its results
         If it fails, return the function parameters
     '''
-    # This assume parameters are packed in a tuple
+    # This assumes parameters are packed in a tuple
     def batched_fn(*item, **kwargs):
         try:
             result = (*item, f(*item, **kwargs))
