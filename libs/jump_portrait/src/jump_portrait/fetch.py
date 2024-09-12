@@ -129,7 +129,7 @@ def get_jump_image_batch(metadata: pl.DataFrame, channel: list[str],
     Parameters:
     ----------
     metadata : pl.DataFrame
-        must have the shape ("Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well")
+        must have the column in this specific order ("Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well")
     channel : list of string
         list of channel desired
         Must be in ['DNA', 'ER', 'AGP', 'Mito', 'RNA']
@@ -144,28 +144,17 @@ def get_jump_image_batch(metadata: pl.DataFrame, channel: list[str],
 
     Return:
     ----------
-    features : pl.DataFrame
-        DataFrame collecting the metadata, channel, site, correction + the image
-    work_fail : list of tuple
-        List collecting tuple of metadata which failed to load an image
+    iterable : list of tuple
+        list containing the metadata, channel, site and correction
+    img_list : list of array
+        list containing the images
 
     '''
-    iterable = list(starmap(lambda *x: (*x[0], *x[1:]), product(metadata.rows(), site, channel)))
+    iterable = list(starmap(lambda *x: (*x[0], *x[1:]), product(metadata.rows(), channel, site, [correction])))
     img_list = parallel(iterable, batch_processing(try_function(get_jump_image)),
                         verbose=verbose)
      
-    img_list = sorted(img_list, key=lambda x: len(x))
-    fail_success = {k: list(g) for k, g in groupby(img_list, key=lambda x: len(x))}
-    if len(fail_success):
-        img_success = list(fail_success.values())[0]
-        work_fail = []
-    else:
-        work_fail, img_success = fail_success.values()
-    features = pl.DataFrame(img_success,
-                               schema=["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well",
-                                        "channel", "site", "correction",
-                                        "img"])
-    return features, work_fail
+    return iterable, img_list
 
 
 
@@ -377,3 +366,11 @@ def get_gene_images(
     )
 
     return images
+
+metadata_pre = get_item_location_info("MYT1")
+iterable, img_list = get_jump_image_batch(metadata_pre.select(pl.col(
+["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"])),
+                                                        channel=['DNA','ER', 'RNA'],#, 'ER', 'AGP', 'Mito', 'RNA'],
+                                                        site=[str(i) for i in range(8)],
+                                                        correction='Orig',
+                                                        verbose=False) #None, 'Illum'

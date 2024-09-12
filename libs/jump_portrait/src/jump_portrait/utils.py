@@ -103,16 +103,16 @@ def batch_processing(f: Callable):
 def try_function(f: Callable):
     '''
     Wrap a function into an instance which will Try to call the function:
-        If it success, return a tuple of function parameters + its results
-        If it fails, return the function parameters
+        If it success, return the output of the function.
+        If it fails, return None
     '''
     # This assumes parameters are packed in a tuple
     def batched_fn(*item, **kwargs):
         try:
-            result = (*item, f(*item, **kwargs))
+            result = f(*item, **kwargs)
 
         except:
-            result = item
+            result = None
 
         return result
     return batched_fn
