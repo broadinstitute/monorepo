@@ -51,12 +51,6 @@ def test_standardize_molecule(method):
     # Run the standardization process
     output_df = standardizer.run()
 
-    # Read the expected output file
-    expected_df = pd.read_csv(expected_output_file)
-
-    # Compare the generated output with the expected output
-    pd.testing.assert_frame_equal(output_df, expected_df)
-
     # Validate that each standardized SMILES is valid
     for smiles in output_df["SMILES_standardized"]:
         mol = Chem.MolFromSmiles(smiles)
@@ -75,6 +69,12 @@ def test_standardize_molecule(method):
         assert all(
             len(part) == length for part, length in zip(parts, [14, 10, 1])
         ), f"Incorrect InChIKey sections length: {inchikey}"
+
+    # Read the expected output file
+    expected_df = pd.read_csv(expected_output_file)
+
+    # Compare the generated output with the expected output
+    pd.testing.assert_frame_equal(output_df, expected_df)
 
     # Clean up the temporary output file
     if os.path.exists(temp_output_file):
