@@ -8,7 +8,6 @@ dependencies:
   - numpy=1.24.2
   - tqdm=4.64.1
   - rdkit=2022.9.4
-  - pymysql=1.0.2
   - pip>=21.2.4
   - black>=23.0.0
   - ipykernel>=6.21.2
