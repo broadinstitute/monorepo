@@ -1,6 +1,6 @@
 from collections import Counter
 from multiprocessing import Pool
-from rdkit import rdBase, RDLogger
+from rdkit import RDLogger
 from rdkit.rdBase import BlockLogs
 from rdkit.Chem import (
     MolFromSmiles,
@@ -18,8 +18,6 @@ import pandas as pd
 import requests
 import tqdm
 from pathlib import Path
-
-from rdkit import RDLogger
 
 RDLogger.DisableLog("rdApp.*")
 
@@ -76,7 +74,7 @@ class StandardizeMolecule:
         smiles_original = smiles
 
         # Disable RDKit logging
-        block = BlockLogs()
+        block = BlockLogs()  # noqa: F841
 
         # Set the random seed for reproducibility within each task
         np.random.seed(self.random_seed)
@@ -96,99 +94,89 @@ class StandardizeMolecule:
                 ]
             )
 
-        try:
-            smiles_clean_counter = Counter()
-            mol_dict = {}
-            is_finalize = False
+        smiles_clean_counter = Counter()
+        mol_dict = {}
+        is_finalize = False
 
-            if self.method == "jump_canonical":
-
-                for _ in range(5):
-                    # standardize molecules using MolVS and RDKit
-                    mol = standardizer.charge_parent(mol)
-                    mol = standardizer.isotope_parent(mol)
-                    mol = standardizer.stereo_parent(mol)
-                    mol = standardizer.tautomer_parent(mol)
-                    mol = standardizer.standardize(mol)
-                    mol_standardized = mol
-
-                    # convert mol object back to SMILES
-                    smiles_standardized = MolToSmiles(mol_standardized)
-
-                    if smiles == smiles_standardized:
-                        is_finalize = True
-                        break
-
-                    smiles_clean_counter[smiles_standardized] += 1
-                    if smiles_standardized not in mol_dict:
-                        mol_dict[smiles_standardized] = mol_standardized
-
-                    smiles = smiles_standardized
-                    mol = MolFromSmiles(smiles)
-
-                if not is_finalize:
-                    # If the standardization process is not finalized, we choose the most common SMILES from the counter
-                    smiles_standardized = smiles_clean_counter.most_common()[0][0]
-                    # ... and the corresponding mol object
-                    mol_standardized = mol_dict[smiles_standardized]
-
-            elif self.method == "jump_alternate_1":
-                # Note from @srijitseal:
-                # This is a simpler way to standardize smiles
-                # Tautomers are often difficult to canonicalize, if more runs are allowed, one could find more duplicates.
-                # In this case, we found 6 compounds with dual entries.
-                # I would recommend running standardization according to the problem in question when using this dataset,
-                # protonating at the required pH etc, and evaluating on a case by case basis for the endpoint considered.
-
-                # This solved phosphate oxidation in most cases but introduces a problem for some compounds: eg. geldanamycin where the stable strcutre is returned
-                inchi_standardised = MolToInchi(mol)
-                mol = MolFromInchi(inchi_standardised)
-
-                # removeHs, disconnect metal atoms, normalize the molecule, reionize the molecule
-                mol = rdMolStandardize.Cleanup(mol)
-
-                # if many fragments, get the "parent" (the actual mol we are interested in)
-                mol = rdMolStandardize.FragmentParent(mol)
-
-                # try to neutralize molecule
-                uncharger = (
-                    rdMolStandardize.Uncharger()
-                )  # annoying, but necessary as no convenience method exists
-
-                mol = uncharger.uncharge(
-                    mol
-                )  # standardize molecules using MolVS and RDKit
+        if self.method == "jump_canonical":
+            for _ in range(5):
+                # standardize molecules using MolVS and RDKit
                 mol = standardizer.charge_parent(mol)
                 mol = standardizer.isotope_parent(mol)
                 mol = standardizer.stereo_parent(mol)
-
-                # Normalize tautomers
-                normalizer = tautomer.TautomerCanonicalizer()
-                mol = normalizer.canonicalize(mol)
-
-                # Final Rules
+                mol = standardizer.tautomer_parent(mol)
                 mol = standardizer.standardize(mol)
                 mol_standardized = mol
 
                 # convert mol object back to SMILES
                 smiles_standardized = MolToSmiles(mol_standardized)
 
-            else:
-                raise ValueError(
-                    "Method must be either 'jump_canonical' or 'jump_alternate_1'"
-                )
+                if smiles == smiles_standardized:
+                    is_finalize = True
+                    break
 
-            # Convert the mol object to InChI
-            inchi_standardized = MolToInchi(mol_standardized)
+                smiles_clean_counter[smiles_standardized] += 1
+                if smiles_standardized not in mol_dict:
+                    mol_dict[smiles_standardized] = mol_standardized
 
-            # Convert the InChI to InChIKey
-            inchikey_standardized = MolToInchiKey(mol_standardized)
+                smiles = smiles_standardized
+                mol = MolFromSmiles(smiles)
 
-        except (ValueError, AttributeError) as e:
-            smiles_standardized = np.nan
-            inchi_standardized = np.nan
-            inchikey_standardized = np.nan
-            logging.error(f"Standardization error, {smiles}, Error Type: {str(e)}")
+            if not is_finalize:
+                # If the standardization process is not finalized, we choose the most common SMILES from the counter
+                smiles_standardized = smiles_clean_counter.most_common()[0][0]
+                # ... and the corresponding mol object
+                mol_standardized = mol_dict[smiles_standardized]
+
+        elif self.method == "jump_alternate_1":
+            # Note from @srijitseal:
+            # This is a simpler way to standardize smiles
+            # Tautomers are often difficult to canonicalize, if more runs are allowed, one could find more duplicates.
+            # In this case, we found 6 compounds with dual entries.
+            # I would recommend running standardization according to the problem in question when using this dataset,
+            # protonating at the required pH etc, and evaluating on a case by case basis for the endpoint considered.
+
+            # This solved phosphate oxidation in most cases but introduces a problem for some compounds: eg. geldanamycin where the stable strcutre is returned
+            inchi_standardised = MolToInchi(mol)
+            mol = MolFromInchi(inchi_standardised)
+
+            # removeHs, disconnect metal atoms, normalize the molecule, reionize the molecule
+            mol = rdMolStandardize.Cleanup(mol)
+
+            # if many fragments, get the "parent" (the actual mol we are interested in)
+            mol = rdMolStandardize.FragmentParent(mol)
+
+            # try to neutralize molecule
+            uncharger = (
+                rdMolStandardize.Uncharger()
+            )  # annoying, but necessary as no convenience method exists
+
+            mol = uncharger.uncharge(mol)  # standardize molecules using MolVS and RDKit
+            mol = standardizer.charge_parent(mol)
+            mol = standardizer.isotope_parent(mol)
+            mol = standardizer.stereo_parent(mol)
+
+            # Normalize tautomers
+            normalizer = tautomer.TautomerCanonicalizer()
+            mol = normalizer.canonicalize(mol)
+
+            # Final Rules
+            mol = standardizer.standardize(mol)
+            mol_standardized = mol
+
+            # convert mol object back to SMILES
+            smiles_standardized = MolToSmiles(mol_standardized)
+
+        else:
+            raise ValueError(
+                "Method must be either 'jump_canonical' or 'jump_alternate_1'"
+            )
+
+        # Convert the mol object to InChI
+        inchi_standardized = MolToInchi(mol_standardized)
+
+        # Convert the InChI to InChIKey
+        inchikey_standardized = MolToInchiKey(mol_standardized)
 
         # return as a dataframe
         return pd.DataFrame(
@@ -327,9 +315,7 @@ class StandardizeMolecule:
                 "InChI_standardized",
                 "InChIKey_standardized",
             ]
-            for column in new_columns:
-                if column in self.input_original.columns:
-                    self.input_original = self.input_original.drop(columns=column)
+            self.input_original.drop(columns=new_columns, inplace=True, errors="ignore")
 
             standardized_df = pd.merge(
                 standardized_df,
@@ -344,9 +330,9 @@ class StandardizeMolecule:
         # if self.output is not None, save the standardized dataframe to a csv file
         if self.output is not None:
             standardized_df.to_csv(self.output, index=False)
-            return self.output
-        else:
-            return standardized_df
+            logging.info(f"Standardized data saved to {self.output}")
+
+        return standardized_df
 
 
 if __name__ == "__main__":
