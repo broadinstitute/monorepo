@@ -19,27 +19,27 @@ def test_export():
     [
         tuple(),
         "",
-        "BRD-K18895904-001-16-1",
-        ("BRD-K36461289-001-05-8",),
-        ("BRD-K36461289-001-05-8", "ccsbBroad304_16164"),
-        ("ccsbBroad304_16164", "BRD-K48830578-001-01-9"),
+        "ccsbBroad304_16164",
+        ("ccsbbroad304_11164",),
+        ("ccsbBroad304_16164", "ccsbBroad304_16165"),
+        ("ccsbbroad304_16164", "ccsbBroad304_16165"),
     ],
 )
 @pytest.mark.parametrize(
-    "output_column", ["standard_key", "broad_sample", "pert_type", "JCP2022"]
+    "output_columns", ["standard_key", "broad_sample", "pert_type", "JCP2022"]
 )
-def test_basic_query_broad(query, output_column):
-    run_query(query, input_column="broad_sample", output_column=output_column)
+def test_basic_query_broad(query, output_columns):
+    run_query(query, input_column="broad_sample", output_columns=output_columns)
 
 
 @pytest.mark.parametrize(
     "query",
     [
         "",
-        "BRD-K18895904-001-16-1",
-        ("BRD-K36461289-001-05-8",),
-        ("BRD-K36461289-001-05-8", "ccsbBroad304_16164"),
-        ("ccsbBroad304_16164", "BRD-K48830578-001-01-9"),
+        "ccsbBroad304_16164",
+        ("ccsbBroad304_16164",),
+        ("ccsbBroad304_16164", "ccsbBroad304_16165"),
+        ("ccsbBroad304_16164", "ccsbBroad304_16165"),
     ],
 )
 def test_broad_to_standard(query):
@@ -48,12 +48,12 @@ def test_broad_to_standard(query):
 
 @pytest.mark.parametrize(
     "query",
-    ("BRD-K18895904%", "BRD-K21728777%"),
+    ("ccsbBroad304_1616%", "ccsbBroad304_1613%"),
 )
 def test_like_query(query):
     run_query(
         query,
         input_column="broad_sample",
-        output_column="*",
+        output_columns="*",
         operator="LIKE",
     )

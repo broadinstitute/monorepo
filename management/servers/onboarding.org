@@ -1,0 +1,112 @@
+#+title: Onboarding
+This is documentation on how to onboard a new user to a NixOS server, replace  <machine_name> with the coloquial name of the machine you are setting up (e.g., moby is Alán's server).
+Eventually we would want to automate the process, probably replacing many components with [[https://github.com/dustinlyons/nixos-config][this]], as they provide scripts that automate the process as much as possible.
+
+* Set up remote connections
+** USER: Install [[https://tailscale.com/download][tailscale]]
+Set up in the networtk that is associated to <machine_name>.
+** homes/
+- copy and adjust homes/<username>
+** machines/<machine_name>/default.nix
+Add the following, editing the =shell= line. The main options are
+- zsh: quasi-standard terminal
+- fish: nice autocompletion (non-posix compliant)
+#+begin_src nix
+  users.users.llanos = {
+    shell = pkgs.zsh;
+    isNormalUser = true;
+    description = "User Name (e.g., Jane Doe)";
+    extraGroups = [ "networkmanager" "wheel" "libvirtd" "qemu-libvirtd" "input"];
+    openssh.authorizedKeys.keyFiles = [
+      ../../homes/<username>/id_rsa.pub
+    ];
+  };
+#+end_src
+
+#+begin_src nix
+Then enable home manager
+  home-manager.users.llanos = {
+    imports = [
+     inputs.agenix.homeManagerModules.default
+     ../../homes/llanos/<machine_name>.nix
+    ];
+  };
+#+end_src
+
+** Add the desired packages
+For this new user the packages are to be added on =homes/<username>packages.nix=. Feel free to check [[https://github.com/afermg/clouds/tree/master/homes/amunoz/packages.nix#L5-L86][this]] section of the config for an example of the type of packages.
+
+** USER: [[https://docs.github.com/en/authentication/connecting-to-github-with-ssh/generating-a-new-ssh-key-and-adding-it-to-the-ssh-agent][Generate]] and copy the public ssh key to =home/<username>/id_rsa.pub= and then link it at =machines/<machine_name>/default.nix=.
+** Apply new configuration
+Move to the folder and run
+#+begin_src shell
+sudo nixos-rebuild switch --flake .#<machine_name>
+#+end_src
+
+** Generate password
+Generate password for new user
+
+#+begin_src shell
+sudo passwd <username>
+#+end_src
+
+** VS Code :optional:
+The code related to vscode support is in the following sections. No modification should be needed if copying an existing profile.
+ - https://github.com/afermg/clouds/blob/0a968c99fe58c98eccaaf7f4cfe48784229177f1/flake.nix#L20-L21
+- https://github.com/afermg/clouds/tree/0a968c99fe58c98eccaaf7f4cfe48784229177f1/homes/common/vscode.nix
+
+*** On the client side
+Follow [[https://github.com/nix-community/nixos-vscode-server?tab=readme-ov-file#connecting-with-ssh-timed-out][these]] instructions to be able to login from
+
+    ../common/vscode.nix
+
+* Setting up development environments
+We use .envrc to login to reproducible development environments. From bash you normally just =cd= into the folder and it is set automatically. From a given IDE this may not be as simple:
+
+** TODO Figure out how to do integrate .envrc on on VSCode and/or jupyter notebooks
+
+** Example of Torch-compatible enviroment
+A common (and tricky) dependency we use is pytorch. Here is an example of the standard . Note that the host NVIDIA driver must be 535 or 545 (installed here)
+
+* Setting up development environments
+* Day-to-day access
+The environments can be accessed in multiple ways.
+*** Jupyter notebook
+This method requires =screen= both in remote and local computers.
+**** Step 1: Open Jupyter notebook on Moby
+
+#+begin_src shell
+ssh $USER@moby
+screen
+cd project/folder
+# envrc should start by itself here. If this project has not been configured that way you can do:
+# nix develop . --impure
+poetry run jupyter notebook
+# Copy the url including the token
+# Press <Ctrl-A> -> <Ctrl-D> to detatch your screen session
+#+end_src
+
+**** Step 2: Tunnel the port to your local computer
+Then open a tunnel to your jupyter notebook instance from the local computer.
+#+begin_src shell
+screen -d -S tunnel -m 'ssh -L 8888:localhost:8888 $USER@moby -N'
+#+end_src
+
+On your local computer, go yo the URL copied on step 1.
+
+If moby is restarted you must repeat step 1 (we can try to automate it too).
+If your local computer is restarted you need to repeat step 2.
+*** VS Code
+Tested on versions before 1.88.
+
+1. Install Remote Development Extension
+2.
+
+*** Emacs
+1. Set up your packages of interest ([[https://github.com/doomemacs/doomemacs][doom emacs]] makes it simpler for beginners). Make sure to include the direnv module.
+2.Run
+#+begin_src shell
+ssh $user@moby -t 'emacsclient -t'
+
+#+end_src
+3. You may need to fiddle a bit to get the proper environment working, this is work in progress.

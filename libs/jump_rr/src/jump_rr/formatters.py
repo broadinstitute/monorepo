@@ -8,10 +8,10 @@ import polars as pl
 @cache
 def get_formatter(kind: str) -> str:
     formatters = dict(
-        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}}',
+        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"NCBI"}}',
         url='"https://phenaid.ardigen.com/static-jumpcpexplorer/' 'images/{}_{{}}.jpg"',
         img='{{"img_src": {}, "href": {}, "width": 200}}',
-        external_flat='{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"External"}',
+        external_flat='{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"NCBI"}',
         url_flat='"https://phenaid.ardigen.com/static-jumpcpexplorer/'
         'images/{}/{}/{}_{}.jpg"',
         img_flat='{"img_src": {}, "href": {}, "width": 200}',
@@ -19,12 +19,17 @@ def get_formatter(kind: str) -> str:
     return formatters[kind]
 
 
-def format_val(kind: str, input_value: str or int or list):
+def format_val(kind: str, input_value: str or int or list or None) -> str:
     # Apply html formating for Datasette hyperlinks and visualisation
-    if isinstance(input_value, str) or isinstance(input_value, int):
+
+    if input_value is None:
+        return ""
+    elif isinstance(input_value, str) or isinstance(input_value, int):
         input_value = [input_value]
 
-    return get_formatter(kind).format(*input_value)
+    result = get_formatter(kind).format(*input_value)
+
+    return result
 
 
 def add_url_col(
@@ -51,9 +56,9 @@ def add_url_col(
     FIXME: Add docs.
 
     """
-    assert url_colname.startswith(
-        "Metadata"
-    ), "New URL column must start with 'Metadata'"
+    # assert url_colname.startswith(
+    #     "Metadata"
+    # ), "New URL column must start with 'Metadata'"
 
     prof = prof.with_columns(
         pl.concat_str(

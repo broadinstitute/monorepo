@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "gh2sqlite"
+version = "0.1.0"
+description = "Generate statistics from github repositories"
+authors = ["Alan"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9,<3.11"
+github-to-sqlite = "^2.9"
+datasette = "^0.64.6"
+
+[tool.poetry.group.dev.dependencies]
+jupyter = "^1.0.0"
+jupytext = "^1.15.2"
+ipdb = "^0.13.13"
+ruff-lsp = "^0.0.50"
+ruff = "<0.2.0"
+
+[[tool.poetry.source]]
+name = "PyPI"
+priority = "primary"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

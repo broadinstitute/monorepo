@@ -8,7 +8,9 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.11"
-Flask = "^3.0.2"
+rdkit = "^2023.9.5"
+fire = "^0.6.0"
+# Flask = "^3.0.2"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"
@@ -16,6 +18,8 @@ jupytext = "^1.15.2"
 ipdb = "^0.13.13"
 ruff-lsp = "^0.0.50"
 ruff = "<0.2.0"
+black = "^24.3.0"
+pytest = "^8.1.1"
 
 
 [build-system]

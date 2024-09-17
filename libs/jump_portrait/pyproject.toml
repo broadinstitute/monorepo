@@ -1,30 +1,54 @@
-[tool.poetry]
-name = "jump-portrait"
-version = "0.0.14"
+[project]
+name = "jump_portrait"
+version = "0.0.22"
 description = "Tools to fetch and visualize JUMP images"
-authors = ["Alan Munoz"]
+authors = [{ name = "Alán Muñoz", email = "amunozgo@broadinstitute.org" }]
 readme = "README.md"
-packages = [{include = "jump_portrait", from= "src"}]
+requires-python = ">=3.10,<3.12"
+dependencies = [
+    "boto3>=1.33.1",
+    "broad-babel>=0.1.22",
+    "joblib~=1.3.2",
+    "matplotlib~=3.8.2",
+    "polars>=0.19.19",
+    "pooch~=1.7.0",
+    "pyarrow>=14.0.1",
+    "s3path~=0.5.0",
+    "tqdm~=4.66.1",
+    "s3fs~=2024.6.0",
+    "jupyter>=1.0.0",
+    "numpy<2.0.0",
+]
+license = { text = "MIT" }
 
-[tool.poetry.dependencies]
-python = "^3.9"
-boto3 = ">=1.33.1"
-broad-babel = "^0.1.13"
-joblib = "^1.3.2"
-matplotlib = "^3.8.2"
-polars = "^0.19.19"
-pooch = "^1.7.0"
-pyarrow = "^14.0.1"
-s3path = "^0.5.0"
-tqdm = "^4.66.1"
-
-[tool.poetry.group.dev.dependencies]
-jupyter = "^1.0.0"
-jupytext = "^1.15.0"
-pytest = "^7.4.1"
-ruff-lsp = "^0.0.48"
-ruff = "^0.3.2"
+[project.optional-dependencies]
+dev = [
+"jupyter~=1.0.0",
+"pytest>=8.2.2",
+"jupytext~=1.15.0",
+"ruff-lsp~=0.0.48",
+"ruff~=0.3.2",
+"ipdb>=0.13.13",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+# setuptools>=61 supports PEPs 517, 518, 621, 660
+# https://setuptools.pypa.io/en/latest/history.html#v61-0-0
+# setuptools-scm asks for setuptools>=64
+# https://setuptools-scm.readthedocs.io/en/latest/
+requires = ["setuptools>=64.0.0", "setuptools-scm>=8.0"]
+build-backend = "setuptools.build_meta"
+
+[tool]
+rye = { dev-dependencies = [
+    "pytest>=8.2.2",
+    "jupyter~=1.0.0",
+    "ruff-lsp~=0.0.48",
+    "ruff~=0.3.2",
+    "ipdb~=0.13.13",
+    "jupytext~=1.15.0",
+] }
+
+[tool.ruff]
+select = ["ANN", "C90", "D", "E", "F", "I", "N", "NPY", "PTH", "TID", "UP", "W"]
+exclude = ["vendor"]

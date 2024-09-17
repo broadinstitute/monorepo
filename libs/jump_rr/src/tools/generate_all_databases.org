@@ -1,0 +1,15 @@
+#+title: Generate All Databases
+#+PROPERTY: header-args :tangle yes
+
+This notebook shows how to generate all =jump_rr= databases from an existing installation.
+
+#+begin_src bash :tangle yes
+bash ./download_profiles.bash
+#+end_src
+
+Generate galleries, matching elements and features
+#+begin_src bash
+poetry run python "../jump_rr/galleries.py"
+poetry run python "../jump_rr/calculate.py"
+poetry run python "../jump_rr/calculate_features.py"
+#+end_src

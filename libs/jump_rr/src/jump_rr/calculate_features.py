@@ -14,7 +14,7 @@
 
 """
 Select the perturbations with highest and lowest feature values
-for CRISPR (TODO waiting for data) and ORF datasets using a GPU,
+for CRISPR and ORF datasets using a GPU,
 then wrangle information and produce an explorable data frame.
 
 This is intended for use on a server with GPUs and high RAM to analyse
@@ -23,145 +23,157 @@ This is intended for use on a server with GPUs and high RAM to analyse
 Steps:
 - Group feature names using regular expression
 - Get median from the grouped subfeatures
-- Build dataframe
+- Build DataFrame
+- Add reproducibility metric (Phenotypic activity)
 """
+
 from pathlib import Path
 
 import cupy as cp
 import numpy as np
 import polars as pl
 from jump_rr.concensus import (
-    format_val,
     get_concensus_meta_urls,
     get_cycles,
     repeat_cycles,
 )
+from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
+from jump_rr.metadata import write_metadata
 from jump_rr.parse_features import get_feature_groups
-from jump_rr.significance import pvals_from_path
+from jump_rr.replicability import add_replicability
+from jump_rr.significance import add_pert_type, pvals_from_path
+from jump_rr.synonyms import get_synonym_mapper
 from jump_rr.translate import get_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
 # %% Setup
 ## Paths
-dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
+dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
-precor_file = "full_profiles_cc_adj_mean_corr.parquet"
-# precor_file = "harmonized_no_sphering_profiles.parquet"
-precor_path = dir_path / "orf" / precor_file
+datasets = (
+    "orf",
+    "crispr",
+)
 
 ## Parameters
-n_vals_used = 50  # Number of top and bottom matches used
-plate_type = "orf"
+n_vals_used = 200  # Number of top and bottom matches used
+feat_decomposition = ("Cell region", "Feature", "Channel", "Suffix")
 
 ## Column names
-jcp_short = "JCP2022"  # Shortened input data frame
-jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
-match_col = "Match"  # Highest matches
-match_url_col = f"{match_col} Example"  # URL with image examples
+jcp_short = "JCP2022 ID"  # Shortened input data frame
+jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
-url_col = "Metadata_image"  # Must start with "Metadata" for URL grouping to work
-feature_names = ("Mask", "Feature", "Channel")
+url_col = "Gene/Compound example image"
+rep_col = "Phenotypic activity"  # Column containing reproducibility
+val_col = "Median"  # Value col
+stat_col = "Feature significance"
 
+for dset in datasets:
+    print(f"Processing features for {dset} dataset")
+    precor_path = dir_path / f"{dset}_interpretable.parquet"
 
-# %% Loading
-precor = pl.read_parquet(precor_path)
+    # %% Loading
+    precor = pl.read_parquet(precor_path)
+    precor = add_pert_type(precor, dataset=dset)
 
-# %% Split data into med (concensus), meta and urls
+    # %% Split data into med (concensus), meta and urls
 
-# Note that we remove the negcons from these analysis, as they are used to
-# produce p values on significance.py
-med, meta, urls = get_concensus_meta_urls(
-    precor.filter(pl.col("Metadata_pert_type") != "negcon")
-)
-med_vals = med.select(pl.exclude("^Metadata.*$"))
+    # Note that we remove the negcons from these analysis, as they are used to produce p values on significance.py
+    med, _, urls = get_concensus_meta_urls(
+        precor.filter(pl.col("Metadata_pert_type") != "negcon"),
+        url_colname="Metadata_placeholder",
+    )
+    urls = urls.rename({"Metadata_placeholder": url_col})
 
+    # This function also performs a filter to remove controls (as there are too many)
+    corrected_pvals = pvals_from_path(precor_path, dataset=dset)
+    # Ensure that the perturbation numbers match
+    filtered_med = med.filter(
+        pl.col(jcp_col).is_in(corrected_pvals.get_column(jcp_col))
+    )
+    median_vals = cp.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
 
-# %% group by feature
+    phenact = cp.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
+    # Find bottom $n_values_used
+    xs, ys = get_edge_indices(
+        phenact.T,
+        n_vals_used,
+    )
 
+    decomposed_feats = get_feature_groups(
+        tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
+        feat_decomposition,
+    )
 
-def median_values(med_vals, group_by: list[str] or None = None):
-    if group_by is None:
-        feature_meta = get_feature_groups(tuple(med_vals.columns))
-    features = pl.concat((feature_meta, med_vals.transpose()), how="horizontal")
+    url_vals = urls.get_column(url_col).to_numpy()
+    cycles = get_cycles(dset)
+    cycled_indices = repeat_cycles(len(xs), dset)
 
-    grouped = features.group_by(feature_meta.columns)
+    # %% Build Data Frame
+    df = pl.DataFrame(
+        {
+            **{
+                col: np.repeat(vals, n_vals_used)
+                for col, vals in decomposed_feats.to_dict().items()
+            },
+            stat_col: phenact[xs, ys].get(),
+            val_col: median_vals[xs, ys].get(),
+            jcp_short: med[jcp_col][ys],
+            url_col: [  # Use indices to fetch matches
+                format_val("img", (img_src, img_src))
+                for url, idx in zip(url_vals[ys], cycled_indices[ys])
+                if (img_src := next(url).format(next(idx)))
+            ],
+        }
+    )
 
-    return grouped.median()
+    uniq = tuple(df.get_column(jcp_short).unique())
+    jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, dset)
+    _, jcp_external_raw_mapper = get_mappers(uniq, dset, format_output=False)
 
+    df = add_replicability(
+        df, left_on=jcp_short, right_on=jcp_col, replicability_col=rep_col
+    )
 
-feat_med = median_values(med_vals)
+    jcp_translated = df.with_columns(
+        pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
+        pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
+        pl.col(jcp_short)  # Add synonyms
+        .replace(jcp_external_raw_mapper)  # Map to NCBI ID
+        .replace(get_synonym_mapper())  # Map synonyms
+        .alias("Synonyms"),
+    )
 
-# Find top and bottom $n_values_used
+    # Reorder columns
+    order = [
+        *decomposed_feats.columns,
+        stat_col,
+        std_outname,
+        url_col,
+        val_col,
+        rep_col,
+        "Synonyms",
+        jcp_short,
+        ext_links_col,
+    ]
+    sorted_df = jcp_translated.select(order)
 
-# xs, ys = get_bottom_top_indices(vals, n_vals_used, skip_first=False)
-# %%
-#
-# Calculate or read likelihood estimates
-# TODO check that both groupings return matrices in the same orientation
-# Note that this is cached. To uncache (takes ~5 mins for ORF) run
-# pvals_from_path.clear_cache()
-corrected_pvals = pvals_from_path(precor_path)
-median_vals = cp.array(feat_med.select(pl.col("^column.*$")).to_numpy())
-vals = cp.array(corrected_pvals.drop(feature_names))
-xs, ys = get_edge_indices(
-    vals.T,
-    n_vals_used,
-)
+    # Output
+    output_dir.mkdir(parents=True, exist_ok=True)
+    jcp_translated.write_parquet(
+        output_dir / f"{dset}_features.parquet", compression="zstd"
+    )
 
-url_vals = urls.get_column(url_col).to_numpy()
-cycles = get_cycles(plate_type)
-cycled_indices = repeat_cycles(len(xs), plate_type)
+    # Update metadata
+    write_metadata(dset, "feature", (*jcp_translated.columns, "(*)"))
 
-
-# %% Build Data Frame
-df = pl.DataFrame(
-    {
-        **{
-            col: np.repeat(feat_med.get_column(col), n_vals_used)
-            for col in feat_med.select(pl.all().exclude("^column.*$")).columns
-        },
-        "Statistic": vals[xs, ys].get(),
-        "Median": median_vals[xs, ys].get(),
-        jcp_short: med[jcp_col][ys],
-        url_col: [  # Use indices to fetch matches
-            format_val("img", (img_src, img_src))
-            for url, idx in zip(url_vals[ys], cycled_indices[ys])
-            if (img_src := next(url).format(next(idx)))
-        ],
-    }
-)
-
-uniq = tuple(df.get_column(jcp_short).unique())
-jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, plate_type)
-
-jcp_translated = df.with_columns(
-    pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
-    pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
-)
-
-# Reorder columns
-order = [
-    "Mask",
-    "Feature",
-    "Channel",
-    "Suffix",
-    "Statistic",
-    std_outname,
-    url_col,
-    "Median",
-    jcp_short,
-]
-sorted_df = jcp_translated.select(order)
-
-# Output
-output_dir.mkdir(parents=True, exist_ok=True)
-sorted_df.write_parquet(output_dir / "orf_features.parquet", compression="zstd")
-
-# Procedure
-# 1. Group all features by JCP_ID
-# 2. Get the stats for all groups
-# 2a. Compare JCPX samples with JCP(Average)
-# 3. Use
+    # Save phenotypic activity matrix in case it is of use to others
+    pl.DataFrame(
+        data=phenact.get(),
+        schema=filtered_med.select(pl.exclude("^Metadata.*$")).columns,
+    ).with_columns(filtered_med.get_column("Metadata_JCP2022")).write_parquet(
+        output_dir / f"{dset}_significance_full.parquet"
+    )

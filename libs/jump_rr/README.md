@@ -1,15 +1,15 @@
-- [Decision Flowchart](#org508eccd)
-- [Quick data access](#orgdc31503)
-- [Overview](#org179690a)
-- [Data accessibility](#org8003323)
-- [Installation](#orgb5eebe6)
-  - [pip](#orgd4cc76a)
-  - [poetry (dev)](#org65057ac)
-- [Contributions](#org140fca1)
+- [Decision Flowchart](#Decision%20Flowchart)
+- [Quick data access](#Quick%20data%20access)
+- [Overview](#Overview)
+- [Data accessibility](#Data%20accessibility)
+- [Installation](#Installation)
+  - [pip](#pip)
+  - [poetry (dev)](#poetry%20%28dev%29)
+- [Contributions](#Contributions)
 
 
 
-<a id="org508eccd"></a>
+<a id="Decision%20Flowchart"></a>
 
 # Decision Flowchart
 
@@ -25,58 +25,59 @@ flowchart LR
     orf -- No -->  F[(broad.io/orf)]
     orf -- Yes -->  G[(broad.io/orf_feature)]
     crispr -- No -->  H[(broad.io/crispr)]
-    crispr -- Yes --> I[(WIP)]
+    crispr -- Yes --> I[(broad.io/crispr_feature)]
 ```
 
 
-<a id="orgdc31503"></a>
+<a id="Quick%20data%20access"></a>
 
 # Quick data access
 
 Use the following datasets to explore morphological similarities between gene and/or compounds.
 
-| Dataset  | Perturbation simile                        | Feature ranking                                       | Gallery                                                           | Description         |
-|-------- |------------------------------------------ |----------------------------------------------------- |----------------------------------------------------------------- |------------------- |
-| ORF      | [broad.io/orf](https://broad.io/orf)       | [broad.io/orf\_feature](https://broad.io/orf_feature) | [broad.io/orf\_gallery](https://broad.io/orf_gallery)             | Gene overexpression |
-| CRISPR   | [broad.io/crispr](https://broad.io/crispr) | WIP                                                   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)       | Gene knock-out      |
-| Compound | WIP                                        | WIP                                                   | [broad.io/compounds\_gallery](https://broad.io/compounds_gallery) | Chemical compounds  |
+| Dataset  | Matches                                    | Feature ranking                                       | Gallery                                                         | Description         |
+|-------- |------------------------------------------ |----------------------------------------------------- |--------------------------------------------------------------- |------------------- |
+| ORF      | [broad.io/orf](https://broad.io/orf)       | [broad.io/orf\_feature](https://broad.io/orf_feature) | [broad.io/orf\_gallery](https://broad.io/orf_gallery)           | Gene overexpression |
+| CRISPR   | [broad.io/crispr](https://broad.io/crispr) | [broad.io/crispr\_feature](https://broad.io/crispr)   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)     | Gene knock-out      |
+| Compound | WIP                                        | WIP                                                   | [broad.io/compound\_gallery](https://broad.io/compound_gallery) | Chemical compounds  |
 
-Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which increase sample replicability.
+Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
 
 
-<a id="org179690a"></a>
+<a id="Overview"></a>
 
 # Overview
 
-This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that are to be accessed by biologists using [datasette-lite](https://github.com/simonw/datasette-lite).
+This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that we make accessible through the browser using [datasette-lite](https://github.com/simonw/datasette-lite).
 
 
-<a id="org8003323"></a>
+<a id="Data%20accessibility"></a>
 
 # Data accessibility
 
-The raw morphological profiles are currently in a local server. It will be provided independently and this section updated in the future.
+-   You can fetch the raw morphological profiles (before any non-image processing step) on the [Cell Painting Gallery](https://cellpainting-gallery.s3.amazonaws.com/index.html#cpg0016-jump-assembled/source_all/workspace/profiles) (CPG) under the &ldquo;profiles.parquet&rdquo; names.
+-   [This](https://github.com/broadinstitute/monorepo/tree/452543be5f17a626a3964b8b90984a9502952a06/libs/jump_rr/tools/download_profiles.org) file points to the gist points to the data used to produce the final tables, if you adjust `OUTPUT_DIR` you can download the files locally.
 
 
-<a id="orgb5eebe6"></a>
+<a id="Installation"></a>
 
 # Installation
 
 You do not need to install this unless you want to re-do the similarity calculations. You can use the datasette web interface provided if your goal is to explore genes. We assume that a GPU and cuda11 are available in the server where this is run. This is to use cupy, which offers vastly faster distance calculations.
 
 
-<a id="orgd4cc76a"></a>
+<a id="pip"></a>
 
 ## pip
 
-Use this if you want to analyse data.
+Use this if you want to re-analyse data. Several of the anyalyses require GPUs.
 
 ```python
 pip install jump_rr
 ```
 
 
-<a id="org65057ac"></a>
+<a id="poetry%20%28dev%29"></a>
 
 ## poetry (dev)
 
@@ -89,7 +90,7 @@ poetry install --with dev
 ```
 
 
-<a id="org140fca1"></a>
+<a id="Contributions"></a>
 
 # Contributions
 

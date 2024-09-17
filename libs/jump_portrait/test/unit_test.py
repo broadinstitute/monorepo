@@ -5,10 +5,9 @@ from jump_portrait.s3 import get_image_from_s3uri
 
 
 @pytest.mark.parametrize("gene", ["MYT1"])
-@pytest.mark.parametrize("control", [True, False])
-def test_get_item_location(gene, control):
+def test_get_item_location(gene):
     # Check that finding image locations from gene or compounds works
-    result = get_item_location_info(gene, control).shape
+    result = get_item_location_info(gene).shape
     assert result[0] > 1
     assert result[1] == 28
 

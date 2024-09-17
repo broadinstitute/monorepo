@@ -23,10 +23,11 @@ Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vig
 """
 
 from math import sqrt
-from pathlib import Path
 from time import perf_counter
 
+from broad_babel.query import get_mapper
 from cachier import cachier
+from pathos.multiprocessing import Pool
 
 try:
     import cupy as cp
@@ -35,9 +36,7 @@ except Exception:
 
 import numpy as np
 import polars as pl
-from parse_features import get_feature_groups
-from pathos.multiprocessing import Pool
-from scipy.stats import combine_pvalues, t
+from scipy.stats import mannwhitneyu, t
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
 
@@ -78,50 +77,76 @@ def sample_ids(
     return result
 
 
-def partition_by_trt(
-    df: pl.DataFrame,
+@cachier()
+def partition_parquet_by_trt(
+    path: str,
+    dataset: str,
     column: str = "Metadata_JCP2022",
     negcons_per_plate: int = 2,
     seed: int = 42,
 ) -> dict[str, tuple[pl.DataFrame, pl.DataFrame]]:
+    profiles = pl.read_parquet(path)
+    profiles = add_pert_type(profiles, dataset=dataset)
+    return partition_by_trt(profiles, dataset, column, negcons_per_plate, seed)
+
+
+def partition_by_trt(
+    df: pl.DataFrame,
+    dataset: str,
+    column: str = "Metadata_JCP2022",
+    negcons_per_plate: int = 2,
+    seed: int = 42,
+) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     """
     Partition a dataframe by using identifier column (by default Metadata_JCP2022)
     and then further split into two dataframes, one for positive controls and one
     for negative controls.
     """
     meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
-    pos_partition, neg_partition = df.select(
+    # TODO Refactor these sections to increase performance
+    partitions = df.select(
         pl.col(meta_cols),
         pl.all().exclude("^Metadata.*$").cast(pl.Float32),
-    ).partition_by("Metadata_pert_type", include_key=False)
+    ).partition_by("Metadata_pert_type")
 
-    neg_partition = neg_partition.drop(column)
+    partitions = {
+        v.head(1).get_column("Metadata_pert_type")[0]: v.select(
+            pl.exclude("Metadata_pert_type")
+        )
+        for v in partitions
+    }
+    partitions["negcon"] = partitions["negcon"].drop(column)
     if negcons_per_plate:  # Sample $negcons_per_plate elements from each plate
-        neg_partition = neg_partition.filter(
+        partitions["negcon"] = partitions["negcon"].filter(
             pl.int_range(0, pl.count()).shuffle(seed=seed).over("Metadata_Plate")
             < negcons_per_plate
         )
 
-    ids_plates = dict(pos_partition.group_by(column).agg("Metadata_Plate").iter_rows())
+    ids_plates = dict(
+        partitions["trt"].group_by(column).agg("Metadata_Plate").iter_rows()
+    )
 
-    ids_prof = pos_partition.drop("Metadata_pert_type", "Metadata_Plate").partition_by(
-        column, as_dict=True, maintain_order=False, include_key=False
+    ids_prof = (
+        partitions["trt"]
+        .drop("Metadata_pert_type", "Metadata_Plate")
+        .partition_by(column, as_dict=True, maintain_order=False, include_key=False)
     )
 
     # TODO is there a better way to return only float values?
     id_trt_negcon = {
         id_: (
-            ids_prof[id_],
-            neg_partition.filter(pl.col("Metadata_Plate").is_in(plates)).drop(
-                "Metadata_Plate"
-            ),
+            ids_prof[id_].to_numpy(),
+            partitions["negcon"]
+            .filter(pl.col("Metadata_Plate").is_in(plates))
+            .drop("Metadata_Plate")
+            .to_numpy(),
         )
         for id_, plates in ids_plates.items()
     }
     return id_trt_negcon
 
 
-def get_p_value(a, b, negcons_per_plate: int = 2, seed: int = 42):
+def get_p_value(a, b, seed: int = 42):
     """
     Calculate the p value of two matrices in a column fashion.
     TODO check if we should sample independently or if we can sample once and used all features from a given sample set.
@@ -152,14 +177,22 @@ def get_p_value(a, b, negcons_per_plate: int = 2, seed: int = 42):
     return np.nan_to_num(p, nan=1.0)
 
 
-def calculate_pvals(
+def get_pvalue_mwu(a, b, axis=0):
+    """
+    Wrapper over scipy ttest_ind
+    """
+
+    return mannwhitneyu(a, b, axis=axis).pvalue
+
+
+def calculate_mw(
     profiles: pl.DataFrame,
     negcons_per_plate: int = 2,
     seed: int = 42,
 ):
     """
-    Calculate the pvalues of all features against a sample of their negative controls.
-    1. Calculate the p value of all features
+    Calculate the pvalues of each feature against a sample of their negative controls.
+    1. Calculate the MW test
     2. then adjust the p value to account for multiple testing
     """
     partitioned = partition_by_trt(profiles, seed=seed)
@@ -190,82 +223,86 @@ def calculate_pvals(
     return corrected
 
 
-@cachier()
-def pvals_from_path(path: str, *args, **kwargs):
+def calculate_pvals(
+    partitioned: dict[str, tuple[np.ndarray, np.ndarray]],
+) -> tuple[tuple[str], pl.DataFrame]:
     """
-    Locally cached version of pvals. To clean cache run <function>.clean_cache().
+    Calculate the pvalues of each feature against a sample of their negative controls.
+    1. Calculate the p value of all features
+    2. then adjust the p value to account for multiple testing
     """
-    profiles = pl.read_parquet(path)
-    return calculate_pvals(profiles, *args, **kwargs)
+    # Remove perturbations that have an excessive number of entries (usually controls/errors)
+    partitioned = {
+        k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
+    }
+    print("Calculating and adjusting p values")
+    timer = perf_counter()
+    if False:  # Unthreaded by default
+        timer = perf_counter()
+        with Pool() as p:
+            corrected = p.map(
+                lambda x: multipletests(get_pvalue_mwu(*x), method="fdr_bh")[1],
+                partitioned.values(),
+            )
+        print(f"Threaded: {perf_counter()-timer}")
+    else:
+        timer = perf_counter()
+        corrected = [
+            multipletests(get_pvalue_mwu(a, b), method="fdr_bh")[1]
+            for a, b in tqdm(partitioned.values())
+        ]
+        print(f"Linear: {perf_counter()-timer}")
+        # print(f"FDR correction performed in {perf_counter()-timer}")
+
+    return (tuple(partitioned.keys()), corrected)
 
 
-def correct_group_feature_pvals(
-    corrected: pl.DataFrame,
+def add_pert_type(
+    profiles: pl.DataFrame, dataset: str, poscons: bool = False
 ) -> pl.DataFrame:
     """
-    1. Group features based on their hierarchy and compute combined p-value per group using
-    2. then correct the p values from step 5 (fdr_bh)
-
-    # TODO double-check if the statistics work for features that originate from the same cell
+    Add metadata with perturbation type from the JCP2022 ID.
+    poscons: Ensure all outputs are trt or negcon. Drop nulls.
     """
-
-    # %% Group pvalues
-
-    groups = get_feature_groups(corrected.select(pl.all().exclude("^Metadata.*$")))
-    parsed = pl.concat((corrected.transpose(), groups), how="horizontal")
-    agg = parsed.group_by(groups.columns).agg(pl.all())
-    # TODO think of if/how to deal with features that come empty
-
-    # Combine p values and fill nans
-    print("Combine p values using parsed features")
-
-    np_pvals = agg.drop(groups.columns).to_numpy()
-
-    timer = perf_counter()
-    with Pool() as p:
-        fully_grouped_pvals = p.map(
-            lambda x: np.nan_to_num(combine_pvalues(x).pvalue, nan=1.0),
-            np_pvals.flatten(),
+    pert_type = "Metadata_pert_type"
+    if "Metadata_pert_type" not in profiles.select(pl.col("^Metadata.*$")).columns:
+        # Add perturbation type metadata (new profiles exclude it)
+        jcp_to_pert_type = get_mapper(
+            dataset,
+            input_column="plate_type",
+            output_columns="JCP2022,pert_type",
         )
 
-    print(f"{perf_counter()-timer}")
-
-    print("Perform the correction for grouped features")
-    second_grouping_matrix = np.reshape(fully_grouped_pvals, np_pvals.shape)
-    timer = perf_counter()
-    with Pool() as p:
-        second_correction = p.map(
-            lambda x: multipletests(x, method="fdr_bh")[1],
-            second_grouping_matrix.T,
+        profiles = profiles.with_columns(
+            pl.col("Metadata_JCP2022").replace(jcp_to_pert_type).alias(pert_type)
         )
-    print(f"{perf_counter()-timer}")
-    corrected_p_value = pl.DataFrame(
-        np.transpose(second_correction), schema=agg.columns[3:]
-    )
 
-    final = pl.concat((agg.select(groups.columns), corrected_p_value), how="horizontal")
-    return final
+    profiles = profiles.filter(pl.col(pert_type) != "null")
+    if not poscons:
+        profiles = profiles.with_columns(
+            pl.when(pl.col(pert_type) != "negcon")
+            .then(pl.lit("trt"))
+            .otherwise(pl.lit("negcon"))
+            .alias(pert_type)
+        )
+    return profiles
 
 
-@cachier
-def get_grouped_corrected_pvals(
-    profiles_path: str,
-    *args,
-    **kwargs,
-):
-    print("Calculating corrected p-values")
-    print("Partition data into treatment and negative control")
+@cachier()
+def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
+    """
+    Use the path to cache pvals
+    Locally cached version of pvals. To clean cache run <function>.clean_cache().
+    """
     timer = perf_counter()
-    corrected_pvals = pvals_from_path(profiles_path, *args, **kwargs)
-    corrected_grouped_pvals = calculate_pvals(corrected_pvals)
-    print(f"{perf_counter()-timer}")
+    partitioned = partition_parquet_by_trt(path, dataset)
+    print(f"Partitioning took {perf_counter()-timer}")
 
-    return corrected_grouped_pvals
-
-
-# Autogenerates the parquet file if run from command line
-if __name__ == "__main__":
-    dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
-    precor_file = "full_profiles_cc_adj_mean_corr.parquet"
-    precor_path = dir_path / "orf" / precor_file
-    corrected_pvals = pvals_from_path(precor_path, overwrite=True)
+    ids, pvals = calculate_pvals(partitioned, *args, **kwargs)
+    return pl.DataFrame(
+        pvals,
+        schema={
+            k: pl.Float32
+            for k in pl.scan_parquet(path).select(pl.exclude("^Metadata.*$")).columns
+        },
+    ).with_columns(Metadata_JCP2022=pl.Series(ids))

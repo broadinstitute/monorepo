@@ -18,7 +18,8 @@ from jump_portrait.fetch import (
 )
 from jump_portrait.s3 import get_corrected_image
 from jump_portrait.utils import batch_processing, parallel
-
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 def download_item_images(
     item_name: str,
@@ -40,10 +41,9 @@ def download_item_images(
 
     item_ch_corr_combinations = list(product(item_location_tups, channels, corrections))
 
-    parallel(item_ch_corr_combinations, save_image, output_dir=output_dir)
+    # parallel(item_ch_corr_combinations, save_image, output_dir=output_dir)
+    Parallel(n_jobs=-1)(delayed(save_image)(*item) for item in tqdm(item_ch_corr_combinations))
 
-
-@batch_processing
 def save_image(
     row,
     channel: str,
@@ -53,7 +53,7 @@ def save_image(
     apply_correction: bool = False,
 ):
     s3_image_path = build_s3_image_path(row=row, channel=channel, correction=correction)
-    image = get_corrected_image(first_row, channel, correction, apply_correction)
+    image = get_corrected_image(row, channel, correction, apply_correction)
     row["padded_ix"] = str(row["ix"]).rjust(pad, "0")
     out_file = "{standard_key}_{Metadata_PlateType}_{Metadata_Plate}_{padded_ix}"
 

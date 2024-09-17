@@ -141,25 +141,24 @@ def main():
         collate(Path(args.output_path))
 
 
-def get_inchi_annotations(output_dir):
-    df = pd.read_parquet(Path(output_dir) / 'annotations.parquet')
+def get_inchikeys(output_dir, source_ids, codes):
     db_mapper = get_mapper(output_dir, 'drugbank')
     ch_mapper = get_mapper(output_dir, 'chembl')
     pc_mapper = get_mapper(output_dir, 'pubchem')
 
-    drugbank_mask = df['source_id'] == 'drugbank'
-    chembl_mask = df['source_id'] == 'chembl'
-    pubchem_mask = df['source_id'] == 'pubchem'
+    drugbank_mask = source_ids == 'drugbank'
+    chembl_mask = source_ids == 'chembl'
+    pubchem_mask = source_ids == 'pubchem'
 
-    df['inchikey'] = None
-    df.loc[drugbank_mask, 'inchikey'] = df['source'].map(db_mapper)
-    df.loc[chembl_mask, 'inchikey'] = df['source'].map(ch_mapper)
-    df.loc[pubchem_mask, 'inchikey'] = df['source'].map(pc_mapper)
+    inchikeys = pd.Series(index=codes.index)
+    inchikeys[drugbank_mask] = codes.map(db_mapper)
+    inchikeys[chembl_mask] = codes.map(ch_mapper)
+    inchikeys[pubchem_mask] = codes.map(pc_mapper)
 
     inchi_regex = r'^([A-Z]{14}\-[A-Z]{10})(\-[A-Z])$'
-    df = df.query('inchikey.fillna("").str.fullmatch(@inchi_regex)')
-    df = df.drop_duplicates().reset_index(drop=True).copy()
-    return df
+    inchi_match = inchikeys.fillna("").str.fullmatch(inchi_regex)
+    inchikeys[~inchi_match] = None
+    return inchikeys
 
 
 if __name__ == '__main__':

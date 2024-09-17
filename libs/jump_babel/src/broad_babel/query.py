@@ -11,8 +11,8 @@ import pooch
 DB_FILE = pooch.retrieve(
     # Temporarily  using URL out due to Zenodo API change
     # https://github.com/zenodo/zenodo/issues/2506
-    url=("https://zenodo.org/records/10542488/files/" "babel.db"),
-    known_hash="md5:eef26392377e8a01dd0a7e4ceb2e59a8",
+    url=("https://zenodo.org/records/12211976/files/" "babel.db"),
+    known_hash="md5:4748089ad27a5ff2855627698897f075",
 )
 TABLE = "babel"
 
@@ -21,7 +21,7 @@ TABLE = "babel"
 def run_query(
     query: str or tuple[str],
     input_column: str,
-    output_column: str or str,
+    output_columns: str or str,
     operator: None or str = None,
     predicate: None or str = None,
 ) -> str or t.Dict[str, str]:
@@ -32,8 +32,8 @@ def run_query(
     query : str or t.List[str]
         Input identifiers
     input_column : str
-        Type of name the input belongs to. It can be JCP2022, broad_sample or standard_key.
-    output_column : str or t.List[str]
+        Type of name the input belongs to. It can be  standard_key,JCP2022,plate_type,NCBI_Gene_ID,broad_sample or pert_type.
+    output_columns : str or t.List[str]
         Desired name translation.
     operator : None or str
         Type of comparison to use, default is "=", but use "LIKE" to match an expression.
@@ -46,13 +46,13 @@ def run_query(
         - Translated name (str) if query is string and only one occurrence is found.
         - List of tuples with all fields if output_column is not one column or multiple occurrnces are found.
         - Dictionary with input->output names if the input is a collection of strings.
-
     """
+
     con = sqlite3.connect(DB_FILE)
     cur = con.cursor()
     expression_prefix = (
         expression
-    ) = f"SELECT {output_column} FROM {TABLE} WHERE {input_column} "
+    ) = f"SELECT {output_columns} FROM {TABLE} WHERE {input_column} "
     placeholder = "?"  # For SQLite. See DBAPI paramstyle.
     if isinstance(query, str):
         operator = operator or "="
@@ -63,7 +63,47 @@ def run_query(
     expression = expression_prefix + operator + " (%s)" % placeholder
     if predicate is not None:
         expression += f" {predicate}"
-    return cur.execute(expression, query).fetchall()
+
+    result = cur.execute(expression, query).fetchall()
+    # Remove duplicates (e.g., different broad ids, same JUMP ids)
+    no_duplicates = list(set(result))
+
+    return no_duplicates
+
+
+def get_mapper(
+    query: list or tuple, input_column: str, output_columns: str
+) -> dict[str, str]:
+    """
+    Convenience function to generate a mapper from a set of queries.
+    It delegates matching to sqlite3 and ensures prefixes are removed.
+    Unlike "run_query", this returns a one-to-one relationship by compressing
+    the repeated inputs into a dictionary.
+
+    Parameters
+    ----------
+    query : str or t.List[str]
+        Input identifiers
+    input_column : str
+        Type of name the input belongs to. It can be JCP2022, broad_sample or standard_key.
+    output_columns : str or t.List[str]
+        Desired value of resulting dictionary
+
+    Returns
+    -------
+    Dictionary where keys are input_column items and values are their equivalent
+    """
+    assert len(output_columns.split(","))==2, "Incorrect number of output columns"
+
+    input_column = input_column.removeprefix("Metadata_")
+    output_columns = ",".join(x.removeprefix("Metadata") for x in output_columns.split(","))
+    return dict(
+        run_query(
+            query,
+            input_column=input_column,
+            output_columns=output_columns,
+        )
+    )
 
 
 def broad_to_standard(query: str or t.List[str]) -> str or t.Dict[str, str]:
@@ -117,3 +157,4 @@ def export_csv(output: str = "exported.csv", table: str = TABLE):
         headers = [x[1] for x in cur.execute(f"PRAGMA table_info({TABLE})").fetchall()]
         writer.writerow(headers)
         writer.writerows(data)
+

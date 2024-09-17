@@ -8,7 +8,6 @@ dt = 0.1
 n_observed = 2
 
 # "Observations"
-
 X = jnp.array([[0], [0], [0.1], [0.1]])
 Ys = jnp.cumsum(uniform(key, (n_iter, n_observed)), axis=0)
 P = jnp.eye(len(X)) * 0.1
