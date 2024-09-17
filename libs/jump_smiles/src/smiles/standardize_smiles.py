@@ -15,7 +15,6 @@ import fire
 import logging
 import numpy as np
 import pandas as pd
-import requests
 import tqdm
 from pathlib import Path
 
@@ -86,12 +85,12 @@ class StandardizeMolecule:
         if mol is None:
             logging.error(f"Reading Error, {smiles}")
             return pd.DataFrame(
-                columns=[
-                    "SMILES_original",
-                    "SMILES_standardized",
-                    "InChI_standardized",
-                    "InChIKey_standardized",
-                ]
+                {
+                    "SMILES_original": [smiles_original],
+                    "SMILES_standardized": [pd.NA],
+                    "InChI_standardized": [pd.NA],
+                    "InChIKey_standardized": [pd.NA],
+                }
             )
 
         smiles_clean_counter = Counter()
@@ -207,33 +206,6 @@ class StandardizeMolecule:
 
         return pd.concat(standardized_dfs, ignore_index=True)
 
-    def skip_rows_bang(self, file_or_url):
-        """
-        Return the rows that start with a bang.
-
-        :param file_or_url: Input file name, either a local file or a URL
-
-        """
-        # Check if the input is a URL
-        if file_or_url.startswith("http://") or file_or_url.startswith("https://"):
-            response = requests.get(file_or_url)
-            content = response.content.decode("utf-8")
-            lines = content.splitlines()
-        elif file_or_url.endswith(".gz"):
-            import gzip
-
-            with gzip.open(file_or_url, "rt") as f:
-                lines = f.readlines()
-        else:
-            with open(file_or_url, "r") as f:
-                lines = f.readlines()
-
-        exclamation_indices = [
-            index for index, line in enumerate(lines) if line.startswith("!")
-        ]
-
-        return exclamation_indices
-
     def _load_input(self):
         """
         Read the input and return a pandas dataframe containing the SMILES.
@@ -254,7 +226,8 @@ class StandardizeMolecule:
             self.input = pd.read_csv(
                 self.input,
                 sep=sep,
-                skiprows=self.skip_rows_bang(self.input),
+                comment="!",
+                compression="infer",
                 low_memory=False,
             )
 
