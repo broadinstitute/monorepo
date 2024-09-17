@@ -27,8 +27,8 @@ from jump_portrait.s3 import (
     get_image_from_s3uri,
     read_parquet_s3,
 )
-from jump_portrait.utils import batch_processing, parallel
-
+from jump_portrait.utils import batch_processing, parallel, try_function
+from itertools import groupby, product, starmap
 
 def format_cellpainting_s3() -> str:
     return (
@@ -84,8 +84,8 @@ def get_jump_image(
         Site identifier (also called foci), default is 1.
     correction : str
         Whether or not to use corrected data. It does not by default.
-    apply_illum : bool
-        When correction=="Illum" apply Illum correction on original image.
+    apply_correction : bool
+        When apply_correction=="Illum" apply Illum correction on original image.
 
     Returns
     -------
@@ -117,6 +117,46 @@ def get_jump_image(
         first_row, channel, correction, apply_correction, compressed, staging
     )
     return result
+
+
+def get_jump_image_batch(metadata: pl.DataFrame, channel: list[str],
+                        site: list[str], correction:str='Orig',
+                        verbose: bool=True,
+                        ) -> (pl.DataFrame, list[tuple]):
+    '''
+    Load jump image associated to metadata in a threaded fashion.
+
+    Parameters:
+    ----------
+    metadata : pl.DataFrame
+        must have the column in this specific order ("Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well")
+    channel : list of string
+        list of channel desired
+        Must be in ['DNA', 'ER', 'AGP', 'Mito', 'RNA']
+    site : list of string
+        list of site desired
+        - For compound, must be in ['1' - '6']
+        - For ORF, CRISPR, must be in ['1' - '9']
+    correction : str
+        Must be 'Illum' or 'Orig'
+    verbose : bool
+        Whether to enable tqdm or not.
+
+    Return:
+    ----------
+    iterable : list of tuple
+        list containing the metadata, channel, site and correction
+    img_list : list of array
+        list containing the images
+
+    '''
+    iterable = list(starmap(lambda *x: (*x[0], *x[1:]), product(metadata.rows(), channel, site, [correction])))
+    img_list = parallel(iterable, batch_processing(try_function(get_jump_image)),
+                        verbose=verbose)
+     
+    return iterable, img_list
+
+
 
 
 def get_item_location_metadata(
@@ -322,3 +362,11 @@ def get_gene_images(
     )
 
     return images
+
+metadata_pre = get_item_location_info("MYT1")
+iterable, img_list = get_jump_image_batch(metadata_pre.select(pl.col(
+["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"])),
+                                                        channel=['DNA','ER', 'RNA'],#, 'ER', 'AGP', 'Mito', 'RNA'],
+                                                        site=[str(i) for i in range(8)],
+                                                        correction='Orig',
+                                                        verbose=False) #None, 'Illum'
