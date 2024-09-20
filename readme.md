@@ -36,7 +36,7 @@ Documentation under construction. This is intended to concentrate all the shared
 
 <a id="To%20be%20integrated"></a>
 
-### To be integrated
+### Other tools/libraries
 
 -   [copairs](https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/tree/master): Find pairs and compute metrics between them.
 
