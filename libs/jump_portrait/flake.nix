@@ -52,8 +52,8 @@
                   export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
                   runHook venvShellHook
                   export PYTHONPATH=${python_with_pkgs}/${python_with_pkgs.sitePackages}:$PYTHONPATH
-                  rye sync
-                  source .venv/bin/activate
+#                  rye sync
+#                  source .venv/bin/activate
               '';
               };
             };
