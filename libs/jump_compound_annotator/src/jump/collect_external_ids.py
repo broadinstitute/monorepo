@@ -26,7 +26,7 @@ def export(output_path):
     ])
 
     drugs, genes, edges, categories = open_dgidb(output_path)
-    edges.drug_concept_id.fillna("", inplace=True)
+    edges["drug_concept_id"] = edges["drug_concept_id"].fillna("")
     edges = edges.query('drug_concept_id.str.match("chembl:")').copy()
     edges['drug_concept_id'] = edges.drug_concept_id.str[len('chembl:'):]
     dgidb_chembl_id = edges['drug_concept_id'].dropna().drop_duplicates()
