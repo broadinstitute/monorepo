@@ -32,7 +32,7 @@ _DESCRIPTIONS = {
     "Match example image": "Sample image of the perturbation’s match. It cycles over the available images for every occurrence of the perturbation.",
     "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations’ profiles are anti-correlated. Ranges from -1 to 1.",
     "Suffix": "Suffix associated with a CellProfiler feature.",
-    "Phenotypic activity": "Adjusted p-value (*) indicating the statistical significance of the difference between the perturbation's morphological profile and its corresponding control profile. Lower values suggest stronger phenotypic effects. ",
+    "Phenotypic activity": "Adjusted p-value (*) indicating the statistical significance of the difference between the perturbation's morphological profile and its corresponding control profile. Lower values suggest stronger phenotypic effects. An empty value indicates that the value was discarded due to low infection efficiency.",
     "Feature significance": "Adjusted p-value (*) indicating the statistical significance of the difference between a specific morphological feature in the perturbed condition compared to the control condition. Lower values suggest a stronger effect of the perturbation on that particular feature.",
     "Phenotypic activity Match": "P-value indicating that the feature is significantly different from the feature in the controls (for the match). ",
     "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",

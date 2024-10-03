@@ -49,7 +49,8 @@
                   # https://devenv.sh/reference/options/
                   packages = with pkgs; [
                     poetry
-                    python310
+                    python311
+                    python311Packages.cupy
                   ];
                   enterShell = ''
                     export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH

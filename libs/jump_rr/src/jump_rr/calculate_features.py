@@ -18,7 +18,7 @@ for CRISPR and ORF datasets using a GPU,
 then wrangle information and produce an explorable data frame.
 
 This is intended for use on a server with GPUs and high RAM to analyse
- data massively.
+ data en masse.
 
 Steps:
 - Group feature names using regular expression

@@ -67,7 +67,7 @@ def add_url_col(
             pl.col("Metadata_Well"),
             separator="/",
         )
-        .map_elements(lambda x: format_val("url", x))
+        .map_elements(lambda x: format_val("url", x), return_dtype=pl.String)
         .alias(url_colname)
     )
     return prof
