@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.05";
+    nixpkgs.url = "github:NixOS/nixpkgs/nixos-23.11";
     nixpkgs_master.url = "github:NixOS/nixpkgs/master";
     systems.url = "github:nix-systems/default";
     devenv.url = "github:cachix/devenv";
@@ -46,12 +46,18 @@
                   ]);
                   # https://devenv.sh/reference/options/
                   packages = with pkgs; [
-                    python311
-                    python311Packages.polars
+                    poetry
+                    python311Packages.cupy
+                    csvtool
                   ];
                   enterShell = ''
                     export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:${pkgs.cudatoolkit}
+                    # export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
                     export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
+                    if [ ! -d ".venv" ]; then
+                       poetry install -vv --with dev
+                    fi
+                    source .venv/bin/activate
                   '';
                 }
               ];
