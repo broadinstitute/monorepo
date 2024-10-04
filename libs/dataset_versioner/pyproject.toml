@@ -1,0 +1,27 @@
+[tool.poetry]
+name = "dataset_versioner"
+version = "0.1.0"
+description = "Version dataset components via Zenodo"
+authors = ["Alan Fernando Muñoz González <amunozgo@broadinstitute.org>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+requests = "^2.32.3"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.3.3"
+requests-mock = "^1.12.1"
+ruff = "^0.6.9"
+
+[tool.poetry.scripts]
+update_etags = "dataset_versioner.update_etags:main"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.ruff]
+lint.select = ["ANN", "C90", "D", "E", "F", "I", "N", "NPY", "PTH", "TID", "UP", "W"]
+lint.ignore = ["D211", "D213"] 
+exclude = ["vendor"]
