@@ -23,5 +23,5 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.ruff]
 lint.select = ["ANN", "C90", "D", "E", "F", "I", "N", "NPY", "PTH", "TID", "UP", "W"]
-lint.ignore = ["D211", "D213"] 
+lint.ignore = ["D211", "D213", "ANN101", "ANN003"] 
 exclude = ["vendor"]
