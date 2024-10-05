@@ -336,10 +336,10 @@ class ZenodoClient:  # noqa: D101
             )
             if response.status_code != 202:
                 logger.error(
-                    f"Error publishing deposition: {response.status_code} {response.text}"
+                    f"Error publishing deposition: {response.status_code} {response.text}"  # noqa: E501
                 )
                 raise ZenodoError(
-                    f"Error publishing deposition: {response.status_code} {response.text}"
+                    f"Error publishing deposition: {response.status_code} {response.text}"  # noqa: E501
                 )
             data = response.json()
             logger.info(f"Published deposition ID: {data['id']}")
