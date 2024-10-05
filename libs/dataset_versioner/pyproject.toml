@@ -16,6 +16,7 @@ ruff = "^0.6.9"
 
 [tool.poetry.scripts]
 update_etags = "dataset_versioner.update_etags:main"
+upload_index = "dataset_versioner.upload_index:main"
 
 [build-system]
 requires = ["poetry-core"]
