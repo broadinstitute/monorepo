@@ -3,7 +3,7 @@ Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_babel
 
 [tool.poetry]
 name = "broad-babel"
-version = "0.1.26"
+version = "0.1.27"
 description = "A translator of Broad and JUMP ids to more conventional names."
 authors = ["Alan Munoz"]
 readme = "README.md"
@@ -15,7 +15,6 @@ pooch = "^1.7.0"
 polars = "^1.5.0"
 adbc-driver-sqlite = "^0.8.0"
 pyarrow = "^16.1.0"
-jump-portrait = "^0.0.22"
 
 [tool.poetry.group.dev.dependencies]
 jupytext = "^1.15.0"
