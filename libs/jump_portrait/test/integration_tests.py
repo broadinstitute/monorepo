@@ -40,3 +40,7 @@ def test_get_corrected_image():
 def test_download_image():
     # TODO add test
     pass
+
+def test_negcon():
+    item_name="JCP2022_033924"
+    tmp = get_item_location_info(item_name, input_column="JCP2022")

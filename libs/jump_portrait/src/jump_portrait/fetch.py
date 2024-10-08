@@ -129,6 +129,7 @@ def get_item_location_metadata(
     Return tuple with its Metadata location in order source, batch, plate,
     well and site.
     """
+    assert item_name!="JCP2022_033924", "The negative control is not supported, please use a smaller selection before fetching plate information"
 
     # Get plates
     jcp_ids = query.run_query(
@@ -236,6 +237,9 @@ def get_item_location_info(
     well_level_metadata = get_item_location_metadata(
         item_name, input_column=input_column
     )
+    assert len(well_level_metadata), f"Item {item_name} was not found in column {input_column}"
+    # Note that this breaks if we pass item_name="JCP2022_033924" and
+    # input_column="JCP2022" due to the negative control
     item_selected_meta = load_filter_well_metadata(well_level_metadata)
     joint = item_selected_meta.join(
         well_level_metadata.drop("Metadata_Well"),
