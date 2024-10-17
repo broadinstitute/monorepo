@@ -4,7 +4,6 @@ import pandas as pd
 from tqdm import tqdm
 
 from jump.biokg import get_compound_annotations as get_biokg
-from jump.collate_compounds import get_inchikeys
 from jump.collate_gene import fill_with_synonyms
 from jump.dgidb import get_compound_annotations as get_dgidb
 from jump.drugrep import get_compound_annotations as get_drugrep
@@ -54,8 +53,5 @@ def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame
         datasets_d[annot]["database"] = annot
     dframe = pd.concat(datasets_d.values()).reset_index(drop=True)
     dframe["target"] = fill_with_synonyms(output_dir, dframe["target"])
-    dframe["inchikey"] = get_inchikeys(
-        output_dir, dframe["source_id"], dframe["source"]
-    )
     dframe.to_parquet(filepath)
     return dframe

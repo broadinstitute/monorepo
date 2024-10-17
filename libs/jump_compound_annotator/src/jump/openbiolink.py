@@ -3,7 +3,7 @@ from zipfile import ZipFile
 
 import pandas as pd
 
-from jump.utils import download_file, load_gene_ids
+from jump.utils import download_file, ncbi_to_symbol
 
 
 def open_zip(output_path: Path, redownload=False):
@@ -27,10 +27,7 @@ def open_zip(output_path: Path, redownload=False):
 
 def get_compound_annotations(output_dir: str):
     output_path = Path(output_dir)
-    gene_ids = load_gene_ids()
-    gene_ids.dropna(subset="NCBI_Gene_ID", inplace=True)
-    gene_ids["NCBI_Gene_ID"] = gene_ids["NCBI_Gene_ID"].astype(int)
-    gene_mapper = gene_ids.set_index("NCBI_Gene_ID")["Approved_symbol"]
+    gene_mapper = ncbi_to_symbol(output_path)
     edges, nodes = open_zip(output_path)
     query = 'source.str.startswith("PUBCHEM") and target.str.startswith("NCBIGENE")'
     edges = edges.query(query).copy()
@@ -57,11 +54,7 @@ def get_compound_annotations(output_dir: str):
 
 def get_gene_interactions(output_dir: str):
     output_path = Path(output_dir)
-    gene_ids = load_gene_ids()
-    gene_ids.dropna(subset="NCBI_Gene_ID", inplace=True)
-    gene_ids["NCBI_Gene_ID"] = gene_ids["NCBI_Gene_ID"].astype(int)
-    gene_mapper = gene_ids.set_index("NCBI_Gene_ID")["Approved_symbol"]
-
+    gene_mapper = ncbi_to_symbol(output_path)
     edges, nodes = open_zip(output_path)
     query = 'rel_type.str.startswith("GENE") and rel_type.str.endswith("GENE")'
     edges = edges.query(query).copy()
