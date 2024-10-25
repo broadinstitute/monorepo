@@ -1,4 +1,5 @@
 import ftplib
+import os
 from pathlib import Path
 
 import pandas as pd
@@ -10,7 +11,10 @@ def download_ftp_file(host, remote_file_path, filepath: Path, redownload=False):
     if filepath.is_file() and not redownload:
         return
     try:
-        ftp = ftplib.FTP(host, user="anonymous", passwd=f"anonymous@{host}")
+        if not isinstance(host, ftplib.FTP):
+            ftp = ftplib.FTP(host, user="anonymous", passwd=f"anonymous@{host}")
+        else:
+            ftp = host
         # Get the file size
         file_size = ftp.size(remote_file_path)
 
@@ -19,7 +23,12 @@ def download_ftp_file(host, remote_file_path, filepath: Path, redownload=False):
         with (
             filepath.open("wb") as local_file,
             tqdm(
-                total=file_size, unit="B", unit_scale=True, desc="Downloading", ncols=80
+                total=file_size,
+                unit="B",
+                unit_scale=True,
+                desc="Downloading",
+                ncols=80,
+                leave=False,
             ) as pbar,
         ):
 
@@ -30,8 +39,35 @@ def download_ftp_file(host, remote_file_path, filepath: Path, redownload=False):
             ftp.retrbinary("RETR " + remote_file_path, progress_callback)
     except Exception as e:
         print("An error occurred:", e)
-    finally:
-        ftp.quit()
+
+
+def download_ftp_directory(ftp_server, remote_dir, local_dir, redownload=False):
+    ftp = ftplib.FTP(ftp_server)
+    ftp.login()
+    os.makedirs(local_dir, exist_ok=True)
+    ftp.cwd(remote_dir)
+
+    local_file_list = local_dir / "_list.txt"
+    remote_file_list = ftp.nlst()
+    if not local_file_list.exists() or redownload:
+        with local_file_list.open("w") as fwrite:
+            fwrite.write("\n".join(remote_file_list))
+    else:
+        with local_file_list.open("r") as fread:
+            local_file_list = fread.read().splitlines()
+        remote_file_list = [f for f in remote_file_list if f not in local_file_list]
+
+    for file_name in tqdm(remote_file_list, leave=False):
+        local_file = Path(os.path.join(local_dir, file_name))
+        try:
+            ftp.cwd(file_name)  # If this works, it's a directory
+            new_remote_dir = os.path.join(remote_dir, file_name)
+            new_local_dir = os.path.join(local_dir, file_name)
+            download_ftp_directory(ftp, new_remote_dir, new_local_dir)
+            ftp.cwd("..")  # Go back up a level in the directory tree
+        except Exception:
+            download_ftp_file(ftp, file_name, local_file, redownload)
+    ftp.quit()
 
 
 def download_file(url, filepath: Path, redownload=False):
