@@ -24,7 +24,7 @@ def get_inchikeys(output_dir, source_ids, codes):
     return inchikeys
 
 
-def add_inchikeys(output_dir, pull=False):
+def add_inchikeys(output_dir, redownload=False):
     output_path = Path(output_dir)
     st_labels = pd.read_parquet(output_path / "annotations.parquet")
     ss_labels = pd.read_parquet(output_path / "compound_interactions.parquet")
@@ -40,7 +40,7 @@ def add_inchikeys(output_dir, pull=False):
         ]
     )
 
-    if pull:
+    if redownload:
         pull_inchikeys(output_dir, all_codes["source_id"], all_codes["source"])
 
     st_labels["inchikey"] = get_inchikeys(

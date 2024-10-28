@@ -7,7 +7,7 @@ import requests
 from tqdm.auto import tqdm
 
 
-def download_ftp_file(host, remote_file_path, filepath: Path, redownload=False):
+def download_ftp_file(host, remote_file_path, filepath: Path, redownload):
     if filepath.is_file() and not redownload:
         return
     try:
@@ -41,7 +41,7 @@ def download_ftp_file(host, remote_file_path, filepath: Path, redownload=False):
         print("An error occurred:", e)
 
 
-def download_ftp_directory(ftp_server, remote_dir, local_dir, redownload=False):
+def download_ftp_directory(ftp_server, remote_dir, local_dir, redownload):
     ftp = ftplib.FTP(ftp_server)
     ftp.login()
     os.makedirs(local_dir, exist_ok=True)
@@ -70,7 +70,7 @@ def download_ftp_directory(ftp_server, remote_dir, local_dir, redownload=False):
     ftp.quit()
 
 
-def download_file(url, filepath: Path, redownload=False):
+def download_file(url, filepath: Path, redownload):
     if filepath.is_file() and not redownload:
         return
     response = requests.get(url, stream=True)
@@ -97,11 +97,16 @@ def load_jump_ids(output_path):
     return ids
 
 
-def ncbi_to_symbol(output_path: Path):
-    url = "https://g-a8b222.dd271.03c0.data.globus.org/pub/databases/genenames/hgnc/tsv/hgnc_complete_set.txt"
+def hgnc_ids(output_path, redownload: bool):
+    url = "https://storage.googleapis.com/public-download-files/hgnc/archive/archive/monthly/tsv/hgnc_complete_set_2024-10-01.txt"
     dst = output_path / "hgnc" / "complete_set.txt"
-    download_file(url, dst)
+    download_file(url, dst, redownload)
     gene_ids = pd.read_csv(dst, sep="\t", low_memory=False)
+    return gene_ids
+
+
+def ncbi_to_symbol(output_path: Path, redownload: bool):
+    gene_ids = hgnc_ids(output_path, redownload)
     gene_ids.dropna(subset="entrez_id", inplace=True)
     gene_ids["entrez_id"] = gene_ids["entrez_id"].astype(int)
     gene_mapper = gene_ids.set_index("entrez_id")["symbol"]

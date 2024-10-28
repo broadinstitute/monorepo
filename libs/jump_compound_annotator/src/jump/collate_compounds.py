@@ -9,17 +9,17 @@ from jump.pharmebinet import get_compound_interactions as get_pharmebinet
 from jump.primekg import get_compound_interactions as get_primekg
 
 
-def concat_annotations(output_dir: str, overwrite: bool = False) -> pd.DataFrame:
+def concat_annotations(output_dir: str, redownload: bool = False) -> pd.DataFrame:
     """Aggregate compound interactions from all sources"""
     filepath = Path(output_dir) / "compound_interactions.parquet"
-    if filepath.is_file() and not overwrite:
+    if filepath.is_file() and not redownload:
         return pd.read_parquet(filepath)
 
     datasets_d = {}
     pbar = tqdm(["biokg", "primekg", "pharmebinet", "hetionet"])
     for annot in pbar:
         pbar.set_description(f"Processing {annot}")
-        datasets_d[annot] = eval(f"get_{annot}(output_dir)")
+        datasets_d[annot] = eval(f"get_{annot}(output_dir, redownload)")
         datasets_d[annot]["database"] = annot
     df = pd.concat(datasets_d.values()).reset_index(drop=True)
 

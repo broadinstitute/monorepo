@@ -23,16 +23,16 @@ compounds to inchikeys using mychem and unichem
 
 ```python
 from jump.collate import concat_annotations
-concat_annotations("./outputs/")
+concat_annotations("./outputs/", redownload=False)
 
 from jump.collate_gene import concat_annotations
-concat_annotations("./outputs/")
+concat_annotations("./outputs/", redownload=False)
 
 from jump.collate_compounds import concat_annotations
-concat_annotations("./outputs/")
+concat_annotations("./outputs/", redownload=False)
 
 from jump.find_inchikeys import add_inchikeys
-add_inchikeys("./outputs/", pull=True)
+add_inchikeys("./outputs/", redownload=True)
 ```
 
 ## Export external ids to txt files
