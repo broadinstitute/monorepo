@@ -44,7 +44,7 @@ for dset in datasets:
     feats = tuple( prof.select(numeric()).columns )
     mapper = {k:'~'.join(v) for k,v in zip(feats, get_feature_groups(feats).iter_rows())}
 
-    med = prof.group_by(by="Metadata_JCP2022").median()
+    med = prof.group_by(by="Metadata_JCP2022", maintain_order=True).median()
     arr = cp.array(med.select(numeric()), dtype=cp.float32 )
      
     # Calculate the Perason correlation coefficient of all vs all features

@@ -21,7 +21,7 @@ def get_concensus_meta_urls(prof: pl.DataFrame, url_colname: str) -> tuple:
     """
     prof = add_url_col(prof, url_colname=url_colname)
 
-    grouped = prof.group_by(jcp_col)
+    grouped = prof.group_by(jcp_col, maintain_order=True)
     med = grouped.median()
     meta = grouped.agg(pl.col("^Metadata_.*$").map_elements(cycle))
     urls = grouped.agg(pl.col(url_colname).map_elements(cycle))
@@ -39,7 +39,7 @@ def get_group_median(med, group_by: list[str] or None = None):
         feature_meta = get_feature_groups(tuple(med_vals.columns))
     features = pl.concat((feature_meta, med_vals.transpose()), how="horizontal")
 
-    grouped = features.group_by(feature_meta.columns)
+    grouped = features.group_by(feature_meta.columns, maintain_order=True)
 
     return grouped.median()
 
