@@ -26,6 +26,7 @@ import cupy as cp
 import cupyx.scipy.spatial as spatial
 import numpy as np
 import polars as pl
+import polars.selectors as cs
 from jump_rr.concensus import (
     get_concensus_meta_urls,
     get_cycles,
@@ -38,13 +39,14 @@ from jump_rr.replicability import add_replicability
 from jump_rr.synonyms import get_synonym_mapper
 from jump_rr.translate import get_mappers
 
+from jump_rr.datasets import get_dataset
+
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
 # %% Setup
 ## Paths
-dir_path = Path("/datastore/shared/morphmap_profiles/")
-datasets = ("crispr", "orf")
 output_dir = Path("./databases")
+datasets = ("crispr", "orf")
 
 ## Parameters
 n_vals_used = 25  # Number of top and bottom matches used
@@ -66,19 +68,18 @@ ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NC
 # HTML formatters
 img_formatter = '{{"img_src": {}, "href": {}, "width": 200}}'
 
+
 # %% Processing starts
 for dset in datasets:
-    profiles_path = dir_path / f"{dset}.parquet"
-
     # %% Load Metadata
     print(dset)
-    df = pl.read_parquet(profiles_path)
+    df = pl.read_parquet(get_dataset(dset))
 
     # %% add build url from individual wells
     med, _, urls = get_concensus_meta_urls(df, url_colname="Metadata_placeholder")
     urls = urls.rename({"Metadata_placeholder": url_col})
 
-    vals = cp.array(med.select(pl.all().exclude("^Metadata.*$")).to_numpy())
+    vals = cp.array(med.select(cs.by_dtype(pl.Float32)).to_numpy())
 
     # %% Calculate cosine distance
     cosine_dist = spatial.distance.cdist(vals, vals, metric="cosine")

@@ -37,6 +37,7 @@ from jump_rr.concensus import (
     get_cycles,
     repeat_cycles,
 )
+from jump_rr.datasets import get_dataset
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_edge_indices
 from jump_rr.metadata import write_metadata
@@ -50,11 +51,10 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 
 # %% Setup
 ## Paths
-dir_path = Path("/datastore/shared/morphmap_profiles/")
 output_dir = Path("./databases")
 datasets = (
-    "orf",
-    "crispr",
+    "crispr_interpretable",
+    "orf_interpretable",
 )
 
 ## Parameters
@@ -73,15 +73,14 @@ stat_col = "Feature significance"
 
 for dset in datasets:
     print(f"Processing features for {dset} dataset")
-    precor_path = dir_path / f"{dset}_interpretable.parquet"
 
     # %% Loading
-    precor = pl.read_parquet(precor_path)
-    precor = add_pert_type(precor, dataset=dset)
+    precor = pl.read_parquet(get_dataset(dset))
+    dset_type = dset.removesuffix("_interpretable")
+    precor = add_pert_type(precor, dataset=dset_type)
 
     # %% Split data into med (concensus), meta and urls
-
-    # Note that we remove the negcons from these analysis, as they are used to produce p values on significance.py
+    # Note that we remove the negcons from these analysis, as they are used to produce p-values on significance.py
     med, _, urls = get_concensus_meta_urls(
         precor.filter(pl.col("Metadata_pert_type") != "negcon"),
         url_colname="Metadata_placeholder",
@@ -89,7 +88,7 @@ for dset in datasets:
     urls = urls.rename({"Metadata_placeholder": url_col})
 
     # This function also performs a filter to remove controls (as there are too many)
-    corrected_pvals = pvals_from_path(precor_path, dataset=dset)
+    corrected_pvals = pvals_from_path(get_dataset(dset), dataset=dset_type)
     # Ensure that the perturbation numbers match
     filtered_med = med.filter(
         pl.col(jcp_col).is_in(corrected_pvals.get_column(jcp_col))
@@ -97,6 +96,7 @@ for dset in datasets:
     median_vals = cp.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
 
     phenact = cp.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
+
     # Find bottom $n_values_used
     xs, ys = get_edge_indices(
         phenact.T,
@@ -134,10 +134,12 @@ for dset in datasets:
     jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, dset)
     _, jcp_external_raw_mapper = get_mappers(uniq, dset, format_output=False)
 
+    # Add phenotypic activity from a previously-calculated
     df = add_replicability(
         df, left_on=jcp_short, right_on=jcp_col, replicability_col=rep_col
     )
 
+    # Add aliases and external links
     jcp_translated = df.with_columns(
         pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
         pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),

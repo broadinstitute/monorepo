@@ -1,7 +1,6 @@
 #!/usr/bin/env jupyter
 import re
 from functools import cache
-from itertools import cycle
 
 import polars as pl
 

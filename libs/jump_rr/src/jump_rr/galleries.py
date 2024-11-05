@@ -20,19 +20,12 @@ from pathlib import Path
 
 import polars as pl
 from jump_rr.concensus import get_range
+from jump_rr.datasets import get_dataset
 from jump_rr.formatters import get_formatter
 from jump_rr.translate import get_mappers
-from pyarrow.dataset import dataset
-from s3fs import S3FileSystem
 
 # %% Setup Local
 ## Paths
-dir_path = Path("/dgx1nas1/storage/data/shared/morphmap_profiles/")
-# platetype_filepath = (
-#     ("crispr", "harmonized_no_sphering_profiles"),
-#     ("orf", "transformed_inf_eff_filtered"),
-#     ("compounds", "mad_int_featselect_scanorama"),
-# )
 output_dir = Path("./databases")
 
 ## Column names
@@ -45,9 +38,9 @@ ext_links_col = "NCBI"  # Link to external resources (e.g., NCBI)
 # %% Processing starts
 
 
-def generate_gallery(dset: str, profiles_path: str or Path, write: bool = True):
+def generate_gallery(dset: str, write: bool = True):
     # %% Load Metadata
-    df = pl.scan_parquet(profiles_path)
+    df = pl.scan_parquet(get_dataset(dset, return_pooch=False))
 
     # %% Translate genes names to standard
     uniq_jcp = tuple(df.select("Metadata_JCP2022").unique().collect().to_numpy()[:, 0])
@@ -98,4 +91,4 @@ def generate_gallery(dset: str, profiles_path: str or Path, write: bool = True):
 
 # No need for threading, as this is very fast
 for dset in ("orf", "crispr", "compound"):
-    generate_gallery(dset, dir_path / f"{dset}.parquet", write=True)
+    generate_gallery(dset, write=True)
