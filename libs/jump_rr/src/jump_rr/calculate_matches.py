@@ -81,10 +81,10 @@ for dset in datasets:
     vals = cp.array(med.select(pl.all().exclude("^Metadata.*$")).to_numpy())
 
     # %% Calculate cosine distance
-    cosine_sim = spatial.distance.cdist(vals, vals, metric="cosine")
+    cosine_dist = spatial.distance.cdist(vals, vals, metric="cosine")
 
     # Get most correlated and anticorrelated indices
-    xs, ys = get_bottom_top_indices(cosine_sim, n_vals_used, skip_first=True)
+    xs, ys = get_bottom_top_indices(cosine_dist, n_vals_used, skip_first=True)
 
     # Build a dataframe containing matches
     jcp_ids = urls.select(pl.col(jcp_col)).to_series().to_numpy().astype("<U15")
@@ -96,7 +96,7 @@ for dset in datasets:
         {
             jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
             match_jcp_col: jcp_ids[ys].astype("<U15"),
-            dist_col: cosine_sim[xs, ys].get(),
+            dist_col: cosine_dist[xs, ys].get(),
             url_col: [  # Secuentially produce multiple images
                 format_val("img", (img_src, img_src))
                 for x in url_vals
@@ -169,7 +169,7 @@ for dset in datasets:
 
     write_metadata(dset, "matches", (*order, "(*)"))
 
-    # Save cosine similarity matrix with JCP IDS
+    # Save cosine distance matrix with JCP IDS
     pl.DataFrame(
-        data=cosine_sim.get(), schema=med.get_column("Metadata_JCP2022").to_list()
+        data=cosine_dist.get(), schema=med.get_column("Metadata_JCP2022").to_list()
     ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
