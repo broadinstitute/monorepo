@@ -6,7 +6,7 @@ authors = ["Alan"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = ">=3.10,<3.12"
+python = ">3.10,<3.12"
 broad-babel = {path = "../jump_babel"}
 numpy = "*"
 # fastcluster = "^1.2.6"
@@ -21,7 +21,6 @@ pathos = "^0.3.2"
 cachier = "^3.0.0"
 s3fs = "^2024.3.1"
 # dask-cuda = "^24.6.0"
-babel = "^2.15.0"
 
 [tool.poetry.group.dev.dependencies]
 jupyter = "^1.0.0"

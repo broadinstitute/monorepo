@@ -27,6 +27,10 @@
               system = system;
               config.allowUnfree = true;
             };
+            mpkgs = import inputs.nixpkgs_master {
+              system = system;
+              config.allowUnfree = true;
+            };
 
           in
             {
@@ -41,7 +45,7 @@
                   cudaPackages.cudatoolkit
                   #linuxPackages.nvidia_x11
                   pkgs.libz # for numpy
-                  pkgs.stdenv.cc.cc
+                  mpkgs.stdenv.cc.cc
                   pkgs.libGL
                   ]);
                   # https://devenv.sh/reference/options/
