@@ -170,12 +170,12 @@ for dset in datasets:
     )
 
     # Update metadata
-    write_metadata(dset, "feature", (*jcp_translated.columns, "(*)"))
+    write_metadata(dset_type, "feature", (*jcp_translated.columns, "(*)"))
 
     # Save phenotypic activity matrix in case it is of use to others
     pl.DataFrame(
         data=phenact.get(),
         schema=filtered_med.select(pl.exclude("^Metadata.*$")).columns,
     ).with_columns(filtered_med.get_column("Metadata_JCP2022")).write_parquet(
-        output_dir / f"{dset}_significance_full.parquet"
+        output_dir / f"{dset_type}_significance_full.parquet"
     )

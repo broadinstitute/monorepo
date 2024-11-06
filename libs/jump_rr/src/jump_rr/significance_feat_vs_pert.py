@@ -3,7 +3,6 @@
 from pathlib import Path
 import polars as pl
 
-import scipy
 from jump_rr.significance import partition_by_trt, add_pert_type
 from scipy.stats import mannwhitneyu
 from tqdm import tqdm
@@ -18,16 +17,19 @@ for dset in datasets:
     partitioned = partition_by_trt(df)
 
     def wrapper_mwu(jcp_pair):
-        key, (pos,neg) = jcp_pair
+        key, (pos, neg) = jcp_pair
         return (key, mannwhitneyu(pos, neg).pvalue)
 
-    result =[]
-    for x in tqdm( partitioned.items() ):
+    result = []
+    for x in tqdm(partitioned.items()):
         result.append(wrapper_mwu(x))
 
-    feat_vs_pert_pvals = pl.DataFrame({
-        "Feature":prof.select(pl.exclude("^Metadata.*$")).columns,
-        **dict(result),
-    })
-    feat_vs_pert_pvals.write_parquet(output_dir / f"{dset}_feat_pert_pval_mwu.parquet", compression="zstd")
-    
+    feat_vs_pert_pvals = pl.DataFrame(
+        {
+            "Feature": prof.select(pl.exclude("^Metadata.*$")).columns,
+            **dict(result),
+        }
+    )
+    feat_vs_pert_pvals.write_parquet(
+        output_dir / f"{dset}_feat_pert_pval_mwu.parquet", compression="zstd"
+    )
