@@ -24,7 +24,7 @@ The project uses Poetry for dependency management with the following core requir
 1. Clone the repository:
 ```bash
 git clone <repository-url>
-cd jump-smiles
+cd libs/jump_smiles
 ```
 
 2. Install dependencies using Poetry:
