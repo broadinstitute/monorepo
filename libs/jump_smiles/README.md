@@ -211,7 +211,7 @@ results = standardizer.run()
 ## Best Practices
 
 1. **Method Selection**:
-   - Use `jump_canonical` for general-purpose standardization
+   - Use `jump_canonical` when working with the [JUMP Cell Painting dataset](https://github.com/jump-cellpainting/datasets)
    - Use `jump_alternate_1` when dealing with tautomer-heavy datasets
 
 2. **Performance Optimization**:
