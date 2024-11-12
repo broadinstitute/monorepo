@@ -1,6 +1,6 @@
 # JUMP-SMILES Documentation
 
-A Python library for standardizing chemical structures using RDKit. Designed to standardize SMILES strings for consistency with JUMP Cell Painting datasets and supports parallel processing with multiple standardization methods.
+A Python library for standardizing chemical structures using RDKit. Designed to standardize SMILES strings for consistency with the [JUMP Cell Painting datasets](https://github.com/jump-cellpainting/datasets).
 
 ## Installation
 
