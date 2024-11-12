@@ -4,20 +4,60 @@ JUMP-SMILES is a Python library for standardizing chemical structure representat
 
 ## Installation
 
-Prerequisites:
-- Python 3.6+
-- RDKit
-- pandas
-- numpy
-- tqdm
-- fire
+### Prerequisites
+
+- Python 3.11 or newer
+- [Poetry](https://python-poetry.org/docs/#installation) package manager
+
+### Dependencies
+
+The project uses Poetry for dependency management with the following core requirements:
+- rdkit 2023.9.5
+- pandas 2.2.2
+- numpy 2.1.1
+- fire 0.4.0 or newer
+- tqdm 4.64.1
+- requests 2.28.2
+
+### Installation Steps
+
+1. Clone the repository:
+```bash
+git clone <repository-url>
+cd jump-smiles
+```
+
+2. Install dependencies using Poetry:
+```bash
+poetry install
+```
+
+3. Activate the Poetry virtual environment:
+```bash
+poetry shell
+```
+
+### Development Installation
+
+For development, additional dependencies are included:
+- pytest 8.1.1
+- jupyter
+- ipykernel
+- jupytext
+- ipdb
+- ruff (for linting)
+
+Install with development dependencies:
+```bash
+poetry install --with dev
+```
 
 ## Basic Usage
 
 ### Command Line Interface
 
 ```bash
-python standardize_smiles.py \
+poetry run python standardize_smiles.py \
   --input molecules.csv \
   --output standardized_molecules.csv \
   --num_cpu 4 \
