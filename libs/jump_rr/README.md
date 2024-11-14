@@ -41,7 +41,7 @@ Use the following datasets to explore morphological similarities between gene an
 | CRISPR   | [broad.io/crispr](https://broad.io/crispr) | [broad.io/crispr\_feature](https://broad.io/crispr_feature)   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)     | Gene knock-out      |
 | Compound | WIP                                        | WIP                                                   | [broad.io/compound\_gallery](https://broad.io/compound_gallery) | Chemical compounds  |
 
-Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
+Note that the feature databases are based on interpretable features. The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
 
 
 <a id="Overview"></a>
