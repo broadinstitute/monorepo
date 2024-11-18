@@ -7,6 +7,7 @@ from typing import Any
 from joblib import Parallel, cpu_count, delayed
 from tqdm import tqdm
 
+
 def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
     """Create slices of the given iterable.
 
@@ -105,9 +106,17 @@ def try_function(f: Callable):
     Wrap a function into an instance which will Try to call the function:
         If it success, return the output of the function.
         If it fails, return None
+
+    Parameters
+    ----------
+    f : Callable
+
+    Returns
+    -------
+    tryed_fn : Callable
     '''
     # This assumes parameters are packed in a tuple
-    def batched_fn(*item, **kwargs):
+    def tryed_fn(*item, **kwargs):
         try:
             result = f(*item, **kwargs)
 
@@ -115,4 +124,4 @@ def try_function(f: Callable):
             result = None
 
         return result
-    return batched_fn
+    return tryed_fn

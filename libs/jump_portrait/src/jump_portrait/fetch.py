@@ -16,19 +16,18 @@ Current problems:
 
 """
 
+
+from itertools import  product, starmap
+
 import numpy as np
 import polars as pl
 from broad_babel import query
 from broad_babel.data import get_table
 
-from jump_portrait.s3 import (
-    build_s3_image_path,
-    get_corrected_image,
-    get_image_from_s3uri,
-    read_parquet_s3,
-)
+from jump_portrait.s3 import (build_s3_image_path, get_corrected_image,
+                              get_image_from_s3uri, read_parquet_s3)
 from jump_portrait.utils import batch_processing, parallel, try_function
-from itertools import groupby, product, starmap
+
 
 def format_cellpainting_s3() -> str:
     return (
@@ -83,7 +82,7 @@ def get_jump_image(
     site : int
         Site identifier (also called foci), default is 1.
     correction : str
-        Whether or not to use corrected data. It does not by default.
+        Whether or not to use corrected data. It does not by default., "Orig" or "Illum"
     apply_correction : bool
         When apply_correction=="Illum" apply Illum correction on original image.
 
@@ -119,10 +118,13 @@ def get_jump_image(
     return result
 
 
-def get_jump_image_batch(metadata: pl.DataFrame, channel: list[str],
-                        site: list[str], correction:str='Orig',
-                        verbose: bool=True,
-                        ) -> (pl.DataFrame, list[tuple]):
+def get_jump_image_batch(
+        metadata: pl.DataFrame,
+        channel: list[str],
+        site: list[str],
+        correction: str='Orig',
+        verbose: bool=True,
+) -> tuple[list[tuple], list[np.ndarray]]:
     '''
     Load jump image associated to metadata in a threaded fashion.
 
@@ -153,7 +155,7 @@ def get_jump_image_batch(metadata: pl.DataFrame, channel: list[str],
     iterable = list(starmap(lambda *x: (*x[0], *x[1:]), product(metadata.rows(), channel, site, [correction])))
     img_list = parallel(iterable, batch_processing(try_function(get_jump_image)),
                         verbose=verbose)
-     
+
     return iterable, img_list
 
 
@@ -367,10 +369,3 @@ def get_gene_images(
 
     return images
 
-metadata_pre = get_item_location_info("MYT1")
-iterable, img_list = get_jump_image_batch(metadata_pre.select(pl.col(
-["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"])),
-                                                        channel=['DNA','ER', 'RNA'],#, 'ER', 'AGP', 'Mito', 'RNA'],
-                                                        site=[str(i) for i in range(8)],
-                                                        correction='Orig',
-                                                        verbose=False) #None, 'Illum'
