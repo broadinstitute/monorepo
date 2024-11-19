@@ -2,7 +2,6 @@
 from itertools import groupby, starmap
 
 import numpy as np
-import polars as pl
 import pytest
 from jump_portrait.fetch import get_item_location_info, get_jump_image_batch
 from jump_portrait.s3 import get_image_from_s3uri
@@ -30,7 +29,7 @@ def test_get_image(s3_image_uri):
 @pytest.fixture
 def get_metadata():
      metadata = get_item_location_info("MYT1")
-     return metadata.select(pl.col(["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"])).unique()
+     return metadata.select(["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"]).unique()
 
 
 @pytest.mark.parametrize("channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [str(i) for i in range(8)])])
@@ -48,29 +47,32 @@ def test_get_jump_image_batch(
         site,
         correction,
         verbose=False)
-    img_list_exist = [x is not None for x in img_list]
+    mask = [x is not None for x in img_list]
 
     # verify that there is an output for every input parameter stored in iterable
     assert len(iterable) == len(img_list)
 
     # verify that images retrieved are not all None
-    assert sum(img_list_exist) != len(img_list)
+    assert sum(mask) != len(img_list)
 
     # verify we retrieve 2d img
-    iterable_filt = [param for i, param in enumerate(iterable) if img_list_exist[i]]
-    img_list_filt = [param for i, param in enumerate(img_list) if img_list_exist[i]]
+    iterable_filt = [param for i, param in enumerate(iterable) if mask[i]]
+    img_list_filt = [param for i, param in enumerate(img_list) if mask[i]]
     assert sum([len(img.shape) == 2 for img in img_list_filt]) == len(iterable_filt)
 
     # caution with the following test:
     # it might be too restrictive as there could be one channel missing for an img (Should not happen theoretically)
     # stack img per channel and assert img.shape[0] == len(channel)
-    zip_iter_img = sorted(zip(iterable_filt, img_list_filt), key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5], x[0][4]))
-    param_l, img_stack_l = list(zip(*starmap(
-        lambda key, param_img: (key, np.stack(list(map(lambda x: x[1], param_img)))),
-        # grouped image are returned as the common key, and then the zip of param and img, so we retrieve the img then we stack
-        groupby(zip_iter_img, key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5])))))
+    zip_iter_img = sorted(zip(iterable_filt, img_list_filt),
+                          key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5], x[0][4]))
+    iterable_stack, img_stack = map(lambda tup: list(tup),
+            zip(*starmap(
+                lambda key, param_img: (key, np.stack(list(map(lambda x: x[1], param_img)))),
+                # grouped image are returned as the common key, and then the zip of param and img, so we retrieve the img then we stack
+                groupby(zip_iter_img,
+                        key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5])))))
 
-    assert sum([img.shape[0] == len(channel) for img in img_stack_l]) == len(param_l)
+    assert sum([img.shape[0] == len(channel) for img in img_stack]) == len(iterable_stack)
 
     # NB: no test is done on the number of image retrieved per sample to assess if it is equal
     # to the number of site as this is not always the case.
