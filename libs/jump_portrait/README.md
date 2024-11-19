@@ -115,6 +115,7 @@ standard_key: Gene or compound queried
 ```
 
 We can then feed this information to `jump_portrait.fetch.get_jump_image` to fetch the available images as in workflow 2.
+
 Or we can feed this information straight to `jump_portrait.fetch.get_jump_image_batch` to fetch the available images in batches with desired channel and sites.
 
 ```python
@@ -129,24 +130,24 @@ iterable, img_list = get_jump_image_batch(sub_location_df, channel, site, correc
 ```
 
 Returns: 
-iterable (list of tuple) > list containing the metadata, channel, site and correction
-img_list (list of array) > list containing the images. NB, if no image has been retrieved for a specific site (this might happen), array object is replaced by a None
+- iterable (list of tuple) > list containing the metadata, channel, site and correction
+- img_list (list of array) > list containing the images. NB, if no image has been retrieved for a specific site (this might happen), array object is replaced by a None
 
 From there, current processing will include:
 1. Filter out images where no image has been retrieved (remove None values) 
 2. Stack images along a channel axis
 
 ```python
-# first filter out img / param where no img has been retrieved
+# first, filter out img / param where no img has been retrieved
 mask = [x is not None for x in img_list]
 iterable_filt = [param for i, param in enumerate(iterable) if mask[i]]
 img_list_filt = [param for i, param in enumerate(img_list) if mask[i]]
 ```
 
 ``` python
+# second, group image per source, batch, well, site > to stack on channel
 from itertools import groupby, starmap
 import numpy as np
-# group image per source, batch, well, site > to stack on channel
 zip_iter_img = sorted(zip(iterable_filt, img_list_filt),
                       key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5], x[0][4]))
 iterable_stack, img_stack = map(lambda tup: list(tup),
