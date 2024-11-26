@@ -43,6 +43,7 @@ Use the following datasets to explore morphological similarities between gene an
 
 Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
 
+In the rare case where you experience a problem before data is loaded, it may be transient - try reloading the webpage. 
 
 <a id="Overview"></a>
 
