@@ -5,6 +5,7 @@ from itertools import chain
 from typing import Any
 
 from joblib import Parallel, cpu_count, delayed
+from tqdm import tqdm
 
 
 def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
@@ -41,6 +42,7 @@ def parallel(
     args: list[Any] = [],
     jobs: int = None,
     timeout: float = None,
+    verbose: bool = True,
     **kwargs: dict[Any, Any],
 ) -> list[Any]:
     """Distribute process on iterable.
@@ -57,6 +59,8 @@ def parallel(
         Number of jobs to launch, by default None
     timeout: float, optional
         Timeout for worker processes.
+    verbose: bool, optional
+        Whether to enable tqdm or not.
 
     Returns
     -------
@@ -72,7 +76,7 @@ def parallel(
         jobs = len(iterable)
     slices = slice_iterable(iterable, jobs)
     result = Parallel(n_jobs=jobs, timeout=timeout)(
-        delayed(func)(chunk, idx, *args, **kwargs)
+        delayed(func)(chunk, idx, verbose, *args, **kwargs)
         for idx, chunk in enumerate([iterable[s] for s in slices])
     )
 
@@ -82,13 +86,42 @@ def parallel(
 
 def batch_processing(f: Callable):
     # This assumes parameters are packed in a tuple
-    def batched_fn(item_list: Iterable, job_idx: int, *args, **kwargs):
+    def batched_fn(item_list: Iterable, job_idx: int,
+                   verbose:bool=True,
+                   *args, **kwargs):
         results = []
-        for item in item_list:
-            # pbar.set_description(f"Processing {item}")
+        for item in tqdm(item_list, position=0, leave=True,
+                         disable=not verbose,
+                         desc=f"worker #{job_idx}"):
             results.append(f(*item, *args, **kwargs))
 
         if any([x is not None for x in results]):
             return results
 
     return batched_fn
+
+
+def try_function(f: Callable):
+    '''
+    Wrap a function into an instance which will Try to call the function:
+        If it success, return the output of the function.
+        If it fails, return None
+
+    Parameters
+    ----------
+    f : Callable
+
+    Returns
+    -------
+    tryed_fn : Callable
+    '''
+    # This assumes parameters are packed in a tuple
+    def tryed_fn(*item, **kwargs):
+        try:
+            result = f(*item, **kwargs)
+
+        except:
+            result = None
+
+        return result
+    return tryed_fn
