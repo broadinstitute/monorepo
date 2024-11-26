@@ -28,7 +28,6 @@ from jump_portrait.s3 import (
     read_parquet_s3,
 )
 from jump_portrait.utils import batch_processing, parallel, try_function
-from typing import List
 from itertools import groupby
 
 def format_cellpainting_s3() -> str:
@@ -120,10 +119,10 @@ def get_jump_image(
     return result
 
 
-def get_jump_image_iter(metadata: pl.DataFrame, channel: List[str],
-                        site: List[str], correction:str='Orig',
+def get_jump_image_iter(metadata: pl.DataFrame, channel: list[str],
+                        site: list[str], correction:str='Orig',
                         print_progress: bool=True,
-                        ) -> (pl.DataFrame, List[tuple]):
+                        ) -> (pl.DataFrame, list[tuple]):
     '''
        Load jump image associated to metadata in a threaded fashion.
         ----------
