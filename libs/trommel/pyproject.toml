@@ -4,7 +4,7 @@ Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/trommel"
 [tool.poetry]
 name = "trommel"
 version = "0.1.0"
-description = ""
+description = "Data cleaning functions and pipelines for morphological profiles."
 authors = ["Alan Munoz"]
 readme = "README.md"
 packages = [{include = "trommel", from= "src"}]
