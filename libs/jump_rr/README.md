@@ -38,17 +38,18 @@ Use the following datasets to explore morphological similarities between gene an
 | Dataset  | Matches                                    | Feature ranking                                       | Gallery                                                         | Description         |
 |-------- |------------------------------------------ |----------------------------------------------------- |--------------------------------------------------------------- |------------------- |
 | ORF      | [broad.io/orf](https://broad.io/orf)       | [broad.io/orf\_feature](https://broad.io/orf_feature) | [broad.io/orf\_gallery](https://broad.io/orf_gallery)           | Gene overexpression |
-| CRISPR   | [broad.io/crispr](https://broad.io/crispr) | [broad.io/crispr\_feature](https://broad.io/crispr)   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)     | Gene knock-out      |
+| CRISPR   | [broad.io/crispr](https://broad.io/crispr) | [broad.io/crispr\_feature](https://broad.io/crispr_feature)   | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)     | Gene knock-out      |
 | Compound | WIP                                        | WIP                                                   | [broad.io/compound\_gallery](https://broad.io/compound_gallery) | Chemical compounds  |
 
-Note that the feature databases are based on interpretable features. The The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
+Note that the feature databases are based on interpretable features. The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
 
+In the rare case where you experience a problem before data is loaded, it may be transient - try reloading the webpage. 
 
 <a id="Overview"></a>
 
 # Overview
 
-This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that we make accessible through the browser using [datasette-lite](https://github.com/simonw/datasette-lite). You can read more about JUMP at the [JUMP Cellpainting Hub](https://broad.io/jump).
+This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that we make accessible through the browser using [datasette-lite](https://github.com/simonw/datasette-lite). You can read more about JUMP at the [JUMP-Cell Painting Hub](https://broad.io/jump).
 
 
 <a id="Data%20accessibility"></a>
@@ -70,7 +71,7 @@ You do not need to install this unless you want to re-do the similarity calculat
 
 ## pip
 
-Use this if you want to re-analyse data. Several of the anyalyses require GPUs.
+Use this if you want to re-analyse data. Several of the analyses require GPUs.
 
 ```python
 pip install jump_rr
