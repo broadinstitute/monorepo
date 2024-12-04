@@ -1,32 +1,24 @@
-[project.urls]
-Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/trommel"
-
-[tool.poetry]
+[project]
 name = "trommel"
 version = "0.1.0"
 description = "Data cleaning functions and pipelines for morphological profiles."
-authors = ["Alan Munoz"]
+authors = [
+  {name = "Alan Munoz"},
+]
 readme = "README.md"
-packages = [{include = "trommel", from= "src"}]
+requires-python = ">3.10,<3.12"
+dependencies = [
+    "numpy>=2.0.2",
+    "polars>=1.16.0",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.12"
-numpy = ">=1.22"
-polars = "^1.5.0"
-pyarrow = "^15.0.1"
+[project.optional-dependencies]
+dev = [
+  "ruff",
+]
 
-[tool.poetry.group.dev.dependencies]
-jupyter = "^1.0.0"
-jupytext = "^1.15.0"
-ruff-lsp = ">=0.0.50,<0.2.0"
-# pyright = "^1.1.349"
-# ruff = "^0.3.2"
-pytest = "^8.2.2"
-ipdb = "^0.13.13"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.ruff]
-line-length = 88
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.1",
+    "ruff>=0.8.1",
+]
