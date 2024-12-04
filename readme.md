@@ -14,7 +14,7 @@ Monorepo of the Carpenter-Singh Lab, hosting many of the tools and methods we de
 ### Tools outside the monorepo
 
 -   [copairs](https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/tree/master): Find pairs and compute metrics between them.
-- [[cp\_measure](https://github.com/afermg/cp_measurements)]: Extract CellProfiler features directly from Python.
+- [cp\_measure(https://github.com/afermg/cp_measurements)]: Extract CellProfiler features directly from Python.
 
 ## JUMP Cell Painting Hub
 
