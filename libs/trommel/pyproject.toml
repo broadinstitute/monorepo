@@ -10,6 +10,7 @@ requires-python = ">3.10,<3.12"
 dependencies = [
     "numpy>=2.0.2",
     "polars>=1.16.0",
+    "pyarrow>=18.1.0",
 ]
 
 [project.optional-dependencies]
