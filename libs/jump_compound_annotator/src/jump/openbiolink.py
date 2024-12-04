@@ -3,10 +3,10 @@ from zipfile import ZipFile
 
 import pandas as pd
 
-from jump.utils import download_file, load_gene_ids
+from jump.utils import download_file, ncbi_to_symbol
 
 
-def open_zip(output_path: Path, redownload=False):
+def open_zip(output_path: Path, redownload: bool):
     filepath = output_path / "openbiolink/openbiolink.zip"
     url = "https://zenodo.org/record/5361324/files/HQ_UNDIR.zip?download=1"
     download_file(url, filepath, redownload)
@@ -25,13 +25,10 @@ def open_zip(output_path: Path, redownload=False):
     return edges, nodes
 
 
-def get_compound_annotations(output_dir: str):
+def get_compound_annotations(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
-    gene_ids = load_gene_ids()
-    gene_ids.dropna(subset="NCBI_Gene_ID", inplace=True)
-    gene_ids["NCBI_Gene_ID"] = gene_ids["NCBI_Gene_ID"].astype(int)
-    gene_mapper = gene_ids.set_index("NCBI_Gene_ID")["Approved_symbol"]
-    edges, nodes = open_zip(output_path)
+    gene_mapper = ncbi_to_symbol(output_path, redownload)
+    edges, nodes = open_zip(output_path, redownload)
     query = 'source.str.startswith("PUBCHEM") and target.str.startswith("NCBIGENE")'
     edges = edges.query(query).copy()
     edges["source"] = edges["source"].str.split(":", expand=True)[1]
@@ -55,14 +52,10 @@ def get_compound_annotations(output_dir: str):
     return edges
 
 
-def get_gene_interactions(output_dir: str):
+def get_gene_interactions(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
-    gene_ids = load_gene_ids()
-    gene_ids.dropna(subset="NCBI_Gene_ID", inplace=True)
-    gene_ids["NCBI_Gene_ID"] = gene_ids["NCBI_Gene_ID"].astype(int)
-    gene_mapper = gene_ids.set_index("NCBI_Gene_ID")["Approved_symbol"]
-
-    edges, nodes = open_zip(output_path)
+    gene_mapper = ncbi_to_symbol(output_path, redownload)
+    edges, nodes = open_zip(output_path, redownload)
     query = 'rel_type.str.startswith("GENE") and rel_type.str.endswith("GENE")'
     edges = edges.query(query).copy()
     edges["gene_a"] = edges["source"].str.split(":", expand=True)[1]
