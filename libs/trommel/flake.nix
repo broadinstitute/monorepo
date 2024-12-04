@@ -19,7 +19,7 @@
               system = system;
               config.allowUnfree = true;
             };
- 
+
             libList = [
                 # Add needed packages here
                 pkgs.libz # Numpy
@@ -44,14 +44,14 @@
                         ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
                       '';
                 NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
-                packages = [ 
+                packages = [
                   pwp
                   python311Packages.venvShellHook
                   uv
-                  
+
                   ruff
                 ]
-                ++ libList; 
+                ++ libList;
                 venvDir = "./.venv";
                 postVenvCreation = ''
                     unset SOURCE_DATE_EPOCH
@@ -68,7 +68,7 @@
                     uv sync
 
                     export PYTHONPATH=${pwp}/${pwp.sitePackages}:$PYTHONPATH
-                    export PATH=${ruff}/bin:$PATH # Place Nix ruff before Python ruff
+                    export PATH=${pre-commit}/bin:${ruff}/bin:$PATH # Place Nix ruff before Python ruff
                 '';
              };
           };

@@ -65,7 +65,7 @@ The basic cleanup steps are:
 1. Remove NaNs
 2. Calculate Robust Mean Average Deviation (following [pycytominer's](https://github.com/cytomining/pycytominer/blob/f6d0f6668571e39a8cf3a10dc290389b42891777/pycytominer/operations/transform.py#L313) implementation)
 3. Remove outliers
-4. Remove redundant (highly correlated) features 
+4. Remove redundant (highly correlated) features
 
 # Installation
 
@@ -88,7 +88,7 @@ poetry install
 # Additional information
 ## Related projects
 - [pycytominer](https://github.com/cytomining/pycytominer): The closest match, but with more complexity imbued and many of the math functions are pandas-centric.
-- [EFAAR](https://github.com/recursionpharma/EFAAR_benchmarking/blob/trunk/efaar_benchmarking/efaar.py): Much simpler implementation, but it commits similar hard-coding of cellprofiler features. We instead try to be agnostic to the way of the selectors, but we do commit to using `polars`. 
+- [EFAAR](https://github.com/recursionpharma/EFAAR_benchmarking/blob/trunk/efaar_benchmarking/efaar.py): Much simpler implementation, but it commits similar hard-coding of cellprofiler features. We instead try to be agnostic to the way of the selectors, but we do commit to using `polars`.
 
 ## Future features
 - Full separation of data + metadata
