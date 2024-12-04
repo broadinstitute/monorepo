@@ -24,4 +24,7 @@ def test_basic_cleanup():
     """
     data = generate_random_dataset()
 
-    basic_cleanup(data, cs.by_dtype(pl.String))
+    result = basic_cleanup(data, cs.by_dtype(pl.String))
+
+    # Make sure the processed data is smaller
+    assert len(result) and result.shape[1]<data.shape[1]
