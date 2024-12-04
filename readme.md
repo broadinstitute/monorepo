@@ -1,25 +1,5 @@
-- [Table of Contents](#Table%20of%20Contents)
-  - [Tools](#Tools)
-    - [Libraries](#Libraries)
-    - [To be integrated](#To%20be%20integrated)
-  - [JUMP Information Central](#JUMP%20Information%20Central)
-  - [Contributing](#Contributing)
-
-
-
-<a id="Table%20of%20Contents"></a>
-
-# Table of Contents
-
-Documentation under construction. This is intended to concentrate all the shared tools of the Carpenter-Singh Lab, part of the Broad Institute&rsquo;s Imaging Platform.
-
-
-<a id="Tools"></a>
 
 ## Tools
-
-
-<a id="Libraries"></a>
 
 ### Libraries
 
@@ -30,14 +10,7 @@ Documentation under construction. This is intended to concentrate all the shared
 -   [trommel](https://github.com/broadinstitute/monorepo/tree/main/libs/trommel): Data-cleaning functions and pipelines to improve the signal of morphological profiles.
 -   [jump\_smiles](https://github.com/broadinstitute/monorepo/tree/swb/libs/smiles): Standardiser of (Chemical) SMILES.
 
-1.  Under development
-
-    -   [kaljax](https://github.com/broadinstitute/monorepo/tree/b9c5953f64a6f2d5da1f968ef748e5e122b804c0/libs/kaljax/README.md): High efficiency single cell tracker using CellProfiler features and a Kalman filter, it aims to support both on CPUs and GPUs.
-
-
-<a id="To%20be%20integrated"></a>
-
-### Other tools/libraries
+### Tools outside the monorepo
 
 -   [copairs](https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/tree/master): Find pairs and compute metrics between them.
 
