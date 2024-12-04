@@ -13,7 +13,7 @@ Thanks for considering contributing to our libraries! While the purpose of these
 
 # Setting up development environments
 
-Most of the current libraries are set up using Poetry (you&rsquo;ll see a poetry.lock file inside the lib/<library<sub>name</sub>> folder). You can install them in a local environment using the following lines by replacing <library<sub>name</sub>> with your library of interest.
+Most of the current libraries are set up using Poetry (you&rsquo;ll see a poetry.lock file inside the lib/<NAME> folder). You can install them in a local environment using the following lines by replacing <library<sub>name</sub>> with your library of interest.
 
 ```bash
 # Install Poetry (Linux, MacOS, Windows - WSL)
@@ -21,14 +21,17 @@ lib="<library_name>"
 curl -sSL https://install.python-poetry.org | python3 -
 # Checkout the repository
 git clone git@github.com:broadinstitute/monorepo.git
-cd libs/<library_name>
+cd libs/<NAME>
 poetry install --with dev
 ```
 
-Note that you must have a python3 installation beforehand. Once that is covered poetry will create a virtual environment inside the project.
-
-We will update this setup by adding [Nix](https://github.com/NixOS/nix) installations in the future.
-
+We are slowly testing uv for development as a poetry replacement. In that case use this instead:
+```
+uv venv
+source .venv/bin/activate
+uv sync
+```
+it should create a virtualenvironment on the `.venv` folder and install the depenencies in `pyproject.toml`.
 
 <a id="Code%20Quality"></a>
 
@@ -76,7 +79,7 @@ We use numpy documentation style (see [guide](https://numpydoc.readthedocs.io/en
 We follow multiple rules of the thumb on how to review code to maintain high quality for our libraries and the reproducibility of our results. Consider these points when reviewing others&rsquo; code or requesting one. You can read more on anti-patterns [here](https://github.com/quantifiedcode/python-anti-patterns/blob/master/docs/The-Little-Book-Of-Python-Anti-Patterns.pdf). Objects NOT to commit:
 
 -   Binaries: They cannot be version-controlled.
--   Large files (>3MB): They slow down the repository.
+-   Large files (>10MB): They slow down the repository.
 -   Do not push notebooks to the modules: They are hard to parse, obscure diffs and are much bigger than the equivalent script.
 -   Data: the only exception is tiny (<1MB) datasets for tests, but try to generate it as [pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html) instead if possible.
 
