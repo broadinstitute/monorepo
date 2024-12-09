@@ -9,7 +9,7 @@ import pandas as pd
 from jump.utils import download_file
 
 
-def open_gz(output_path: Path, redownload=False):
+def open_gz(output_path: Path, redownload: bool):
     filepath = output_path / "pharmebinet/pharmebinet.tar.gz"
     url = "https://zenodo.org/record/7011027/files/pharmebinet_tsv_2022_08_19_v2.tar.gz?download=1"
     download_file(url, filepath, redownload)
@@ -33,9 +33,9 @@ def open_gz(output_path: Path, redownload=False):
     return edges, nodes
 
 
-def get_compound_annotations(output_dir: str):
+def get_compound_annotations(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
-    edges, nodes = open_gz(output_path)
+    edges, nodes = open_gz(output_path, redownload)
     nodes = nodes.set_index("node_id")
     chem_ids = nodes.query('labels=="Chemical|Compound"').index
     edges = edges.query("start_id in @chem_ids")
@@ -60,9 +60,9 @@ def get_node_props(nodes: pd.DataFrame) -> pd.DataFrame:
     return node_props
 
 
-def get_compound_interactions(output_dir: str):
+def get_compound_interactions(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
-    edges, nodes = open_gz(output_path)
+    edges, nodes = open_gz(output_path, redownload)
     nodes = nodes.set_index("node_id")
     rgx_c = re.compile(r".*_(C[a-z]+C)$")
     rgx_ch = re.compile(r".*_(CH[a-z]+CH)$")
@@ -96,9 +96,9 @@ def get_compound_interactions(output_dir: str):
     return edges_all[["source_a", "source_b", "rel_type", "source_id"]]
 
 
-def get_gene_interactions(output_dir: str):
+def get_gene_interactions(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
-    edges, nodes = open_gz(output_path)
+    edges, nodes = open_gz(output_path, redownload)
     nodes = nodes.set_index("node_id")
     rgx_g = re.compile(r".*_(G[a-z]+G)$")
     types_g = [c.group() for c in map(rgx_g.match, edges.type.unique()) if c]

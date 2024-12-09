@@ -7,7 +7,7 @@ import pandas as pd
 from jump.utils import download_file
 
 
-def open_zip(output_path: Path, redownload=False):
+def open_zip(output_path: Path, redownload: bool):
     filepath = output_path / "hetionet/hetionet.zip"
     url = (
         "https://zenodo.org/record/268568/files/dhimmel/hetionet-v1.0.0.zip?download=1"
@@ -23,9 +23,9 @@ def open_zip(output_path: Path, redownload=False):
     return edges, nodes
 
 
-def get_compound_annotations(output_dir: str):
+def get_compound_annotations(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
-    edges, nodes = open_zip(output_path)
+    edges, nodes = open_zip(output_path, redownload)
     query = 'source.str.startswith("Compound") and target.str.startswith("Gene")'
     edges = edges.query(query).copy()
     edges["source"] = edges["source"].str[len("Compound::") :]
@@ -35,9 +35,9 @@ def get_compound_annotations(output_dir: str):
     return edges[["source", "target", "rel_type", "source_id"]]
 
 
-def get_compound_interactions(output_dir: str):
+def get_compound_interactions(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
-    edges, nodes = open_zip(output_path)
+    edges, nodes = open_zip(output_path, redownload)
     query = 'source.str.startswith("Compound") and target.str.startswith("Compound")'
     edges = edges.query(query).copy()
     edges["source_a"] = edges["source"].str[len("Compound::") :]
@@ -47,9 +47,9 @@ def get_compound_interactions(output_dir: str):
     return edges[["source_a", "source_b", "rel_type", "source_id"]]
 
 
-def get_gene_interactions(output_dir: str):
+def get_gene_interactions(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
-    edges, nodes = open_zip(output_path)
+    edges, nodes = open_zip(output_path, redownload)
     query = 'source.str.startswith("Gene") and target.str.startswith("Gene")'
     edges = edges.query(query).copy()
     edges["rel_type"] = edges["metaedge"].map(

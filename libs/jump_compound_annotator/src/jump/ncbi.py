@@ -3,7 +3,7 @@ from jump.utils import download_ftp_file
 from pathlib import Path
 
 
-def read_gene_info_file(output_path: Path, redownload=False):
+def read_gene_info_file(output_path: Path, redownload):
     filepath = output_path / 'ncbi/gene_info.gz'
     remote_file_path = '/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz'
     host = 'ftp.ncbi.nih.gov'
@@ -11,7 +11,7 @@ def read_gene_info_file(output_path: Path, redownload=False):
     return pd.read_csv(filepath, sep='\t')
 
 
-def get_xrefs(output_dir: str, redownload=False):
+def get_xrefs(output_dir: str, redownload):
     gene_ids = read_gene_info_file(Path(output_dir), redownload)
     xrefs = gene_ids[['Symbol', 'dbXrefs']].drop_duplicates()
     xrefs = xrefs.query('dbXrefs!="-"').set_index('Symbol')
@@ -24,7 +24,7 @@ def get_xrefs(output_dir: str, redownload=False):
     return xrefs
 
 
-def get_synonyms(output_dir: str, redownload=False):
+def get_synonyms(output_dir: str, redownload):
     gene_ids = read_gene_info_file(Path(output_dir), redownload)
 
     synonyms = gene_ids[['Symbol', 'Synonyms']].drop_duplicates()
