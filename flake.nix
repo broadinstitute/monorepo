@@ -8,6 +8,8 @@
 
   outputs = { self, nixpkgs, flake-utils, systems, ... } @ inputs:
       flake-utils.lib.eachDefaultSystem (system:
-          packages = import ./management/project_templates;
+        {
+          templates = import ./management/project_templates;
+        }
       );
 }
