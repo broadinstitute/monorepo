@@ -66,7 +66,7 @@ This dataset provides multiple tables for JUMP exploration:
 
 - Full datasets contain precomputed analysis: - significance - is the phenotypic activity of a given value (see broad.io/crispr_feature for a formal definition), while distance contains the cosine distance of all perturbations vs all other perturbations within a given dataset.
 
-- The 'features' and 'matches' files contain a selection of the raw precomputed analyses and are intended for consumption on a web browser through the Datasette tool (see broad.io/jump-explore for details).
+- The 'features' and 'matches' files contain a selection of the raw precomputed analyses and are intended for consumption on a web browser through the Datasette tool (see https://github.com/broadinstitute/monorepo/tree/main/libs/jump_rr#quick-data-access for details).
 
 - Lastly, 'galleries' are for quick visualization of the images with all channels collapsed into one.",
 "upload_type": "dataset",
