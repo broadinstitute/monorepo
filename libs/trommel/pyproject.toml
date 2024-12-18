@@ -14,11 +14,6 @@ dependencies = [
     "pyarrow>=18.1.0",
 ]
 
-[project.optional-dependencies]
-dev = [
-  "ruff",
-]
-
 [dependency-groups]
 dev = [
     "pre-commit>=4.0.1",
