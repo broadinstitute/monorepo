@@ -92,7 +92,7 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
                 "source_url": "http://broad.io/jump",
                 "tables": {
                     "content": {
-                        "description_html": f"{prefix}<a href = https://github.com/jump-cellpainting/datasets/blob/main/profile_index.csv> Data sources.</a>",
+                        "description_html": f"{prefix}<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a>",
                         "title": f"{dset.upper()} {table_type_to_suffix(table_type)}",
                     }
                 },
