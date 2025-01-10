@@ -1,4 +1,9 @@
 #!/usr/bin/env jupyter
+"""
+Convenience function to get JUMP data tables.
+
+The hashes of these datasets are defined in this documents.
+"""
 from functools import cache
 
 import polars as pl
@@ -7,6 +12,24 @@ import pooch
 
 @cache
 def get_table(table_name: str) -> pl.DataFrame:
+    """
+    Fetch a table from broad_portrait based on the provided name.
+
+    The function retrieves the corresponding metadata csv file,
+    checks its hash against a known value for integrity, and
+    returns the contents as a polars DataFrame.
+
+    Parameters
+    ----------
+    table_name : str
+        The name of the table to be retrieved (e.g., 'compound', 'well', etc.).
+
+    Returns
+    -------
+    pl.DataFrame
+        A polars DataFrame containing the contents of the requested table.
+
+    """
     # Obtained from broad_portrait
     METADATA_LOCATION = (
         "https://github.com/jump-cellpainting/datasets/raw/"
