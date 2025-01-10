@@ -1,5 +1,6 @@
 #!/usr/bin/env jupyter
-"""Functions to get JUMP-CP images from AWS's s3://cellpainting-gallery.
+"""
+Functions to get JUMP-CP images from AWS's s3://cellpainting-gallery.
 
 Based on github.com/jump-cellpainting/datasets/blob/baacb8be98cfa4b5a03b627b8cd005de9f5c2e70/sample_notebook.ipynb
 
@@ -30,7 +31,8 @@ from jump_portrait.utils import batch_processing, parallel, try_function
 
 
 def format_cellpainting_s3() -> str:
-    """Returns a formatted string for an S3 path to Cell Painting data.
+    """
+    Returns a formatted string for an S3 path to Cell Painting data.
 
     The returned path includes placeholders for metadata fields.
     It is expected that the caller will replace these placeholders with actual values.
@@ -68,7 +70,8 @@ def format_cellpainting_s3() -> str:
 
 
 def get_sample(n: int = 2, seed: int = 42) -> pl.DataFrame:
-    """Retrieves a sample of cell painting data from S3.
+    """
+    Retrieves a sample of cell painting data from S3.
 
     Parameters
     ----------
@@ -108,7 +111,8 @@ def get_jump_image(
     compressed: bool = False,
     staging: bool = False,
 ) -> np.ndarray:
-    """Main function to fetch a JUMP image for AWS.
+    """
+    Main function to fetch a JUMP image for AWS.
     Metadata for most files can be obtained from a set of data frames,
     or itemrated using `get_item_location_metadata` from this module.
 
@@ -170,7 +174,8 @@ def get_jump_image_batch(
     correction: str = "Orig",
     verbose: bool = True,
 ) -> tuple[list[tuple], list[np.ndarray]]:
-    """Load jump image associated to metadata in a threaded fashion.
+    """
+    Load jump image associated to metadata in a threaded fashion.
 
     Parameters
     ----------
@@ -214,7 +219,8 @@ def get_item_location_metadata(
     operator: str or None = None,
     input_column: str = "standard_key",
 ) -> pl.DataFrame:
-    """Get metadata location for an item by its name.
+    """
+    Get metadata location for an item by its name.
     Search for datasets where the item is present and return a tuple
     with its metadata location in order of source, batch, plate, well, and site.
 
@@ -266,7 +272,8 @@ def get_item_location_metadata(
 
 
 def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame:
-    """Filters a dataframe with well info. Loading and filtering happens in a threaded manner. Note that it does not check for whole row duplication.
+    """
+    Filters a dataframe with well info. Loading and filtering happens in a threaded manner. Note that it does not check for whole row duplication.
 
     Parameters
     ----------
@@ -317,7 +324,8 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
 
 @batch_processing
 def get_well_image_uris(s3_location_uri, wells: list[str]) -> pl.DataFrame:
-    """Return a dataframe indicating the image location of specific wells for a given parquet file.
+    """
+    Return a dataframe indicating the image location of specific wells for a given parquet file.
     The function reads a parquet file from S3, filters it by well names and returns the result as a DataFrame.
 
 
@@ -346,7 +354,8 @@ def get_item_location_info(
     item_name: str,
     input_column="standard_key",
 ) -> pl.DataFrame:
-    """Wrapper to obtain a dataframe with locations of an item. It removes duplicate rows.
+    """
+    Wrapper to obtain a dataframe with locations of an item. It removes duplicate rows.
 
     Parameters
     ----------
@@ -388,7 +397,8 @@ def get_gene_images(
     input_column: str or None = None,
     samples_per_plate: int = 1,
 ) -> np.ndarray:
-    """Returns a collage of images from a given gene. Returned matrices are arranged in two rows,
+    """
+    Returns a collage of images from a given gene. Returned matrices are arranged in two rows,
     top row are the perturbations and bottom rows are their plate-per-plate controls.
 
     Parameters

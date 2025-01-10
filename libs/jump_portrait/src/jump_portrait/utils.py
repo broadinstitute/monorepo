@@ -9,7 +9,8 @@ from tqdm import tqdm
 
 
 def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
-    """Create slices of the given iterable.
+    """
+    Create slices of the given iterable.
 
     Parameters
     ----------
@@ -46,7 +47,8 @@ def parallel(
     verbose: bool = True,
     **kwargs: dict[Any, Any],
 ) -> list[Any]:
-    """Distribute process on iterable.
+    """
+    Distribute process on iterable.
 
     Parameters
     ----------
@@ -108,7 +110,8 @@ def batch_processing(f: Callable):
 
 
 def try_function(f: Callable):
-    """Wrap a function into an instance which will Try to call the function:
+    """
+    Wrap a function into an instance which will Try to call the function:
         If it success, return the output of the function.
         If it fails, return None
 

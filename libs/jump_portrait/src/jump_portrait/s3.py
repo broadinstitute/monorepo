@@ -93,7 +93,8 @@ def get_corrected_image(
     compressed: bool = False,
     staging: bool = False,
 ) -> np.ndarray:
-    """Correct the image from a given location when appropriate by dividing it by another image in the same location dictionary.
+    """
+    Correct the image from a given location when appropriate by dividing it by another image in the same location dictionary.
 
     Parameters
     ----------
@@ -194,7 +195,8 @@ def build_s3_image_path(
 
 
 def read_parquet_s3(path: str, lazy: bool = False):
-    """Read parquet file from S3 onto memory.
+    """
+    Read parquet file from S3 onto memory.
 
     Parameters
     ----------
