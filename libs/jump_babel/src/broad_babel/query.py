@@ -74,7 +74,8 @@ def get_mapper(
     query: list or tuple, input_column: str, output_columns: str
 ) -> dict[str, str]:
     """
-    Convenience function to generate a mapper from a set of queries.
+    Generate a query->result mapper from a collection of queries.
+
     It delegates matching to sqlite3 and ensures prefixes are removed.
     Unlike "run_query", this returns a one-to-one relationship by compressing
     the repeated inputs into a dictionary.
@@ -114,8 +115,20 @@ def broad_to_standard(query: str or list[str]) -> str or dict[str, str]:
 
     Parameters
     ----------
-    query : str or t.List[str]
-    Input, if str it returns string, if List it returns a dictionary. Function fails if not al queries are found
+    query : str or list[str]
+        Input identifier(s) to be converted. If a string is provided, the function returns a single string.
+        If a list of strings is provided, the function returns a dictionary with input identifiers as keys.
+
+    Returns
+    -------
+    str or dict[str, str]
+        The standard equivalent of the input identifier(s). If a single string was input, the function returns a string.
+        If a list of strings was input, the function returns a dictionary where each key is an input identifier and each value is its corresponding standard equivalent.
+
+    Raises
+    ------
+    AssertionError
+        If not all queries are found or if multiple results are found for a single query.
 
     """
     result = run_query(query, "broad_sample", "standard_key")
@@ -132,7 +145,6 @@ def broad_to_standard(query: str or list[str]) -> str or dict[str, str]:
         ), f"Invalid number of results for broad_sample {broad_sample}"
 
     return {brd: std[0] for brd, std in zip(query, result)}
-
 
 def export_csv(output: str = "exported.csv", table: str = TABLE) -> None:
     """

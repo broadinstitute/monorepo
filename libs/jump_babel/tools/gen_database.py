@@ -16,16 +16,47 @@ plate_col = "Metadata_plate_type"
 plates_order = ("compound", "orf", "crispr", "compound")
 
 
-def select_if_available(df: pl.DataFrame, cols: tuple[str]):
-    # Select columns present in df
+def select_if_available(df: pl.DataFrame, cols: tuple[str]) -> pl.DataFrame:
+    """
+    Select columns present in a Polars DataFrame.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input DataFrame.
+    cols : tuple[str]
+        Columns to select from the DataFrame.
+
+    Returns
+    -------
+    pl.DataFrame
+        DataFrame with selected columns.
+
+    """
     return df.select(*set(df.columns).intersection(cols))
 
 
-# %% Make names consistent
 def provide_mapper(
     df: pl.DataFrame, std_col: str, brd_col: str = None
 ) -> dict[str, str]:
-    # validates mapping keys against a dataframe to rename columns consistently
+    """
+    Validate mapping keys against a Polars DataFrame to rename columns consistently.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input DataFrame.
+    std_col : str
+        Standard column name.
+    brd_col : str, optional
+        Broad column name (default is None).
+
+    Returns
+    -------
+    dict[str, str]
+        Dictionary with consistent mapping keys for renaming columns.
+
+    """
     standard_col_mapper = {
         "Metadata_InChIKey": std_col,
         "Metadata_Symbol": std_col,
@@ -34,7 +65,6 @@ def provide_mapper(
         "broad_sample": brd_col,
     }
     return {k: v for k, v in standard_col_mapper.items() if k in df.columns}
-
 
 # ORF + CRISPR + COMPOUNDS
 
