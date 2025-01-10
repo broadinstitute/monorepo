@@ -1,7 +1,7 @@
 import os
 import pandas as pd
 import tempfile
-from src.smiles.standardize_smiles import StandardizeMolecule
+from src.jump_smiles.standardize_smiles import StandardizeMolecule
 import pytest
 
 from pathlib import Path
