@@ -1,6 +1,4 @@
-"""
-Import morphological profiles using the manifest on github.
-"""
+"""Import morphological profiles using the manifest on github."""
 
 import polars as pl
 import pooch

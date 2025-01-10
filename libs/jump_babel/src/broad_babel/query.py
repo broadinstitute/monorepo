@@ -1,6 +1,4 @@
-"""
-Basic querying logic using Python's sqlite
-"""
+"""Basic querying logic using Python's sqlite"""
 
 import csv
 import sqlite3
@@ -12,7 +10,7 @@ import pooch
 DB_FILE = pooch.retrieve(
     # Temporarily  using URL out due to Zenodo API change
     # https://github.com/zenodo/zenodo/issues/2506
-    url=("https://zenodo.org/records/12211976/files/" "babel.db"),
+    url=("https://zenodo.org/records/12211976/files/babel.db"),
     known_hash="md5:4748089ad27a5ff2855627698897f075",
 )
 TABLE = "babel"

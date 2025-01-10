@@ -13,9 +13,7 @@
 #     name: python3
 # ---
 
-"""
-Generate an interface to browse all available JUMP images.
-"""
+"""Generate an interface to browse all available JUMP images."""
 
 from pathlib import Path
 

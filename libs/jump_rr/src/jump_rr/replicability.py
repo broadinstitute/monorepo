@@ -1,16 +1,12 @@
 #!/usr/bin/env jupyter
-"""
-Tools to fetch replicability information from existing databases, and to recalculate it efficiently when necessary.
-"""
+"""Tools to fetch replicability information from existing databases, and to recalculate it efficiently when necessary."""
 
 import polars as pl
 from cachier import cachier
 
 
 def match_jcp(jcp: str) -> str:
-    """
-    Check the 8th character in a JCP id to fetch its corresponding dataframe
-    """
+    """Check the 8th character in a JCP id to fetch its corresponding dataframe"""
     match jcp[8]:
         case "8" | "crispr":
             return "phenotypic-activity-wellpos_cc_var_mad_outlier_featselect_sphering_harmony_PCA_corrected.csv.gz"

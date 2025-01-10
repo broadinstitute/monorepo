@@ -465,7 +465,12 @@ def get_gene_images(
     ]
     shape = get_image_from_s3uri(paths[0]).shape
     images = np.array([get_image_from_s3uri(x) for x in paths]).reshape(
-        (len(channels), len(base), samples_per_plate, *shape)
+        (
+            len(channels),
+            len(base),
+            samples_per_plate,
+            *shape,
+        )
     )
 
     return images

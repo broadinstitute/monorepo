@@ -3,6 +3,7 @@ from itertools import groupby, starmap
 
 import numpy as np
 import pytest
+
 from jump_portrait.fetch import get_item_location_info, get_jump_image_batch
 from jump_portrait.s3 import get_image_from_s3uri
 
@@ -30,7 +31,12 @@ def test_get_image(s3_image_uri):
 def get_metadata():
     metadata = get_item_location_info("MYT1")
     return metadata.select(
-        ["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"]
+        [
+            "Metadata_Source",
+            "Metadata_Batch",
+            "Metadata_Plate",
+            "Metadata_Well",
+        ]
     ).unique()
 
 

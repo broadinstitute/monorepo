@@ -129,7 +129,11 @@ def basic_cleanup(df: pl.DataFrame, meta_selector: pl.selectors) -> pl.DataFrame
     # Adjust indices
     colnames = numpy.array(values_df.columns)
     for i, indices_to_drop in enumerate(
-        (nan_indices, outlier_indices, redundant_indices)
+        (
+            nan_indices,
+            outlier_indices,
+            redundant_indices,
+        )
     ):
         colnames = drop_indices(colnames, indices_to_drop, axis=0)
 

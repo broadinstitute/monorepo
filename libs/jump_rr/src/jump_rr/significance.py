@@ -188,9 +188,7 @@ def get_p_value(a, b, seed: int = 42):
 
 
 def get_pvalue_mwu(a, b, axis=0):
-    """
-    Wrapper over scipy ttest_ind
-    """
+    """Wrapper over scipy ttest_ind"""
     return mannwhitneyu(a, b, axis=axis).pvalue
 
 
@@ -222,12 +220,12 @@ def calculate_mw(
             negcons_per_plate=negcons_per_plate,
             seed=seed,
         )
-    print(f"{perf_counter()-timer}")
+    print(f"{perf_counter() - timer}")
 
     print("FDR correction")
     timer = perf_counter()
     corrected = pl.DataFrame([multipletests(x, method="fdr_bh")[1] for x in p_values])
-    print(f"{perf_counter()-timer}")
+    print(f"{perf_counter() - timer}")
 
     return corrected
 
@@ -253,14 +251,14 @@ def calculate_pvals(
                 lambda x: multipletests(get_pvalue_mwu(*x), method="fdr_bh")[1],
                 partitioned.values(),
             )
-        print(f"Threaded: {perf_counter()-timer}")
+        print(f"Threaded: {perf_counter() - timer}")
     else:
         timer = perf_counter()
         corrected = [
             multipletests(get_pvalue_mwu(a, b), method="fdr_bh")[1]
             for a, b in tqdm(partitioned.values())
         ]
-        print(f"Linear: {perf_counter()-timer}")
+        print(f"Linear: {perf_counter() - timer}")
         # print(f"FDR correction performed in {perf_counter()-timer}")
 
     return (tuple(partitioned.keys()), corrected)
@@ -305,7 +303,7 @@ def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
     """
     timer = perf_counter()
     partitioned = partition_parquet_by_trt(path, dataset)
-    print(f"Partitioning took {perf_counter()-timer}")
+    print(f"Partitioning took {perf_counter() - timer}")
 
     ids, pvals = calculate_pvals(partitioned, *args, **kwargs)
     return pl.DataFrame(

@@ -1,5 +1,4 @@
-"""
-JCP ids in {crispr, orf, compound} dataset but not on well dataset.
+"""JCP ids in {crispr, orf, compound} dataset but not on well dataset.
 Update the crispr,orf and compound dataframes to remove text and save them into the folder.
 """
 
@@ -47,7 +46,7 @@ for dataset in datasets:
     dataset_jcp = get_table(dataset)["Metadata_JCP2022"]
     n_original = len(dataset_jcp)
     d[dataset] = set(dataset_jcp).intersection(well_jcp)
-    print(f"Dataset {dataset} contains {n_original-len(d[dataset])} fewer entries")
+    print(f"Dataset {dataset} contains {n_original - len(d[dataset])} fewer entries")
 """
 Dataset compound contains 957 fewer entries
 Dataset crispr contains 0 fewer entries

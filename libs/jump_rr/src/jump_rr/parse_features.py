@@ -52,9 +52,11 @@ def get_feature_groups(
 
     results = [(std.findall(x) or chless.findall(x))[0] for x in feature_fullnames]
     results = [
-        (x[0], "".join(x[1:3]), "", x[3])
-        if len(x) < 5
-        else (*x[:2], "".join(x[2:4]), x[4])
+        (
+            (x[0], "".join(x[1:3]), "", x[3])
+            if len(x) < 5
+            else (*x[:2], "".join(x[2:4]), x[4])
+        )
         for x in results
     ]
 

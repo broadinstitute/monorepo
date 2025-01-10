@@ -1,7 +1,5 @@
 #!/usr/bin/env jupyter
-"""
-Functions to group multiple wells
-"""
+"""Functions to group multiple wells"""
 
 from itertools import cycle
 

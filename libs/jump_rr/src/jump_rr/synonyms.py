@@ -1,6 +1,4 @@
-"""
-Functions to get gene synonyms.
-"""
+"""Functions to get gene synonyms."""
 
 from functools import cache
 

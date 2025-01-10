@@ -112,9 +112,19 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
 
 
 def table_type_to_suffix(table_type: str):
-    """
-    Convert a table type to a title suffix.
-    """
+"""Convert a table type to a title suffix.
+This function takes a string representing the type of table and returns the corresponding title suffix.
+
+Parameters
+----------
+table_type : str
+    The type of table, e.g., "matches" or "feature".
+
+Returns
+-------
+str
+    The title suffix for the given table type.
+"""
     match table_type:
         case "matches":
             return "Matches"
