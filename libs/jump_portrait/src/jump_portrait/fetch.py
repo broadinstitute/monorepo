@@ -10,11 +10,9 @@ a) If you have an item of interest and want to see them:
 - Use this location dataframe to build a full path and fetch it from there
 
 Current problems:
-- More controls than individual samples
 - Control info is murky, requires using broad_babel
-
+- More controls than individual samples, thus we must resample.
 """
-
 
 from itertools import product, starmap
 
@@ -32,14 +30,59 @@ from jump_portrait.utils import batch_processing, parallel, try_function
 
 
 def format_cellpainting_s3() -> str:
+    """Returns a formatted string for an S3 path to Cell Painting data.
+
+    The returned path includes placeholders for metadata fields.
+    It is expected that the caller will replace these placeholders with actual values.
+
+    Parameters
+    ----------
+    None
+
+    Returns
+    -------
+    str
+        A formatted string representing the S3 path.
+
+    Notes
+    -----
+    The placeholders in the path are:
+    - {Metadata_Source}
+    - {Metadata_Batch}
+    - {Metadata_Plate}
+
+    Examples
+    --------
+    >>> format_cellpainting_s3()
+    's3://cellpainting-gallery/cpg0016-jump/{Metadata_Source}/workspace/load_data_csv/{Metadata_Batch}/{Metadata_Plate}/load_data_with_illum.parquet'
+
+    """
     return (
         "s3://cellpainting-gallery/cpg0016-jump/"
-        "{Metadata_Source}/workspace/load_data_csv/"
-        "{Metadata_Batch}/{Metadata_Plate}/load_data_with_illum.parquet"
+        "{Metadata_Source}/"
+        "workspace/load_data_csv/"
+        "{Metadata_Batch}/"
+        "{Metadata_Plate}/"
+        "load_data_with_illum.parquet"
     )
 
 
-def get_sample(n: int = 2, seed: int = 42):
+def get_sample(n: int = 2, seed: int = 42) -> pl.DataFrame:
+    """Retrieves a sample of cell painting data from S3.
+
+    Parameters
+    ----------
+    n : int, optional
+        Number of samples to retrieve (default is 2).
+    seed : int, optional
+        Random seed used for shuffling the data (default is 42).
+
+    Returns
+    -------
+    parquet_meta : pl.DataFrame
+        Retrieved parquet metadata.
+
+    """
     sample = (
         get_table("plate")
         .filter(pl.col("Metadata_PlateType") == "TARGET2")
@@ -49,7 +92,7 @@ def get_sample(n: int = 2, seed: int = 42):
     )
     s3_path = format_cellpainting_s3().format(**sample.to_dicts()[0])
 
-    parquet_meta = read_parquet_s3(s3_path)  # , use_pyarrow=True)
+    parquet_meta = read_parquet_s3(s3_path)
     return parquet_meta
 
 
@@ -121,11 +164,11 @@ def get_jump_image(
 
 
 def get_jump_image_batch(
-        metadata: pl.DataFrame,
-        channel: list[str],
-        site: list[str],
-        correction: str='Orig',
-        verbose: bool=True,
+    metadata: pl.DataFrame,
+    channel: list[str],
+    site: list[str],
+    correction: str = "Orig",
+    verbose: bool = True,
 ) -> tuple[list[tuple], list[np.ndarray]]:
     """Load jump image associated to metadata in a threaded fashion.
 
@@ -153,13 +196,17 @@ def get_jump_image_batch(
         list containing the images
 
     """
-    iterable = list(starmap(lambda *x: (*x[0], *x[1:]), product(metadata.rows(), channel, site, [correction])))
-    img_list = parallel(iterable, batch_processing(try_function(get_jump_image)),
-                        verbose=verbose)
+    iterable = list(
+        starmap(
+            lambda *x: (*x[0], *x[1:]),
+            product(metadata.rows(), channel, site, [correction]),
+        )
+    )
+    img_list = parallel(
+        iterable, batch_processing(try_function(get_jump_image)), verbose=verbose
+    )
 
     return iterable, img_list
-
-
 
 
 def get_item_location_metadata(
@@ -167,11 +214,33 @@ def get_item_location_metadata(
     operator: str or None = None,
     input_column: str = "standard_key",
 ) -> pl.DataFrame:
-    """First search for datasets in which this item was present.
-    Return tuple with its Metadata location in order source, batch, plate,
-    well and site.
+    """Get metadata location for an item by its name.
+    Search for datasets where the item is present and return a tuple
+    with its metadata location in order of source, batch, plate, well, and site.
+
+    Parameters
+    ----------
+    item_name : str
+        The name of the item to search for.
+    operator : str or None, optional
+        The operator to use for the query (default is None).
+    input_column : str, optional
+        The input column to use for the query (default is "standard_key").
+
+    Returns
+    -------
+    pl.DataFrame
+        A DataFrame containing the metadata location of the item.
+
+    Raises
+    ------
+    AssertionError
+        If the item_name is "JCP2022_033924", which is not supported as it is a negative control and fills the memory of most computers.
+
     """
-    assert item_name!="JCP2022_033924", "The negative control is not supported, please use a smaller selection before fetching plate information"
+    assert (
+        item_name != "JCP2022_033924"
+    ), "The negative control is not supported, please use a smaller selection before fetching plate information"
 
     # Get plates
     jcp_ids = query.run_query(
@@ -202,13 +271,11 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
     Parameters
     ----------
     well_level_metadata : pl.DataFrame
-        Contains the data
-
-    Load metadata from a dataframe containing these columns
-    - Metadata_Source
-    - Metadata_Batch
-    - Metadata_Plate
-    - Metadata_Well
+        Contains the data, contaning, containing these columns
+            - Metadata_Source
+            - Metadata_Batch
+            - Metadata_Plate
+            - Metadata_Well
 
 
     Returns
@@ -250,8 +317,28 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
 
 @batch_processing
 def get_well_image_uris(s3_location_uri, wells: list[str]) -> pl.DataFrame:
-    # Returns a dataframe indicating the image location of specific wells for a given parquet file.
-    locations_df = read_parquet_s3(s3_location_uri)  # , use_pyarrow=True)
+    """Return a dataframe indicating the image location of specific wells for a given parquet file.
+    The function reads a parquet file from S3, filters it by well names and returns the result as a DataFrame.
+
+
+    Parameters
+    ----------
+    s3_location_uri : str
+        The S3 URI location of the parquet file.
+    wells : list[str]
+        A list of well names to filter by.
+
+    Returns
+    -------
+    pl.DataFrame
+        A dataframe containing the image locations of the specified wells.
+
+    Notes
+    -----
+    It uses a decorator for batch processing.
+
+    """
+    locations_df = read_parquet_s3(s3_location_uri)
     return locations_df.filter(pl.col("Metadata_Well").is_in(wells))
 
 
@@ -279,9 +366,13 @@ def get_item_location_info(
     well_level_metadata = get_item_location_metadata(
         item_name, input_column=input_column
     )
-    assert len(well_level_metadata), f"Item {item_name} was not found in column {input_column}"
+    assert len(
+        well_level_metadata
+    ), f"Item {item_name} was not found in column {input_column}"
+
     # Note that this breaks if we pass item_name="JCP2022_033924" and
-    # input_column="JCP2022" due to the negative control
+    # input_column="JCP2022" due to the negative control. There is an assertion on the top
+    # level to avoid this situation
     item_selected_meta = load_filter_well_metadata(well_level_metadata)
     joint = item_selected_meta.join(
         well_level_metadata.drop("Metadata_Well"),
@@ -297,7 +388,7 @@ def get_gene_images(
     input_column: str or None = None,
     samples_per_plate: int = 1,
 ) -> np.ndarray:
-    """Return a collage of images from a given gene. Returned matrices are arranged in two rows,
+    """Returns a collage of images from a given gene. Returned matrices are arranged in two rows,
     top row are the perturbations and bottom rows are their plate-per-plate controls.
 
     Parameters
@@ -368,4 +459,3 @@ def get_gene_images(
     )
 
     return images
-

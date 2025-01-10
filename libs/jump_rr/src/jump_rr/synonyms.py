@@ -1,6 +1,7 @@
 """
 Functions to get gene synonyms.
 """
+
 from functools import cache
 
 import polars as pl

@@ -4,6 +4,7 @@ Convert NCBI Gene ids to gene names. This is not currently used, but is likely t
 
 Requires biopython and tqdm (or just install dev dependencies via poetry)
 """
+
 import csv
 import json
 from pathlib import Path

@@ -104,10 +104,15 @@ def partition_by_trt(
     """
     meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
     # TODO Refactor these sections to increase performance
-    partitions = {k[0]:v for k,v in df.select(
-        pl.col(meta_cols),
-        pl.all().exclude("^Metadata.*$").cast(pl.Float32),
-    ).partition_by("Metadata_pert_type", include_key=False, as_dict=True).items()}
+    partitions = {
+        k[0]: v
+        for k, v in df.select(
+            pl.col(meta_cols),
+            pl.all().exclude("^Metadata.*$").cast(pl.Float32),
+        )
+        .partition_by("Metadata_pert_type", include_key=False, as_dict=True)
+        .items()
+    }
 
     # partitions = {
     #     v.head(1).get_column("Metadata_pert_type")[0]: v
@@ -127,13 +132,15 @@ def partition_by_trt(
         partitions["trt"].group_by(column).agg("Metadata_Plate").iter_rows()
     )
 
-    ids_prof = { k[0] : v for k,v in
-                 partitions["trt"]
-                 .drop("Metadata_Plate")
-                 .partition_by(column, include_key=False, as_dict=True).items()
-                }
-        #.drop("Metadata_pert_type", "Metadata_Plate")
-        # .partition_by(column, as_dict=True, maintain_order=False, include_key=False)
+    ids_prof = {
+        k[0]: v
+        for k, v in partitions["trt"]
+        .drop("Metadata_Plate")
+        .partition_by(column, include_key=False, as_dict=True)
+        .items()
+    }
+    # .drop("Metadata_pert_type", "Metadata_Plate")
+    # .partition_by(column, as_dict=True, maintain_order=False, include_key=False)
 
     # TODO is there a better way to return only float values?
     id_trt_negcon = {
@@ -142,10 +149,10 @@ def partition_by_trt(
             partitions["negcon"]
             .filter(pl.col("Metadata_Plate").is_in(plates))
             .select(cs.by_dtype(pl.Float32))
-                .to_numpy(),
-            )
-            for id_, plates in ids_plates.items()
-        }
+            .to_numpy(),
+        )
+        for id_, plates in ids_plates.items()
+    }
     return id_trt_negcon
 
 

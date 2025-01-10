@@ -2,6 +2,7 @@
 """
 Functions to group multiple wells
 """
+
 from itertools import cycle
 
 import numpy as np

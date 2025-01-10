@@ -88,13 +88,17 @@ def parallel(
 
 def batch_processing(f: Callable):
     # This assumes parameters are packed in a tuple
-    def batched_fn(item_list: Iterable, job_idx: int,
-                   verbose:bool=True,
-                   *args, **kwargs):
+    def batched_fn(
+        item_list: Iterable, job_idx: int, verbose: bool = True, *args, **kwargs
+    ):
         results = []
-        for item in tqdm(item_list, position=0, leave=True,
-                         disable=not verbose,
-                         desc=f"worker #{job_idx}"):
+        for item in tqdm(
+            item_list,
+            position=0,
+            leave=True,
+            disable=not verbose,
+            desc=f"worker #{job_idx}",
+        ):
             results.append(f(*item, *args, **kwargs))
 
         if any([x is not None for x in results]):
@@ -117,6 +121,7 @@ def try_function(f: Callable):
     tryed_fn : Callable
 
     """
+
     # This assumes parameters are packed in a tuple
     def tryed_fn(*item, **kwargs):
         try:
@@ -126,4 +131,5 @@ def try_function(f: Callable):
             result = None
 
         return result
+
     return tryed_fn

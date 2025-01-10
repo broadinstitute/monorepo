@@ -20,6 +20,7 @@ then wrangle information and produce an explorable data frame.
 
 This is intended for use on a server with GPUs and high RAM to analyse data massively.
 """
+
 from pathlib import Path
 
 import cupy as cp

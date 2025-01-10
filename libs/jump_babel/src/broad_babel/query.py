@@ -1,6 +1,7 @@
 """
 Basic querying logic using Python's sqlite
 """
+
 import csv
 import sqlite3
 import typing as t
@@ -50,9 +51,9 @@ def run_query(
 
     con = sqlite3.connect(DB_FILE)
     cur = con.cursor()
-    expression_prefix = (
-        expression
-    ) = f"SELECT {output_columns} FROM {TABLE} WHERE {input_column} "
+    expression_prefix = expression = (
+        f"SELECT {output_columns} FROM {TABLE} WHERE {input_column} "
+    )
     placeholder = "?"  # For SQLite. See DBAPI paramstyle.
     if isinstance(query, str):
         operator = operator or "="
@@ -93,10 +94,12 @@ def get_mapper(
     -------
     Dictionary where keys are input_column items and values are their equivalent
     """
-    assert len(output_columns.split(","))==2, "Incorrect number of output columns"
+    assert len(output_columns.split(",")) == 2, "Incorrect number of output columns"
 
     input_column = input_column.removeprefix("Metadata_")
-    output_columns = ",".join(x.removeprefix("Metadata") for x in output_columns.split(","))
+    output_columns = ",".join(
+        x.removeprefix("Metadata") for x in output_columns.split(",")
+    )
     return dict(
         run_query(
             query,
@@ -157,4 +160,3 @@ def export_csv(output: str = "exported.csv", table: str = TABLE):
         headers = [x[1] for x in cur.execute(f"PRAGMA table_info({TABLE})").fetchall()]
         writer.writerow(headers)
         writer.writerows(data)
-

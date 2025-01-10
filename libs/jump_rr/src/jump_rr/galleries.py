@@ -16,6 +16,7 @@
 """
 Generate an interface to browse all available JUMP images.
 """
+
 from pathlib import Path
 
 import polars as pl

@@ -28,25 +28,20 @@ def test_get_image(s3_image_uri):
 
 @pytest.fixture
 def get_metadata():
-     metadata = get_item_location_info("MYT1")
-     return metadata.select(["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"]).unique()
+    metadata = get_item_location_info("MYT1")
+    return metadata.select(
+        ["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"]
+    ).unique()
 
 
-@pytest.mark.parametrize("channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [str(i) for i in range(8)])])
+@pytest.mark.parametrize(
+    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [str(i) for i in range(8)])]
+)
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
-def test_get_jump_image_batch(
-        get_metadata,
-        channel,
-        site,
-        correction
-):
-
+def test_get_jump_image_batch(get_metadata, channel, site, correction):
     iterable, img_list = get_jump_image_batch(
-        get_metadata,
-        channel,
-        site,
-        correction,
-        verbose=False)
+        get_metadata, channel, site, correction, verbose=False
+    )
     mask = [x is not None for x in img_list]
 
     # verify that there is an output for every input parameter stored in iterable
@@ -63,16 +58,30 @@ def test_get_jump_image_batch(
     # caution with the following test:
     # it might be too restrictive as there could be one channel missing for an img (Should not happen theoretically)
     # stack img per channel and assert img.shape[0] == len(channel)
-    zip_iter_img = sorted(zip(iterable_filt, img_list_filt),
-                          key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5], x[0][4]))
-    iterable_stack, img_stack = map(lambda tup: list(tup),
-            zip(*starmap(
-                lambda key, param_img: (key, np.stack(list(map(lambda x: x[1], param_img)))),
+    zip_iter_img = sorted(
+        zip(iterable_filt, img_list_filt),
+        key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5], x[0][4]),
+    )
+    iterable_stack, img_stack = map(
+        lambda tup: list(tup),
+        zip(
+            *starmap(
+                lambda key, param_img: (
+                    key,
+                    np.stack(list(map(lambda x: x[1], param_img))),
+                ),
                 # grouped image are returned as the common key, and then the zip of param and img, so we retrieve the img then we stack
-                groupby(zip_iter_img,
-                        key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5])))))
+                groupby(
+                    zip_iter_img,
+                    key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5]),
+                ),
+            )
+        ),
+    )
 
-    assert sum([img.shape[0] == len(channel) for img in img_stack]) == len(iterable_stack)
+    assert sum([img.shape[0] == len(channel) for img in img_stack]) == len(
+        iterable_stack
+    )
 
     # NB: no test is done on the number of image retrieved per sample to assess if it is equal
     # to the number of site as this is not always the case.

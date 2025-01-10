@@ -2,6 +2,7 @@
 JCP ids in {crispr, orf, compound} dataset but not on well dataset.
 Update the crispr,orf and compound dataframes to remove text and save them into the folder.
 """
+
 """
 JCP ids in {crispr, orf, compound} dataset but not on well dataset.
 Update the crispr,orf and compound dataframes to remove text and save them into the folder.
@@ -13,6 +14,7 @@ import polars as pl
 import pooch
 
 out_path = Path("/home/amunoz/projects/datasets/metadata")
+
 
 def get_table(table_name: str) -> pl.DataFrame:
     # Obtained from broad_portrait
@@ -36,6 +38,7 @@ def get_table(table_name: str) -> pl.DataFrame:
         ),
         infer_schema_length=16000,
     )
+
 
 well_jcp = set(get_table("well")["Metadata_JCP2022"])
 datasets = ("compound", "crispr", "orf")

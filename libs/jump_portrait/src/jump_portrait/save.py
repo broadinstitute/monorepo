@@ -41,7 +41,10 @@ def download_item_images(
     item_ch_corr_combinations = list(product(item_location_tups, channels, corrections))
 
     # parallel(item_ch_corr_combinations, save_image, output_dir=output_dir)
-    Parallel(n_jobs=-1)(delayed(save_image)(*item) for item in tqdm(item_ch_corr_combinations))
+    Parallel(n_jobs=-1)(
+        delayed(save_image)(*item) for item in tqdm(item_ch_corr_combinations)
+    )
+
 
 def save_image(
     row,

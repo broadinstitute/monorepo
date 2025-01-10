@@ -26,27 +26,34 @@ prefix = "/cpg0020-varchamp/broad/images/"
 
 def s3client(use_credentials: bool = False):
     if use_credentials:
-        if not all(key in os.environ for key in [
-                    "AWS_ACCESS_KEY_ID",
-                    "AWS_SECRET_ACCESS_KEY",
-                    "AWS_SESSION_TOKEN"]):
-            raise Exception("AWS credentials not found."
-                            "Please set them in the environment, or use"
-                            "data that does not require credentials.")
+        if not all(
+            key in os.environ
+            for key in [
+                "AWS_ACCESS_KEY_ID",
+                "AWS_SECRET_ACCESS_KEY",
+                "AWS_SESSION_TOKEN",
+            ]
+        ):
+            raise Exception(
+                "AWS credentials not found."
+                "Please set them in the environment, or use"
+                "data that does not require credentials."
+            )
 
         return boto3.client(
-            "s3", region_name='us-east-1',
-            aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
-            aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
-            aws_session_token=os.environ['AWS_SESSION_TOKEN'])
+            "s3",
+            region_name="us-east-1",
+            aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
+            aws_session_token=os.environ["AWS_SESSION_TOKEN"],
+        )
     else:
         return boto3.client("s3", config=Config(signature_version=UNSIGNED))
 
 
-def get_image_from_s3uri(s3_image_uri,
-                         bucket_name='cellpainting-gallery',
-                         staging: bool = False) -> np.ndarray:
-
+def get_image_from_s3uri(
+    s3_image_uri, bucket_name="cellpainting-gallery", staging: bool = False
+) -> np.ndarray:
     s3_image_uri = str(s3_image_uri)  # if instance is S3Path
 
     # Remove all possible prefixes
@@ -55,15 +62,16 @@ def get_image_from_s3uri(s3_image_uri,
     s3_image_uri = s3_image_uri.removeprefix(f"{bucket_name}/")
 
     try:
-        response = s3client(
-            use_credentials=staging
-        ).get_object(Bucket=bucket_name, Key=s3_image_uri)
+        response = s3client(use_credentials=staging).get_object(
+            Bucket=bucket_name, Key=s3_image_uri
+        )
         response_body = BytesIO(response["Body"].read())
     except Exception as e:
-        print(f"Failed to fetch s3://{bucket_name}/{s3_image_uri}. Is the file"
-              f"path correct and accessible?")
+        print(
+            f"Failed to fetch s3://{bucket_name}/{s3_image_uri}. Is the file"
+            f"path correct and accessible?"
+        )
         raise e
-
 
     if s3_image_uri.endswith(".tif") or s3_image_uri.endswith(".tiff"):
         result = mpimg.imread(response_body, format="tiff")
@@ -108,7 +116,7 @@ def get_corrected_image(
         channel=channel,
         correction=correction,
         compressed=compressed,
-        staging=staging
+        staging=staging,
     )
 
     result = get_image_from_s3uri(s3_image_path, s3_image_path.bucket, staging=staging)
@@ -139,7 +147,8 @@ def keys(Bucket, Prefix="", StartAfter="", Delimiter="/"):
 
 
 def build_s3_image_path(
-    row: dict[str, str], channel: str,
+    row: dict[str, str],
+    channel: str,
     correction: None or str = None,
     compressed: bool = False,
     staging: bool = False,
@@ -160,21 +169,24 @@ def build_s3_image_path(
     filename = row["_".join(("FileName", index_suffix))]
 
     if staging:
-        directory = directory.replace("cellpainting-gallery", "staging-cellpainting-gallery")
+        directory = directory.replace(
+            "cellpainting-gallery", "staging-cellpainting-gallery"
+        )
     if compressed:
         pattern = r"(images/[^/]+)/(images)/.*"
-        replacement = r"\1/\2_compressed/" + row['Metadata_Plate'] + "/"
+        replacement = r"\1/\2_compressed/" + row["Metadata_Plate"] + "/"
         directory = re.sub(pattern, replacement, directory)
         filename = os.path.splitext(filename)[0] + ".png"
-    if use_bf_channel: # Replace the image with the bright field channel
-        channel_ids = [int(v[-5]) for k,v in row.items() if k.startswith("FileName_Orig")]
+    if use_bf_channel:  # Replace the image with the bright field channel
+        channel_ids = [
+            int(v[-5]) for k, v in row.items() if k.startswith("FileName_Orig")
+        ]
         # the one channel not present
         bf_id = list(set(range(1, 7)).difference(channel_ids))[0]
         filename_as_lst = list(filename)
         filename_as_lst[-5] = str(bf_id)
-        filename_as_lst[-11] = "4" # I found that C06 finishes with A04
+        filename_as_lst[-11] = "4"  # I found that C06 finishes with A04
         filename = "".join(filename_as_lst)
-
 
     final_path = S3Path.from_uri(directory) / filename
 

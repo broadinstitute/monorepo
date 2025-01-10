@@ -2,6 +2,7 @@
 """
 Script to build a sqlite containing the final version of a database
 """
+
 import polars as pl
 from broad_babel.data import get_table
 
@@ -35,6 +36,7 @@ def provide_mapper(
         "broad_sample": brd_col,
     }
     return {k: v for k, v in standard_col_mapper.items() if k in df.columns}
+
 
 # ORF + CRISPR + COMPOUNDS
 
@@ -77,10 +79,10 @@ manual_mapper = {
     "JCP2022_050797": "poscon",  # "Quinidine",
     "JCP2022_064022": "poscon",  # "NVS-PAK1-1",
     "JCP2022_085227": "poscon",  # "Aloxistatin",
-    # TODO remove the following three once these are added to CRISPR metadata file 
+    # TODO remove the following three once these are added to CRISPR metadata file
     "JCP2022_800001": "negcon",  # "no-guide",
     "JCP2022_800002": "negcon",  # "non-targeting",
-    "JCP2022_805264": "poscon",  # PLK1 #  According to Niranj 
+    "JCP2022_805264": "poscon",  # PLK1 #  According to Niranj
     # https://broadinstitute.slack.com/archives/C01AF25CQLT/p1718896975274239?thread_ts=1718896659.778949&cid=C01AF25CQLT
     "JCP2022_900001": "null",  # "BAD CONSTRUCT",
     "JCP2022_999999": "null",  # "UNTREATED",
@@ -114,4 +116,3 @@ final_version.write_database(
     if_exists="replace",
     engine="adbc",
 )
-
