@@ -1,6 +1,5 @@
 #!/usr/bin/env jupyter
 
-import io
 import os
 import re
 from io import BytesIO
@@ -114,7 +113,7 @@ def get_corrected_image(
 
     result = get_image_from_s3uri(s3_image_path, s3_image_path.bucket, staging=staging)
 
-    if apply_correction and not correction in ("Orig", None):
+    if apply_correction and correction not in ("Orig", None):
         original_image_path = build_s3_image_path(
             row=images_location, channel=channel, correction="Orig"
         )
@@ -169,7 +168,7 @@ def build_s3_image_path(
         filename = os.path.splitext(filename)[0] + ".png"
     if use_bf_channel: # Replace the image with the bright field channel
         channel_ids = [int(v[-5]) for k,v in row.items() if k.startswith("FileName_Orig")]
-        # the one channel not present  
+        # the one channel not present
         bf_id = list(set(range(1, 7)).difference(channel_ids))[0]
         filename_as_lst = list(filename)
         filename_as_lst[-5] = str(bf_id)
@@ -199,7 +198,6 @@ def read_parquet_s3(path: str, lazy: bool = False):
     FIXME: Add docs.
 
     """
-
     if lazy:
         raise Exception(
             "Lazy-loading does not currently work for image location parquets."

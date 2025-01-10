@@ -1,6 +1,5 @@
 #!/usr/bin/env jupyter
-"""
-jump_portrait version >=0.0.18
+"""jump_portrait version >=0.0.18
 Workflow 1: Fetch one image for a given item and a control
 """
 

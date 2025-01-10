@@ -20,11 +20,9 @@ from pathlib import Path
 
 import numpy as np
 import cupy as cp
-import cupyx.scipy.spatial as spatial
 import polars as pl
-from jump_rr.concensus import get_group_median
 from jump_rr.parse_features import get_feature_groups
-from polars.selectors import numeric, string
+from polars.selectors import numeric
 
 def map_back(k , n):
     # Map from a linear index to an upper triangle 

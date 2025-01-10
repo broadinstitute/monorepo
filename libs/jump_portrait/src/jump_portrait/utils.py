@@ -22,6 +22,7 @@ def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
     -------
     list[slice]
         A list of slice.
+
     """
     slices = []
     if count == 0:
@@ -66,6 +67,7 @@ def parallel(
     -------
     list[Any]
         A list of outputs genetated by function.
+
     """
     jobs = jobs or cpu_count()
 
@@ -102,8 +104,7 @@ def batch_processing(f: Callable):
 
 
 def try_function(f: Callable):
-    '''
-    Wrap a function into an instance which will Try to call the function:
+    """Wrap a function into an instance which will Try to call the function:
         If it success, return the output of the function.
         If it fails, return None
 
@@ -114,7 +115,8 @@ def try_function(f: Callable):
     Returns
     -------
     tryed_fn : Callable
-    '''
+
+    """
     # This assumes parameters are packed in a tuple
     def tryed_fn(*item, **kwargs):
         try:

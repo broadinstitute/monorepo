@@ -1,6 +1,5 @@
 #!/usr/bin/env jupyter
-"""
-Functions to save images of genes into files.
+"""Functions to save images of genes into files.
 - TODO Associate each sample to a control in its plate
 - TODO Save to tiff
 
@@ -11,15 +10,15 @@ from pathlib import Path
 
 import numpy as np
 import polars as pl
+from joblib import Parallel, delayed
+from tqdm import tqdm
 
 from jump_portrait.fetch import (
     build_s3_image_path,
     get_item_location_info,
 )
 from jump_portrait.s3 import get_corrected_image
-from jump_portrait.utils import batch_processing, parallel
-from joblib import Parallel, delayed
-from tqdm import tqdm
+
 
 def download_item_images(
     item_name: str,

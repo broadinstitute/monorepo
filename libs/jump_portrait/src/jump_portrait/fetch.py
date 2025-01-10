@@ -1,6 +1,5 @@
 #!/usr/bin/env jupyter
-"""
-Functions to get JUMP-CP images from AWS's s3://cellpainting-gallery.
+"""Functions to get JUMP-CP images from AWS's s3://cellpainting-gallery.
 
 Based on github.com/jump-cellpainting/datasets/blob/baacb8be98cfa4b5a03b627b8cd005de9f5c2e70/sample_notebook.ipynb
 
@@ -17,15 +16,18 @@ Current problems:
 """
 
 
-from itertools import  product, starmap
+from itertools import product, starmap
 
 import numpy as np
 import polars as pl
 from broad_babel import query
 from broad_babel.data import get_table
 
-from jump_portrait.s3 import (build_s3_image_path, get_corrected_image,
-                              get_image_from_s3uri, read_parquet_s3)
+from jump_portrait.s3 import (
+    get_corrected_image,
+    get_image_from_s3uri,
+    read_parquet_s3,
+)
 from jump_portrait.utils import batch_processing, parallel, try_function
 
 
@@ -125,10 +127,9 @@ def get_jump_image_batch(
         correction: str='Orig',
         verbose: bool=True,
 ) -> tuple[list[tuple], list[np.ndarray]]:
-    '''
-    Load jump image associated to metadata in a threaded fashion.
+    """Load jump image associated to metadata in a threaded fashion.
 
-    Parameters:
+    Parameters
     ----------
     metadata : pl.DataFrame
         must have the column in this specific order ("Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well")
@@ -151,7 +152,7 @@ def get_jump_image_batch(
     img_list : list of array
         list containing the images
 
-    '''
+    """
     iterable = list(starmap(lambda *x: (*x[0], *x[1:]), product(metadata.rows(), channel, site, [correction])))
     img_list = parallel(iterable, batch_processing(try_function(get_jump_image)),
                         verbose=verbose)
@@ -166,8 +167,7 @@ def get_item_location_metadata(
     operator: str or None = None,
     input_column: str = "standard_key",
 ) -> pl.DataFrame:
-    """
-    First search for datasets in which this item was present.
+    """First search for datasets in which this item was present.
     Return tuple with its Metadata location in order source, batch, plate,
     well and site.
     """
@@ -197,8 +197,7 @@ def get_item_location_metadata(
 
 
 def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame:
-    """
-    Filters a dataframe with well info. Loading and filtering happens in a threaded manner. Note that it does not check for whole row duplication.
+    """Filters a dataframe with well info. Loading and filtering happens in a threaded manner. Note that it does not check for whole row duplication.
 
     Parameters
     ----------
@@ -216,6 +215,7 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
     -------
     pl.DataFrame
         DataFrame with location of item
+
     """
     core_cols = (
         "Metadata_Source",
