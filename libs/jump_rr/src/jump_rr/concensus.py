@@ -1,5 +1,5 @@
 #!/usr/bin/env jupyter
-"""Functions to group multiple wells"""
+"""Functions to group multiple wells."""
 
 from itertools import cycle
 
@@ -32,7 +32,7 @@ def get_concensus_meta_urls(prof: pl.DataFrame, url_colname: str) -> tuple:
 
 
 def get_group_median(med, group_by: list[str] or None = None):
-    """Group columns by their names"""
+    """Group columns by their names."""
     med_vals = med.select(pl.exclude("^Metadata.*$"))
     if group_by is None:
         feature_meta = get_feature_groups(tuple(med_vals.columns))
@@ -46,7 +46,7 @@ def get_group_median(med, group_by: list[str] or None = None):
 def get_range(dataset: str) -> range:
     """
     Generate a cycle of indices based on the dataset
-    0-8 if CRISPR; 1-9 if ORF, 1-6 if compounds
+    0-8 if CRISPR; 1-9 if ORF, 1-6 if compounds.
     """
     offset = dataset != "crispr"
     max_offset = (dataset == "compound") * (-3)

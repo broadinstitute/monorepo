@@ -1,4 +1,4 @@
-"""General utilities"""
+"""General utilities."""
 
 from collections.abc import Callable, Iterable
 from itertools import chain
@@ -113,7 +113,7 @@ def try_function(f: Callable):
     """
     Wrap a function into an instance which will Try to call the function:
         If it success, return the output of the function.
-        If it fails, return None
+        If it fails, return None.
 
     Parameters
     ----------

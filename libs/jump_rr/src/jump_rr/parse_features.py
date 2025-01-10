@@ -14,7 +14,7 @@ def get_feature_groups(
     apples with apples, oranges with oranges
     Two cases
     - Channel-based
-    - Non-channel based shape
+    - Non-channel based shape.
 
     Apply regular expressions
     Convert to format MASK,FEATURE,CHANNEL(opt),SUFFIX, merging channels

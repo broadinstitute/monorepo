@@ -1,7 +1,7 @@
 #!/usr/bin/env jupyter
 """
 jump_portrait version >=0.0.18
-Workflow 1: Fetch one image for a given item and a control
+Workflow 1: Fetch one image for a given item and a control.
 """
 
 from jump_portrait.fetch import get_jump_image, get_sample

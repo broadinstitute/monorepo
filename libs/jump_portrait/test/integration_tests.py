@@ -32,7 +32,7 @@ def test_get_jump_image(
     apply_correction,
     compressed,
     staging,
-):
+) -> None:
     # Check that finding image locations from gene or compounds works
     image = get_jump_image(
         source,
@@ -51,16 +51,16 @@ def test_get_jump_image(
     assert image.sum() > 0  # Not empty nor nulls
 
 
-def test_get_corrected_image():
+def test_get_corrected_image() -> None:
     # TODO add test
     pass
 
 
-def test_download_image():
+def test_download_image() -> None:
     # TODO add test
     pass
 
 
-def test_negcon():
+def test_negcon() -> None:
     item_name = "JCP2022_033924"
-    tmp = get_item_location_info(item_name, input_column="JCP2022")
+    get_item_location_info(item_name, input_column="JCP2022")

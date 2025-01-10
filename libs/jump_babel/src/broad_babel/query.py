@@ -1,8 +1,7 @@
-"""Basic querying logic using Python's sqlite"""
+"""Basic querying logic using Python's sqlite."""
 
 import csv
 import sqlite3
-import typing as t
 from functools import cache
 
 import pooch
@@ -23,7 +22,7 @@ def run_query(
     output_columns: str or str,
     operator: None or str = None,
     predicate: None or str = None,
-) -> str or t.Dict[str, str]:
+) -> str or dict[str, str]:
     """
     Query one or multiple values to the database.
 
@@ -60,7 +59,7 @@ def run_query(
     else:
         operator = "IN"
         placeholder = ", ".join(placeholder for _ in query)
-    expression = expression_prefix + operator + " (%s)" % placeholder
+    expression = expression_prefix + operator + f" ({placeholder})"
     if predicate is not None:
         expression += f" {predicate}"
 
@@ -109,7 +108,7 @@ def get_mapper(
     )
 
 
-def broad_to_standard(query: str or t.List[str]) -> str or t.Dict[str, str]:
+def broad_to_standard(query: str or list[str]) -> str or dict[str, str]:
     """
     Convert broad ids to standard, either InChiKey or Entrez Gene name.
 
@@ -135,7 +134,7 @@ def broad_to_standard(query: str or t.List[str]) -> str or t.Dict[str, str]:
     return {brd: std[0] for brd, std in zip(query, result)}
 
 
-def export_csv(output: str = "exported.csv", table: str = TABLE):
+def export_csv(output: str = "exported.csv", table: str = TABLE) -> None:
     """
     Export entire translation table as csv.
 

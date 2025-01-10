@@ -1,1 +1,1 @@
-#!/usr/bin/env python3
+"""Minimal name translator and metadata for JUMP."""

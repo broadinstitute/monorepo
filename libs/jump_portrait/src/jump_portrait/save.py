@@ -2,7 +2,7 @@
 """
 Functions to save images of genes into files.
 - TODO Associate each sample to a control in its plate
-- TODO Save to tiff
+- TODO Save to tiff.
 
 """
 
@@ -54,8 +54,8 @@ def save_image(
     output_dir: str = "imgs",
     pad: int = 5,
     apply_correction: bool = False,
-):
-    s3_image_path = build_s3_image_path(row=row, channel=channel, correction=correction)
+) -> None:
+    build_s3_image_path(row=row, channel=channel, correction=correction)
     image = get_corrected_image(row, channel, correction, apply_correction)
     row["padded_ix"] = str(row["ix"]).rjust(pad, "0")
     out_file = "{standard_key}_{Metadata_PlateType}_{Metadata_Plate}_{padded_ix}"

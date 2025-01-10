@@ -14,7 +14,7 @@
 
 """
 Generate aggregated statistics for feature values
-Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/issues/4#issuecomment-1918019212
+Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/issues/4#issuecomment-1918019212.
 
 1. Calculate the p value of all features
 2. then adjust the p value to account for multiple testing https://www.statsmodels.org/dev/generated/statsmodels.stats.multitest.multipletests.html (fdr_bh)
@@ -161,7 +161,7 @@ def get_p_value(a, b, seed: int = 42):
     Calculate the p value of two matrices in a column fashion.
     TODO check if we should sample independently or if we can sample once and used all features from a given sample set.
     Challenge:
-    - Multiple genes likely share multiple negative controls
+    - Multiple genes likely share multiple negative controls.
 
     Solution:
     1. Find gene
@@ -188,7 +188,7 @@ def get_p_value(a, b, seed: int = 42):
 
 
 def get_pvalue_mwu(a, b, axis=0):
-    """Wrapper over scipy ttest_ind"""
+    """Wrapper over scipy ttest_ind."""
     return mannwhitneyu(a, b, axis=axis).pvalue
 
 
@@ -200,7 +200,7 @@ def calculate_mw(
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
     1. Calculate the MW test
-    2. then adjust the p value to account for multiple testing
+    2. then adjust the p value to account for multiple testing.
     """
     partitioned = partition_by_trt(profiles, seed=seed)
     features = tuple(
@@ -236,7 +236,7 @@ def calculate_pvals(
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
     1. Calculate the p value of all features
-    2. then adjust the p value to account for multiple testing
+    2. then adjust the p value to account for multiple testing.
     """
     # Remove perturbations that have an excessive number of entries (usually controls/errors)
     partitioned = {

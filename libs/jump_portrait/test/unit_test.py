@@ -9,7 +9,7 @@ from jump_portrait.s3 import get_image_from_s3uri
 
 
 @pytest.mark.parametrize("gene", ["MYT1"])
-def test_get_item_location(gene):
+def test_get_item_location(gene) -> None:
     # Check that finding image locations from gene or compounds works
     result = get_item_location_info(gene).shape
     assert result[0] > 1
@@ -23,7 +23,7 @@ def test_get_item_location(gene):
         "s3://cellpainting-gallery/cpg0016-jump/source_10/images/2021_08_17_U2OS_48_hr_run16/illum/Dest210809-134534/Dest210809-134534_IllumMito.npy",
     ],
 )
-def test_get_image(s3_image_uri):
+def test_get_image(s3_image_uri) -> None:
     assert len(get_image_from_s3uri(s3_image_uri)), "Image fetched is empty"
 
 
@@ -44,7 +44,7 @@ def get_metadata():
     "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [str(i) for i in range(8)])]
 )
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
-def test_get_jump_image_batch(get_metadata, channel, site, correction):
+def test_get_jump_image_batch(get_metadata, channel, site, correction) -> None:
     iterable, img_list = get_jump_image_batch(
         get_metadata, channel, site, correction, verbose=False
     )

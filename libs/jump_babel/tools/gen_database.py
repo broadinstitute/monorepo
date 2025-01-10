@@ -1,5 +1,5 @@
 #!/usr/bin/env jupyter
-"""Script to build a sqlite containing the final version of a database"""
+"""Script to build a sqlite containing the final version of a database."""
 
 import polars as pl
 from broad_babel.data import get_table
