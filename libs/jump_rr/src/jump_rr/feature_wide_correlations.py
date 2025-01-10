@@ -18,8 +18,8 @@ Calculate all the feature correlations at the global level.
 
 from pathlib import Path
 
-import numpy as np
 import cupy as cp
+import numpy as np
 import polars as pl
 from jump_rr.parse_features import get_feature_groups
 from polars.selectors import numeric

@@ -10,10 +10,10 @@ def get_mappers(
     output_cols: list[str] = ["standard_key", "NCBI_Gene_ID"],
     format_output: bool = True,
 ):
-    """Generate translators based on an identifier using broad-babel.
+    """
+    Generate translators based on an identifier using broad-babel.
     This targets a specific use-case of broad_babel.query.get_mappers.
     """
-
     mapper_values = run_query(
         query=ids,
         input_column=input_col,

@@ -26,7 +26,8 @@ def run_query(
     operator: None or str = None,
     predicate: None or str = None,
 ) -> str or t.Dict[str, str]:
-    """Query one or multiple values to the database.
+    """
+    Query one or multiple values to the database.
 
     Parameters
     ----------
@@ -47,8 +48,8 @@ def run_query(
         - Translated name (str) if query is string and only one occurrence is found.
         - List of tuples with all fields if output_column is not one column or multiple occurrnces are found.
         - Dictionary with input->output names if the input is a collection of strings.
-    """
 
+    """
     con = sqlite3.connect(DB_FILE)
     cur = con.cursor()
     expression_prefix = expression = (
@@ -93,6 +94,7 @@ def get_mapper(
     Returns
     -------
     Dictionary where keys are input_column items and values are their equivalent
+
     """
     assert len(output_columns.split(",")) == 2, "Incorrect number of output columns"
 
@@ -110,7 +112,8 @@ def get_mapper(
 
 
 def broad_to_standard(query: str or t.List[str]) -> str or t.Dict[str, str]:
-    """Convert broad ids to standard, either InChiKey or Entrez Gene name.
+    """
+    Convert broad ids to standard, either InChiKey or Entrez Gene name.
 
     Parameters
     ----------
@@ -135,7 +138,8 @@ def broad_to_standard(query: str or t.List[str]) -> str or t.Dict[str, str]:
 
 
 def export_csv(output: str = "exported.csv", table: str = TABLE):
-    """Export entire translation table as csv.
+    """
+    Export entire translation table as csv.
 
     Parameters
     ----------
@@ -149,6 +153,7 @@ def export_csv(output: str = "exported.csv", table: str = TABLE):
     from broad_babel import query
 
     query.export_csv("my_file.csv")
+
     """
     con = sqlite3.connect(DB_FILE)
     cur = con.cursor()

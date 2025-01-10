@@ -1,9 +1,9 @@
 #!/usr/bin/env jupyter
 
 from pathlib import Path
-import polars as pl
 
-from jump_rr.significance import partition_by_trt, add_pert_type
+import polars as pl
+from jump_rr.significance import add_pert_type, partition_by_trt
 from scipy.stats import mannwhitneyu
 from tqdm import tqdm
 

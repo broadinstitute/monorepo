@@ -25,15 +25,15 @@ Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vig
 from math import sqrt
 from time import perf_counter
 
+import numpy as np
+import polars as pl
+import polars.selectors as cs
 from broad_babel.query import get_mapper
 from cachier import cachier
 from pathos.multiprocessing import Pool
 from scipy.stats import mannwhitneyu, t
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
-import numpy as np
-import polars as pl
-import polars.selectors as cs
 
 try:
     import cupy as cp
@@ -191,7 +191,6 @@ def get_pvalue_mwu(a, b, axis=0):
     """
     Wrapper over scipy ttest_ind
     """
-
     return mannwhitneyu(a, b, axis=axis).pvalue
 
 

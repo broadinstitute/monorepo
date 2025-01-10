@@ -33,14 +33,13 @@ from jump_rr.concensus import (
     get_cycles,
     repeat_cycles,
 )
+from jump_rr.datasets import get_dataset
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_bottom_top_indices
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
 from jump_rr.synonyms import get_synonym_mapper
 from jump_rr.translate import get_mappers
-
-from jump_rr.datasets import get_dataset
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 

@@ -42,7 +42,8 @@ _DESCRIPTIONS = {
 
 
 def get_col_desc(key: str) -> str:
-    """Fetch the description for a given key.
+    """
+    Fetch the description for a given key.
 
     Parameters
     ----------
@@ -64,7 +65,8 @@ def get_col_desc(key: str) -> str:
 
 
 def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
-    """Writes metadata file to customize Datasette.
+    """
+    Writes metadata file to customize Datasette.
 
     Parameters
     ----------
@@ -81,7 +83,6 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
     FIXME: Add docs.
 
     """
-
     prefix = ""
     if table_type == "matches":
         prefix = "Only top 50 matches for each perturbation are shown. "
