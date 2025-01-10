@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "smiles"
-version = "0.0.0"
+name = "jump_smiles"
+version = "0.0.1"
 description = ""
 readme = "README.md"
 authors = ["Alán F. Muñoz <amunozgo@broadinstitute.org>"]
