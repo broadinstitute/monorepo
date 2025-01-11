@@ -95,6 +95,19 @@ curated_annotations = curate_annotations(annotations)
 
 # Save curated annotations
 curated_annotations.to_parquet('./outputs/filtered_annotations.parquet')
+
+```
+
+
+```python
+import pandas as pd
+from jump_compound_annotator.curate import analyze_cooccurrence
+import logging
+logging.basicConfig(level=logging.INFO)
+
+curated_annotations = pd.read_parquet('./outputs/filtered_annotations.parquet')
+
+analyze_cooccurrence(curated_annotations, output_path="outputs")
 ```
 
 This creates three main output files in parquet format:
