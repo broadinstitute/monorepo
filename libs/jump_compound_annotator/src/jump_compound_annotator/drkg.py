@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from jump.utils import download_file, load_jump_ids
+from jump_compound_annotator.utils import download_file, load_jump_ids
 
 
 def open_gz(output_path: Path, redownload):

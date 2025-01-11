@@ -3,7 +3,7 @@ from zipfile import ZipFile
 
 import pandas as pd
 
-from jump.utils import download_file, ncbi_to_symbol
+from jump_compound_annotator.utils import download_file, ncbi_to_symbol
 
 
 def open_zip(output_path: Path, redownload: bool):

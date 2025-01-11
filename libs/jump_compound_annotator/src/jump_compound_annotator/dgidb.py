@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from jump.utils import download_file
+from jump_compound_annotator.utils import download_file
 
 
 def open_tsv_files(output_path: Path, redownload: bool):

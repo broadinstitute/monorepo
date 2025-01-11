@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from jump.utils import download_ftp_directory, hgnc_ids
+from jump_compound_annotator.utils import download_ftp_directory, hgnc_ids
 
 FTP_SERVER = "ftp.ebi.ac.uk"
 REMOTE_ROOT = "/pub/databases/opentargets/platform/24.09/output/etl/parquet"

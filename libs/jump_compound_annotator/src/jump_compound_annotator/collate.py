@@ -3,7 +3,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from jump.collate_gene import fill_with_synonyms
+from jump_compound_annotator.collate_gene import fill_with_synonyms
 
 
 def concat_annotations(output_dir: str, redownload: bool) -> pd.DataFrame:

@@ -2,10 +2,10 @@ from pathlib import Path
 
 import pandas as pd
 
-from jump.mychem import get_inchikeys as mychem_inchikeys
-from jump.mychem import save_mapper as save_mychem_mapper
-from jump.unichem import get_inchikeys as unichem_inchikeys
-from jump.unichem import save_mapper as save_unichem_mapper
+from jump_compound_annotator.mychem import get_inchikeys as mychem_inchikeys
+from jump_compound_annotator.mychem import save_mapper as save_mychem_mapper
+from jump_compound_annotator.unichem import get_inchikeys as unichem_inchikeys
+from jump_compound_annotator.unichem import save_mapper as save_unichem_mapper
 
 
 def pull_inchikeys(output_dir, source_ids, codes):

@@ -3,8 +3,8 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from jump.ncbi import get_synonyms
-from jump.utils import ncbi_to_symbol
+from jump_compound_annotator.ncbi import get_synonyms
+from jump_compound_annotator.utils import ncbi_to_symbol
 
 
 def fill_with_synonyms(output_dir, codes, redownload: bool):

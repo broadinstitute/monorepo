@@ -5,13 +5,13 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from jump.biokg import open_zip as open_biokg
-from jump.dgidb import open_tsv_files as open_dgidb
-from jump.drugrep import open_data as open_drugrep
-from jump.hetionet import open_zip as open_hetionet
-from jump.openbiolink import open_zip as open_openbiolink
-from jump.pharmebinet import open_gz as open_pharmebinet
-from jump.primekg import load_kg as open_kg
+from jump_compound_annotator.biokg import open_zip as open_biokg
+from jump_compound_annotator.dgidb import open_tsv_files as open_dgidb
+from jump_compound_annotator.drugrep import open_data as open_drugrep
+from jump_compound_annotator.hetionet import open_zip as open_hetionet
+from jump_compound_annotator.openbiolink import open_zip as open_openbiolink
+from jump_compound_annotator.pharmebinet import open_gz as open_pharmebinet
+from jump_compound_annotator.primekg import load_kg as open_kg
 
 
 def export(output_path):
