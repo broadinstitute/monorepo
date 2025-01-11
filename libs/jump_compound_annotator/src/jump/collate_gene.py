@@ -3,12 +3,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from jump.biokg import get_gene_interactions as get_biokg
-from jump.hetionet import get_gene_interactions as get_hetionet
 from jump.ncbi import get_synonyms
-from jump.openbiolink import get_gene_interactions as get_openbiolink
-from jump.pharmebinet import get_gene_interactions as get_pharmebinet
-from jump.primekg import get_gene_interactions as get_primekg
 from jump.utils import ncbi_to_symbol
 
 

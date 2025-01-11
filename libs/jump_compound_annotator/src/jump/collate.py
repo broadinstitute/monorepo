@@ -3,15 +3,7 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from jump.biokg import get_compound_annotations as get_biokg
 from jump.collate_gene import fill_with_synonyms
-from jump.dgidb import get_compound_annotations as get_dgidb
-from jump.drugrep import get_compound_annotations as get_drugrep
-from jump.hetionet import get_compound_annotations as get_hetionet
-from jump.openbiolink import get_compound_annotations as get_openbiolink
-from jump.opentargets import get_compound_annotations as get_opentargets
-from jump.pharmebinet import get_compound_annotations as get_pharmebinet
-from jump.primekg import get_compound_annotations as get_primekg
 
 
 def concat_annotations(output_dir: str, redownload: bool) -> pd.DataFrame:

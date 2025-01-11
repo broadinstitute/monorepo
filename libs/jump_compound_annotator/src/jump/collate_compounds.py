@@ -3,10 +3,6 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from jump.biokg import get_compound_interactions as get_biokg
-from jump.hetionet import get_compound_interactions as get_hetionet
-from jump.pharmebinet import get_compound_interactions as get_pharmebinet
-from jump.primekg import get_compound_interactions as get_primekg
 
 
 def concat_annotations(output_dir: str, redownload: bool = False) -> pd.DataFrame:
