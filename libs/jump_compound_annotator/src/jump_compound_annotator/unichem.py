@@ -138,9 +138,16 @@ def main():
     )
     parser.add_argument("action", choices=["pull", "collate"])
     parser.add_argument("output_path")
+    parser.add_argument(
+        "--batch-size",
+        type=int,
+        default=1000,
+        help="Number of compounds to process in parallel (default: 1000)",
+    )
     args = parser.parse_args()
+
     if args.action == "pull":
-        pull(Path(args.output_path))
+        pull(Path(args.output_path), batch_size=args.batch_size)
     elif args.action == "collate":
         collate(Path(args.output_path))
 
