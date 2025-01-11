@@ -3,6 +3,13 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+from jump_compound_annotator.biokg import get_compound_interactions as get_biokg  # noqa: F401
+from jump_compound_annotator.hetionet import get_compound_interactions as get_hetionet  # noqa: F401
+from jump_compound_annotator.pharmebinet import (
+    get_compound_interactions as get_pharmebinet,  # noqa: F401
+)
+from jump_compound_annotator.primekg import get_compound_interactions as get_primekg  # noqa: F401
+
 
 def concat_annotations(output_dir: str, redownload: bool = False) -> pd.DataFrame:
     """Aggregate compound interactions from all sources"""

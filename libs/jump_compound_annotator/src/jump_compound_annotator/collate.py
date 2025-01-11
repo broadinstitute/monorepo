@@ -4,6 +4,20 @@ import pandas as pd
 from tqdm import tqdm
 
 from jump_compound_annotator.collate_gene import fill_with_synonyms
+from jump_compound_annotator.biokg import get_compound_annotations as get_biokg  # noqa: F401
+from jump_compound_annotator.dgidb import get_compound_annotations as get_dgidb  # noqa: F401
+from jump_compound_annotator.drugrep import get_compound_annotations as get_drugrep  # noqa: F401
+from jump_compound_annotator.hetionet import get_compound_annotations as get_hetionet  # noqa: F401
+from jump_compound_annotator.openbiolink import (
+    get_compound_annotations as get_openbiolink,  # noqa: F401
+)
+from jump_compound_annotator.opentargets import (
+    get_compound_annotations as get_opentargets,  # noqa: F401
+)
+from jump_compound_annotator.pharmebinet import (
+    get_compound_annotations as get_pharmebinet,  # noqa: F401
+)
+from jump_compound_annotator.primekg import get_compound_annotations as get_primekg  # noqa: F401
 
 
 def concat_annotations(output_dir: str, redownload: bool) -> pd.DataFrame:
