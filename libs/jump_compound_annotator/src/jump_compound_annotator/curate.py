@@ -11,6 +11,9 @@ Compound-Target Annotation Analysis and Filtering
 import pandas as pd
 import numpy as np
 from typing import Dict
+import logging
+
+logger = logging.getLogger(__name__)
 
 RELATIONSHIP_TYPE_MAPPING = {
     "DOWNREGULATES_CHdG": "downregulates",
@@ -103,17 +106,32 @@ def curate_annotations(
     hub_threshold: float = HUB_COMPOUND_THRESHOLD,
 ) -> pd.DataFrame:
     """Curate compound-target annotations by standardizing relationships and filtering hub compounds."""
+    initial_rows = len(annotations)
+    logger.info(f"Initial number of annotations: {initial_rows}")
+
     # Clean and standardize
     df = standardize_relationship_types(annotations, relationship_mapping)
 
     # Remove excluded relationships
     df = df.query("not rel_type.isin(@excluded_relationships)")
+    after_exclusion = len(df)
+    logger.info(
+        f"Rows after removing excluded relationships: {after_exclusion} ({initial_rows - after_exclusion} removed)"
+    )
 
     # Remove duplicates
     df = df.drop_duplicates(["inchikey", "rel_type", "target"]).reset_index(drop=True)
+    after_dedup = len(df)
+    logger.info(
+        f"Rows after removing duplicates: {after_dedup} ({after_exclusion - after_dedup} removed)"
+    )
 
     # Create link IDs and filter hub compounds
     df = create_link_ids(df)
     df = filter_hub_compounds(df, hub_threshold)
+    final_rows = len(df)
+    logger.info(
+        f"Final rows after filtering hub compounds: {final_rows} ({after_dedup - final_rows} removed)"
+    )
 
     return df
