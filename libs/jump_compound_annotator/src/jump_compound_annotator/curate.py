@@ -9,22 +9,8 @@ Compound-Target Annotation Analysis and Filtering
 """
 
 import pandas as pd
-import numpy as np
 from typing import Dict
 import logging
-
-# Optional visualization dependencies
-try:
-    import seaborn as sns
-    import matplotlib.pyplot as plt
-
-    HAS_PLOTTING = True
-except ImportError:
-    HAS_PLOTTING = False
-    logger = logging.getLogger(__name__)
-    logger.debug(
-        "Visualization dependencies (seaborn, matplotlib) not available. Plotting features will be disabled."
-    )
 
 logger = logging.getLogger(__name__)
 
@@ -79,39 +65,6 @@ def filter_hub_compounds(df: pd.DataFrame, threshold_quantile: float) -> pd.Data
     return df.query("inchikey.isin(@nohub_cpds)")
 
 
-def calculate_cooccurrence(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calculate co-occurrence matrix for relationship types.
-    """
-    crosstab = (
-        pd.pivot_table(
-            df, index="link_id", columns="rel_type", values="inchikey", aggfunc=len
-        )
-        .fillna(0)
-        .astype(int)
-    )
-    return crosstab.T.dot(crosstab)
-
-
-def calculate_normalized_cooccurrence(cooc: pd.DataFrame) -> pd.DataFrame:
-    """
-    Calculate normalized co-occurrence and create edge list.
-    """
-    n_cooc = cooc / np.diagonal(cooc)
-    mask = np.triu(np.ones(n_cooc.shape), k=1).astype(bool)
-
-    m_edges = n_cooc.where(mask)
-    m_edges = (
-        m_edges.melt(ignore_index=False)
-        .sort_values(by="value", ascending=False)
-        .dropna()
-    )
-
-    m_edges.index.name = "source"
-    m_edges.columns = ["target", "weight"]
-    return m_edges.query("weight > 0").reset_index()
-
-
 def curate_annotations(
     annotations: pd.DataFrame,
     relationship_mapping: Dict[str, str] = RELATIONSHIP_TYPE_MAPPING,
@@ -148,40 +101,3 @@ def curate_annotations(
     )
 
     return df
-
-
-def analyze_cooccurrence(df: pd.DataFrame, output_path: str = "./"):
-    """
-    1. Calculate co-occurrence and normalized co-occurrence.
-    2. Create an 'm_edges' edge list.
-    3. Generate a histogram plot of 'm_edges.weight'.
-    4. Print or log summary statistics.
-
-    :param df: Curated annotations DataFrame.
-    :param output_path: Directory path where plots or tables could be saved.
-    :return: A DataFrame containing the edge list ('m_edges').
-    """
-    # Step 1: Calculate co-occurrence matrix
-    cooc = calculate_cooccurrence(df)
-
-    # Step 2: Calculate normalized co-occurrence and create edge list
-    m_edges = calculate_normalized_cooccurrence(cooc)
-
-    if HAS_PLOTTING:
-        # Step 3: Create histogram of the 'weight' values
-        plt.figure(figsize=(7, 4))
-        sns.histplot(m_edges, x="weight", binwidth=0.1)
-        plt.title("Co-occurrence Weight Distribution")
-        plt.xlabel("Weight")
-        plt.ylabel("Count")
-        # Save plot to file (if desired)
-        hist_filepath = f"{output_path}/cooccurrence_weight_hist.png"
-        plt.savefig(hist_filepath, dpi=150)
-        logger.info(f"Saved co-occurrence histogram to {hist_filepath}")
-        plt.close()
-    else:
-        logger.info("Skipping histogram plot due to missing plotting dependencies.")
-
-    # Step 4: Print (or log) summary stats
-    weight_summary_by_source = m_edges.groupby("source").weight.describe()
-    logger.info(f"Weight summary by source:\n{weight_summary_by_source}\n")
