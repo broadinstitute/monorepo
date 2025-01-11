@@ -37,7 +37,7 @@ def get_compound_annotations(output_dir: str, redownload: bool):
     output_path = Path(output_dir)
     edges, nodes = open_gz(output_path, redownload)
     nodes = nodes.set_index("node_id")
-    chem_ids = nodes.query('labels=="Chemical|Compound"').index
+    chem_ids = nodes.query('labels=="Chemical|Compound"').index  # noqa: F841
     edges = edges.query("start_id in @chem_ids")
     edges = edges.query('type.str.endswith("G")')
     edges = edges[["start_id", "end_id", "type"]]
@@ -67,8 +67,8 @@ def get_compound_interactions(output_dir: str, redownload: bool):
     rgx_c = re.compile(r".*_(C[a-z]+C)$")
     rgx_ch = re.compile(r".*_(CH[a-z]+CH)$")
 
-    types_c = [c.group() for c in map(rgx_c.match, edges.type.unique()) if c]
-    types_ch = [c.group() for c in map(rgx_ch.match, edges.type.unique()) if c]
+    types_c = [c.group() for c in map(rgx_c.match, edges.type.unique()) if c]  # noqa: F841
+    types_ch = [c.group() for c in map(rgx_ch.match, edges.type.unique()) if c]  # noqa: F841
 
     edges_ch = edges.query("type in @types_ch")[["type", "start_id", "end_id"]]
     edges_c = edges.query("type in @types_c")[["type", "start_id", "end_id"]]
@@ -101,7 +101,7 @@ def get_gene_interactions(output_dir: str, redownload: bool):
     edges, nodes = open_gz(output_path, redownload)
     nodes = nodes.set_index("node_id")
     rgx_g = re.compile(r".*_(G[a-z]+G)$")
-    types_g = [c.group() for c in map(rgx_g.match, edges.type.unique()) if c]
+    types_g = [c.group() for c in map(rgx_g.match, edges.type.unique()) if c]  # noqa: F841
     edges_g = edges.query("type in @types_g")[["type", "start_id", "end_id"]]
     nodes_g = nodes.loc[np.unique(edges_g[["start_id", "end_id"]].values)]
     nodes_feat_g = get_node_props(nodes_g)

@@ -21,7 +21,7 @@ def open_zip(output_path: Path, redownload: bool):
 
 
 def get_compound_annotations(output_dir: str, redownload: bool):
-    rel_types = [
+    rel_types = [  # noqa: F841
         "DPI",
         "DRUG_CARRIER",
         "DRUG_DISEASE_ASSOCIATION",
@@ -44,7 +44,7 @@ def get_compound_annotations(output_dir: str, redownload: bool):
 
 
 def get_compound_interactions(output_dir: str, redownload: bool):
-    rel_types = ["DDI"]
+    rel_types = ["DDI"]  # noqa: F841
     edges = open_zip(Path(output_dir), redownload).query("rel_type in @rel_types")
     edges.rename(columns={"source": "source_a", "target": "source_b"}, inplace=True)
     edges["source_id"] = "drugbank"
@@ -52,7 +52,7 @@ def get_compound_interactions(output_dir: str, redownload: bool):
 
 
 def get_gene_interactions(output_dir: str, redownload: bool):
-    rel_types = ["PPI"]
+    rel_types = ["PPI"]  # noqa: F841
     edges = open_zip(Path(output_dir), redownload).query("rel_type in @rel_types")
     uniprot_ids = (
         edges["source"].drop_duplicates().tolist()
