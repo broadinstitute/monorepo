@@ -107,6 +107,10 @@ outputs/
 ├── unichem_drugbank_mapper.parquet  # UniChem DrugBank mapper
 ├── unichem_pubchem_mapper.parquet   # UniChem PubChem mapper
 ├── pointers.csv                     # Compound ID mappings from UniChem
+├── external_ids                     # External IDs for each compound
+│   ├── chembl.txt
+│   ├── drugbank.txt
+│   └── pubchem.txt
 ├── ids/                             # UniChem mapping batch files
 │   └── ids_*.csv
 ├── errors
