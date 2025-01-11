@@ -63,14 +63,9 @@ After creating ID mappings, collect, standardize, and optionally curate drug-tar
 from jump_compound_annotator.collate import concat_annotations
 from jump_compound_annotator.collate_gene import concat_annotations as concat_gene_annotations
 from jump_compound_annotator.collate_compounds import concat_annotations as concat_compound_annotations
-from jump_compound_annotator.curate import curate_annotations
 
 # Collect drug-gene annotations
 annotations = concat_annotations('./outputs', redownload=False)
-
-# Optional: Apply curation filters to annotations
-curated_annotations = curate_annotations(annotations)
-curated_annotations.to_parquet('./outputs/filtered_annotations.parquet')
 
 # Collect gene-gene interactions
 gene_interactions = concat_gene_annotations('./outputs', redownload=False)
@@ -83,10 +78,31 @@ from jump_compound_annotator.find_inchikeys import add_inchikeys
 add_inchikeys('./outputs')
 ```
 
+### 3. Curate Annotations
+
+```python
+from pathlib import Path
+from jump_compound_annotator.curate import curate_annotations
+import pandas as pd
+import logging
+logging.basicConfig(level=logging.INFO)
+
+# Load annotations
+annotations = pd.read_parquet(Path('./outputs') / "annotations.parquet")
+
+# Curate annotations
+curated_annotations = curate_annotations(annotations)
+
+# Save curated annotations
+curated_annotations.to_parquet('./outputs/filtered_annotations.parquet')
+```
+
 This creates three main output files in parquet format:
 - `annotations.parquet`: Drug-gene relationships
 - `compound_interactions.parquet`: Drug-drug interactions  
 - `gene_interactions.parquet`: Gene-gene interactions
+- (optional) `filtered_annotations.parquet`: Curated drug-gene relationships
+
 
 ### 3. Export External IDs (Optional)
 
