@@ -159,7 +159,12 @@ def get_jump_image(
         (pl.col("Metadata_Well") == well) & (pl.col("Metadata_Site") == str(site))
     )
 
-    assert len(unique_site) == 1, "More than one site found"
+    assert (
+        len(unique_site) > 0
+    ), f"No valid site was found: {source, batch, plate, well, site}"
+    assert (
+        len(unique_site) < 2
+    ), f"More than one site found: {source, batch, plate, well, site}"
 
     first_row = unique_site.row(0, named=True)
 
@@ -213,9 +218,14 @@ def get_jump_image_batch(
             product(metadata.rows(), channel, site, [correction]),
         )
     )
+
     img_list = parallel(
         iterable, batch_processing(try_function(get_jump_image)), verbose=verbose
     )
+    # img_list = []
+    # for x in iterable:
+    #     tmp = get_jump_image(*x)
+    #     img_list.append(tmp)
 
     return iterable, img_list
 
@@ -277,6 +287,7 @@ def get_item_location_metadata(
     )
     return well_level_metadata
 
+
 def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame:
     """
     Load and filter a DataFrame by using metadata of the well location.
@@ -328,6 +339,7 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
     selected_uris = pl.concat(well_images_uri)
 
     return selected_uris
+
 
 @batch_processing
 def get_well_image_uris(s3_location_uri: str, wells: list[str]) -> pl.DataFrame:

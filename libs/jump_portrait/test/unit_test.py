@@ -1,10 +1,14 @@
 #!/usr/bin/env jupyter
-from itertools import groupby, starmap
+from itertools import groupby, product, starmap
 
 import numpy as np
+import polars as pl
 import pytest
-
-from jump_portrait.fetch import get_item_location_info, get_jump_image_batch
+from jump_portrait.fetch import (
+    get_item_location_info,
+    get_jump_image,
+    get_jump_image_batch,
+)
 from jump_portrait.s3 import get_image_from_s3uri
 
 
@@ -28,8 +32,8 @@ def test_get_image(s3_image_uri) -> None:
 
 
 @pytest.fixture
-def get_metadata():
-    metadata = get_item_location_info("MYT1")
+def get_sample_location(item: str = "MYT1") -> pl.DataFrame:
+    metadata = get_item_location_info(item)
     return metadata.select(
         [
             "Metadata_Source",
@@ -41,28 +45,43 @@ def get_metadata():
 
 
 @pytest.mark.parametrize(
-    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [str(i) for i in range(8)])]
+    "channel,site,correction",
+    product(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"), ["Orig", "Illum"]),
+)
+def test_get_jump_image(get_sample_location, channel, site, correction) -> None:
+    image = get_jump_image(*get_sample_location.rows()[0], channel, site, correction)
+    x, y = image.shape
+
+    assert x == 1080, "Wrong x axis size"
+    assert y >= 1080, "Wrong y axis size"
+
+@pytest.mark.parametrize(
+    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"))]
 )
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
-def test_get_jump_image_batch(get_metadata, channel, site, correction) -> None:
+def test_get_jump_image_batch(get_sample_location, channel, site, correction) -> None:
+    """
+    Test pulling images in batches and dealing with potentially missing values.
+    """
     iterable, img_list = get_jump_image_batch(
-        get_metadata, channel, site, correction, verbose=False
+        get_sample_location, channel, site, correction, verbose=False
     )
+    
     mask = [x is not None for x in img_list]
-
     # verify that there is an output for every input parameter stored in iterable
     assert len(iterable) == len(img_list)
 
     # verify that images retrieved are not all None
-    assert sum(mask) != len(img_list)
+    assert sum(mask) == len(img_list)
 
-    # verify we retrieve 2d img
+    # verify we retrieve 2d images
     iterable_filt = [param for i, param in enumerate(iterable) if mask[i]]
     img_list_filt = [param for i, param in enumerate(img_list) if mask[i]]
-    assert sum([len(img.shape) == 2 for img in img_list_filt]) == len(iterable_filt)
+    assert sum([img.ndim == 2 for img in img_list_filt]) == len(iterable_filt)
 
-    # caution with the following test:
-    # it might be too restrictive as there could be one channel missing for an img (Should not happen theoretically)
+    # NOTE: @HugoHakem: aution with the following test:
+    # it might be too restrictive as there could be one channel missing
+    # Though in theory this should not happen
     # stack img per channel and assert img.shape[0] == len(channel)
     zip_iter_img = sorted(
         zip(iterable_filt, img_list_filt),
@@ -76,7 +95,7 @@ def test_get_jump_image_batch(get_metadata, channel, site, correction) -> None:
                     key,
                     np.stack(list(map(lambda x: x[1], param_img))),
                 ),
-                # grouped image are returned as the common key, and then the zip of param and img, so we retrieve the img then we stack
+                # grouped images are returned as the common key, and then the zip of param and img, so we retrieve the img then we stack
                 groupby(
                     zip_iter_img,
                     key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5]),
