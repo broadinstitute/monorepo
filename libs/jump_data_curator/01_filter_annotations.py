@@ -20,7 +20,7 @@
 # 4. Generate filtered dataset for downstream use
 #
 # First get the annotations:
-# rsync -avz "spirit:/home/shsingh/work/projects/annotator/outputs/{unichem_pubchem_mapper.parquet,mychem_pubchem_mapper.parquet,mychem_chembl_mapper.parquet,unichem_drugbank_mapper.parquet,annotations.parquet,gene_interactions.parquet,compound_interactions.parquet,unichem_chembl_mapper.parquet,mychem_drugbank_mapper.parquet}" .
+# rsync -avz "spirit:/home/shsingh/work/projects/annotator/outputs/{unichem_pubchem_mapper.parquet,mychem_pubchem_mapper.parquet,mychem_chembl_mapper.parquet,unichem_drugbank_mapper.parquet,annotations.parquet,gene_interactions.parquet,compound_interactions.parquet,unichem_chembl_mapper.parquet,mychem_drugbank_mapper.parquet,biokg}" .
 
 # %% [markdown]
 # ## Setup
@@ -29,7 +29,7 @@
 from pathlib import Path
 from jump_compound_annotator.data_processing import AnnotationProcessor
 
-PROJECT_ROOT = Path(__file__)
+PROJECT_ROOT = Path(__file__).parent
 OUTPUT_DIR = PROJECT_ROOT / "outputs"
 
 # Constants
