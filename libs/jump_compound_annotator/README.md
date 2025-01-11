@@ -65,13 +65,13 @@ from jump_compound_annotator.collate_gene import concat_annotations as concat_ge
 from jump_compound_annotator.collate_compounds import concat_annotations as concat_compound_annotations
 
 # Collect drug-gene annotations
-annotations = concat_annotations('./outputs')
+annotations = concat_annotations('./outputs', redownload=False)
 
 # Collect gene-gene interactions
-gene_interactions = concat_gene_annotations('./outputs')
+gene_interactions = concat_gene_annotations('./outputs', redownload=False)
 
 # Collect drug-drug interactions
-compound_interactions = concat_compound_annotations('./outputs')
+compound_interactions = concat_compound_annotations('./outputs', redownload=False)
 
 # Add standardized InChIKeys to annotations
 from jump_compound_annotator.find_inchikeys import add_inchikeys
