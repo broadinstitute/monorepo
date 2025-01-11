@@ -1,0 +1,13 @@
+[project]
+name = "jump-data-curator"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "ipykernel>=6.29.5",
+    "jump-compound-annotator",
+]
+
+[tool.uv.sources]
+jump-compound-annotator = { git = "https://github.com/broadinstitute/monorepo.git", subdirectory = "libs/jump_compound_annotator", rev = "annotator-cleanup" }
