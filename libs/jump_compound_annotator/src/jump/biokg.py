@@ -7,7 +7,7 @@ from jump.uniprot import get_gene_names
 from jump.utils import download_file
 
 
-def open_zip(output_path: Path, redownload=False):
+def open_zip(output_path: Path, redownload: bool):
     filepath = output_path / "biokg/biokg.zip"
     url = "https://github.com/dsi-bdi/biokg/releases/download/v1.0.0/biokg.zip"
     download_file(url, filepath, redownload)
@@ -20,7 +20,7 @@ def open_zip(output_path: Path, redownload=False):
     return edges
 
 
-def get_compound_annotations(output_dir: str):
+def get_compound_annotations(output_dir: str, redownload: bool):
     rel_types = [
         "DPI",
         "DRUG_CARRIER",
@@ -30,7 +30,9 @@ def get_compound_annotations(output_dir: str):
         "DRUG_TARGET",
         "DRUG_TRANSPORTER",
     ]
-    edges = open_zip(Path(output_dir)).query("rel_type in @rel_types")
+    edges = (
+        open_zip(Path(output_dir), redownload).query("rel_type in @rel_types").copy()
+    )
     uniprot_ids = edges["target"].drop_duplicates().tolist()
     results = get_gene_names(uniprot_ids)
     uniprot_to_gene = {r["from"]: r["to"] for r in results["results"]}
@@ -41,17 +43,17 @@ def get_compound_annotations(output_dir: str):
     return edges[["source", "target", "rel_type", "source_id"]]
 
 
-def get_compound_interactions(output_dir: str):
+def get_compound_interactions(output_dir: str, redownload: bool):
     rel_types = ["DDI"]
-    edges = open_zip(Path(output_dir)).query("rel_type in @rel_types")
+    edges = open_zip(Path(output_dir), redownload).query("rel_type in @rel_types")
     edges.rename(columns={"source": "source_a", "target": "source_b"}, inplace=True)
     edges["source_id"] = "drugbank"
     return edges[["source_a", "source_b", "rel_type", "source_id"]]
 
 
-def get_gene_interactions(output_dir: str):
+def get_gene_interactions(output_dir: str, redownload: bool):
     rel_types = ["PPI"]
-    edges = open_zip(Path(output_dir)).query("rel_type in @rel_types")
+    edges = open_zip(Path(output_dir), redownload).query("rel_type in @rel_types")
     uniprot_ids = (
         edges["source"].drop_duplicates().tolist()
         + edges["target"].drop_duplicates().tolist()

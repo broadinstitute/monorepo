@@ -6,7 +6,7 @@ import pandas as pd
 from jump.utils import download_file, load_jump_ids
 
 
-def open_gz(output_path: Path, redownload=False):
+def open_gz(output_path: Path, redownload):
     filepath = output_path / 'drkg/drkg.tar.gz'
     url = 'https://dgl-data.s3-us-west-2.amazonaws.com/dataset/DRKG/drkg.tar.gz'
     download_file(url, filepath, redownload)
