@@ -1,6 +1,7 @@
-'''
+"""
 code copied from https://www.uniprot.org/help/id_mapping
-'''
+"""
+
 import re
 import time
 import json
@@ -13,9 +14,7 @@ from requests.adapters import HTTPAdapter, Retry
 POLLING_INTERVAL = 3
 API_URL = "https://rest.uniprot.org"
 
-retries = Retry(total=5,
-                backoff_factor=0.25,
-                status_forcelist=[500, 502, 503, 504])
+retries = Retry(total=5, backoff_factor=0.25, status_forcelist=[500, 502, 503, 504])
 session = requests.Session()
 session.mount("https://", HTTPAdapter(max_retries=retries))
 
@@ -31,11 +30,7 @@ def check_response(response):
 def submit_id_mapping(from_db, to_db, ids):
     request = requests.post(
         f"{API_URL}/idmapping/run",
-        data={
-            "from": from_db,
-            "to": to_db,
-            "ids": ",".join(ids)
-        },
+        data={"from": from_db, "to": to_db, "ids": ",".join(ids)},
     )
     check_response(request)
     return request.json()["jobId"]
@@ -99,10 +94,7 @@ def decode_results(response, file_format, compressed):
             j = json.loads(decompressed.decode("utf-8"))
             return j
         elif file_format == "tsv":
-            return [
-                line for line in decompressed.decode("utf-8").split("\n")
-                if line
-            ]
+            return [line for line in decompressed.decode("utf-8").split("\n") if line]
         elif file_format == "xlsx":
             return [decompressed]
         elif file_format == "xml":
@@ -132,9 +124,7 @@ def merge_xml_results(xml_results):
         for child in root.findall("{http://uniprot.org/uniprot}entry"):
             merged_root.insert(-1, child)
     ElementTree.register_namespace("", get_xml_namespace(merged_root[0]))
-    return ElementTree.tostring(merged_root,
-                                encoding="utf-8",
-                                xml_declaration=True)
+    return ElementTree.tostring(merged_root, encoding="utf-8", xml_declaration=True)
 
 
 def print_progress_batches(batch_index, size, total):
@@ -151,8 +141,9 @@ def get_id_mapping_results_search(url):
     else:
         size = 500
         query["size"] = size
-    compressed = (query["compressed"][0].lower() == "true"
-                  if "compressed" in query else False)
+    compressed = (
+        query["compressed"][0].lower() == "true" if "compressed" in query else False
+    )
     parsed = parsed._replace(query=urlencode(query, doseq=True))
     url = parsed.geturl()
     request = session.get(url)
@@ -176,15 +167,14 @@ def get_id_mapping_results_stream(url):
     parsed = urlparse(url)
     query = parse_qs(parsed.query)
     file_format = query["format"][0] if "format" in query else "json"
-    compressed = (query["compressed"][0].lower() == "true"
-                  if "compressed" in query else False)
+    compressed = (
+        query["compressed"][0].lower() == "true" if "compressed" in query else False
+    )
     return decode_results(request, file_format, compressed)
 
 
 def get_gene_names(ids: list[str]):
-    job_id = submit_id_mapping(from_db="UniProtKB_AC-ID",
-                               to_db="Gene_Name",
-                               ids=ids)
+    job_id = submit_id_mapping(from_db="UniProtKB_AC-ID", to_db="Gene_Name", ids=ids)
     if check_id_mapping_results_ready(job_id):
         link = get_id_mapping_results_link(job_id)
         results = get_id_mapping_results_search(link)

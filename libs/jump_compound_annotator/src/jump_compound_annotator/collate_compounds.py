@@ -4,7 +4,6 @@ import pandas as pd
 from tqdm import tqdm
 
 
-
 def concat_annotations(output_dir: str, redownload: bool = False) -> pd.DataFrame:
     """Aggregate compound interactions from all sources"""
     filepath = Path(output_dir) / "compound_interactions.parquet"
