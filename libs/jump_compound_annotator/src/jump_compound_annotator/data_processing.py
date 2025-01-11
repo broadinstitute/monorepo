@@ -12,9 +12,9 @@ class AnnotationProcessor:
 
     def load_annotations(self) -> pd.DataFrame:
         """Load raw annotations from the output directory."""
-        from jump_compound_annotator.collate import get_inchi_annotations
+        from jump_compound_annotator.collate import concat_annotations
 
-        return get_inchi_annotations(self.output_dir)
+        return concat_annotations(str(self.output_dir), redownload=False)
 
     @staticmethod
     def create_link_ids(df: pd.DataFrame) -> pd.DataFrame:
