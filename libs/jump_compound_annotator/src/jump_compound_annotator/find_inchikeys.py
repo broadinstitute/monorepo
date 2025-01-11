@@ -8,12 +8,13 @@ from jump_compound_annotator.unichem import get_inchikeys as unichem_inchikeys
 from jump_compound_annotator.unichem import save_mapper as save_unichem_mapper
 
 
-def pull_inchikeys(output_dir, source_ids, codes):
+def pull_inchikeys(output_dir, source_ids, codes, redownload=False):
     for source_id in source_ids.unique():
         mask = source_id == source_ids
         unique_codes = codes[mask].drop_duplicates()
-        save_unichem_mapper(output_dir, unique_codes, source_id)
-        save_mychem_mapper(output_dir, unique_codes, source_id)
+
+        save_unichem_mapper(output_dir, unique_codes, source_id, redownload)
+        save_mychem_mapper(output_dir, unique_codes, source_id, redownload)
 
 
 def get_inchikeys(output_dir, source_ids, codes):
@@ -40,8 +41,9 @@ def add_inchikeys(output_dir, redownload=False):
         ]
     )
 
-    if redownload:
-        pull_inchikeys(output_dir, all_codes["source_id"], all_codes["source"])
+    pull_inchikeys(
+        output_dir, all_codes["source_id"], all_codes["source"], redownload=redownload
+    )
 
     st_labels["inchikey"] = get_inchikeys(
         output_dir, st_labels["source_id"], st_labels["source"]

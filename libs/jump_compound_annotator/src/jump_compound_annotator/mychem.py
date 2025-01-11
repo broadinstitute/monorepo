@@ -17,23 +17,24 @@ def inchis_from_chembl(ids: np.ndarray):
     return response.json()
 
 
-def save_chembl_mapper(output_dir, codes):
+def save_chembl_mapper(output_dir, codes, redownload=False):
     output_path = Path(output_dir)
     output_file = output_path / "mychem_chembl_mapper.parquet"
-    batches = np.split(codes, np.arange(500, len(codes), 500))
-    result = thread_map(inchis_from_chembl, batches, max_workers=8)
-    result = sum(result, [])
+    if not output_file.exists() or redownload:
+        batches = np.split(codes, np.arange(500, len(codes), 500))
+        result = thread_map(inchis_from_chembl, batches, max_workers=8)
+        result = sum(result, [])
 
-    mapper = {}
-    for dbid, rs in zip(codes, result):
-        if "error" not in rs and "notfound" not in rs:
-            mapper[dbid] = rs["_id"]
-        else:
-            mapper[dbid] = json.dumps(rs)
+        mapper = {}
+        for dbid, rs in zip(codes, result):
+            if "error" not in rs and "notfound" not in rs:
+                mapper[dbid] = rs["_id"]
+            else:
+                mapper[dbid] = json.dumps(rs)
 
-    mapper = pd.Series(mapper, name="inchikey")
-    mapper.index.name = "chembl"
-    mapper.reset_index().to_parquet(output_file)
+        mapper = pd.Series(mapper, name="inchikey")
+        mapper.index.name = "chembl"
+        mapper.reset_index().to_parquet(output_file)
 
 
 def inchis_from_pubchem(ids: np.ndarray):
@@ -46,23 +47,24 @@ def inchis_from_pubchem(ids: np.ndarray):
     return response.json()
 
 
-def save_pubchem_mapper(output_dir, codes):
+def save_pubchem_mapper(output_dir, codes, redownload=False):
     output_path = Path(output_dir)
     output_file = output_path / "mychem_pubchem_mapper.parquet"
-    batches = np.split(codes, np.arange(500, len(codes), 500))
-    result = thread_map(inchis_from_pubchem, batches, max_workers=8)
-    result = sum(result, [])
+    if not output_file.exists() or redownload:
+        batches = np.split(codes, np.arange(500, len(codes), 500))
+        result = thread_map(inchis_from_pubchem, batches, max_workers=8)
+        result = sum(result, [])
 
-    mapper = {}
-    for dbid, rs in zip(codes, result):
-        if "error" not in rs and "notfound" not in rs:
-            mapper[dbid] = rs["_id"]
-        else:
-            mapper[dbid] = json.dumps(rs)
+        mapper = {}
+        for dbid, rs in zip(codes, result):
+            if "error" not in rs and "notfound" not in rs:
+                mapper[dbid] = rs["_id"]
+            else:
+                mapper[dbid] = json.dumps(rs)
 
-    mapper = pd.Series(mapper, name="inchikey")
-    mapper.index.name = "pubchem"
-    mapper.reset_index().to_parquet(output_file)
+        mapper = pd.Series(mapper, name="inchikey")
+        mapper.index.name = "pubchem"
+        mapper.reset_index().to_parquet(output_file)
 
 
 def inchis_from_drugbank(ids: np.ndarray):
@@ -75,37 +77,38 @@ def inchis_from_drugbank(ids: np.ndarray):
     return response.json()
 
 
-def save_drugbank_mapper(output_dir, codes):
+def save_drugbank_mapper(output_dir, codes, redownload=False):
     output_path = Path(output_dir)
     output_file = output_path / "mychem_drugbank_mapper.parquet"
-    batches = np.split(codes, np.arange(500, len(codes), 500))
-    result = thread_map(inchis_from_drugbank, batches, max_workers=8)
-    result = sum(result, [])
+    if not output_file.exists() or redownload:
+        batches = np.split(codes, np.arange(500, len(codes), 500))
+        result = thread_map(inchis_from_drugbank, batches, max_workers=8)
+        result = sum(result, [])
 
-    mapper = {}
-    for dbid, rs in zip(codes, result):
-        if "error" not in rs and "notfound" not in rs:
-            mapper[dbid] = rs["_id"]
-        else:
-            mapper[dbid] = json.dumps(rs)
+        mapper = {}
+        for dbid, rs in zip(codes, result):
+            if "error" not in rs and "notfound" not in rs:
+                mapper[dbid] = rs["_id"]
+            else:
+                mapper[dbid] = json.dumps(rs)
 
-    mapper = pd.Series(mapper, name="inchikey")
-    mapper.index.name = "drugbank"
-    mapper["DB01361"] = "LQCLVBQBTUVCEQ-QTFUVMRISA-N"
-    mapper["DB01398"] = "YGSDEFSMJLZEOE-UHFFFAOYSA-N"
-    mapper["DB00667"] = "NTYJJOPFIAHURM-UHFFFAOYSA-N"
-    mapper["DB00729"] = "BREMLQBSKCSNNH-UHFFFAOYSA-M"
-    mapper["DB08866"] = "LRHSUZNWLAJWRT-GAJBHWORSA-N"
-    mapper.reset_index().to_parquet(output_file)
+        mapper = pd.Series(mapper, name="inchikey")
+        mapper.index.name = "drugbank"
+        mapper["DB01361"] = "LQCLVBQBTUVCEQ-QTFUVMRISA-N"
+        mapper["DB01398"] = "YGSDEFSMJLZEOE-UHFFFAOYSA-N"
+        mapper["DB00667"] = "NTYJJOPFIAHURM-UHFFFAOYSA-N"
+        mapper["DB00729"] = "BREMLQBSKCSNNH-UHFFFAOYSA-M"
+        mapper["DB08866"] = "LRHSUZNWLAJWRT-GAJBHWORSA-N"
+        mapper.reset_index().to_parquet(output_file)
 
 
-def save_mapper(output_dir, codes, source_id):
+def save_mapper(output_dir, codes, source_id, redownload=False):
     if source_id == "pubchem":
-        save_pubchem_mapper(output_dir, codes)
+        save_pubchem_mapper(output_dir, codes, redownload)
     if source_id == "chembl":
-        save_chembl_mapper(output_dir, codes)
+        save_chembl_mapper(output_dir, codes, redownload)
     if source_id == "drugbank":
-        save_drugbank_mapper(output_dir, codes)
+        save_drugbank_mapper(output_dir, codes, redownload)
 
 
 def get_mapper(output_dir, source_id):

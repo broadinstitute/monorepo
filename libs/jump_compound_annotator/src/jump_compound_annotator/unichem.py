@@ -50,14 +50,15 @@ def inchi_from_id(compound_id, source_id):
     return compound_id, last_error_msg
 
 
-def save_mapper(output_dir, codes, source_id):
+def save_mapper(output_dir, codes, source_id, redownload=False):
     output_path = Path(output_dir)
     output_file = output_path / f"unichem_{source_id}_mapper.parquet"
-    par_func = partial(inchi_from_id, source_id=source_id)
-    mapper = dict(thread_map(par_func, codes))
-    mapper = pd.Series(mapper, name="inchikey")
-    mapper.index.name = source_id
-    mapper.reset_index().to_parquet(output_file)
+    if not output_file.exists() or redownload:
+        par_func = partial(inchi_from_id, source_id=source_id)
+        mapper = dict(thread_map(par_func, codes))
+        mapper = pd.Series(mapper, name="inchikey")
+        mapper.index.name = source_id
+        mapper.reset_index().to_parquet(output_file)
 
 
 def get_mapper(output_dir, source_id):
