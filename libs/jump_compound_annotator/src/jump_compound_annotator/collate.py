@@ -3,15 +3,21 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
-from jump.biokg import get_compound_annotations as get_biokg
-from jump.collate_gene import fill_with_synonyms
-from jump.dgidb import get_compound_annotations as get_dgidb
-from jump.drugrep import get_compound_annotations as get_drugrep
-from jump.hetionet import get_compound_annotations as get_hetionet
-from jump.openbiolink import get_compound_annotations as get_openbiolink
-from jump.opentargets import get_compound_annotations as get_opentargets
-from jump.pharmebinet import get_compound_annotations as get_pharmebinet
-from jump.primekg import get_compound_annotations as get_primekg
+from jump_compound_annotator.collate_gene import fill_with_synonyms
+from jump_compound_annotator.biokg import get_compound_annotations as get_biokg  # noqa: F401
+from jump_compound_annotator.dgidb import get_compound_annotations as get_dgidb  # noqa: F401
+from jump_compound_annotator.drugrep import get_compound_annotations as get_drugrep  # noqa: F401
+from jump_compound_annotator.hetionet import get_compound_annotations as get_hetionet  # noqa: F401
+from jump_compound_annotator.openbiolink import (
+    get_compound_annotations as get_openbiolink,  # noqa: F401
+)
+from jump_compound_annotator.opentargets import (
+    get_compound_annotations as get_opentargets,  # noqa: F401
+)
+from jump_compound_annotator.pharmebinet import (
+    get_compound_annotations as get_pharmebinet,  # noqa: F401
+)
+from jump_compound_annotator.primekg import get_compound_annotations as get_primekg  # noqa: F401
 
 
 def concat_annotations(output_dir: str, redownload: bool) -> pd.DataFrame:

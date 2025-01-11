@@ -1,10 +1,10 @@
 [project]
-name = "jump_fetcher_drug_target_interaction"
+name = "jump-compound-annotator"
 version = "0.1.0"
 description = "Find drug target interaction annotations for JUMP compounds"
 readme = "README.md"
 requires-python = ">=3.8"
-license = {file = "LICENSE.txt"}
+license = {file = "LICENSE"}
 keywords = ["jump-dataset", "DTI"]
 authors = [
   {name = "John Arevalo", email = "johnarevalo@gmail.com" }
@@ -17,22 +17,22 @@ dependencies = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/jump-cellpainting/jump_dti_labels"
-"Bug Reports" = "https://github.com/jump-cellpainting/jump_dti_labels/issues"
-"Source" = "https://github.com/jump-cellpainting/jump_dti_labels"
+"Homepage" = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_compound_annotator"
+"Bug Reports" = "https://github.com/jump-cellpainting/monorepo/issues"
+"Source" = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_compound_annotator"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.poetry]
-name = "jump_fetcher_drug_target_interaction"
+name = "jump-compound-annotator"
 version = "0.1.0"
 description = "Find drug target interaction annotations for JUMP compounds"
 readme = "README.md"
 keywords = ["jump-dataset", "DTI"]
 authors = ["John Arevalo"]
-packages = [{include = "jump", from= "src"}]
+packages = [{include = "jump_compound_annotator", from= "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.8"
