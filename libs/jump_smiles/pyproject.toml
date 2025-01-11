@@ -12,7 +12,7 @@ rdkit = "2023.9.5"
 fire = ">=0.4.0"
 requests = "2.28.2"
 pandas = "2.2.2"
-numpy = "2.1.1"
+numpy = "1.26.4"
 tqdm = "4.64.1"
 
 [tool.poetry.group.dev.dependencies]
