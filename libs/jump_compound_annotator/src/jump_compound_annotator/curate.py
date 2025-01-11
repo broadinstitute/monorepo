@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""
+Compound-Target Annotation Analysis and Filtering
+
+1. Standardizes relationship types
+2. Removes hub compounds
+3. Analyzes relationship co-occurrences
+4. Generates a filtered dataset for downstream use
+"""
+
+import pandas as pd
+import numpy as np
+from typing import Dict
+
+RELATIONSHIP_TYPE_MAPPING = {
+    "DOWNREGULATES_CHdG": "downregulates",
+    "CdG": "downregulates",
+    "UPREGULATES_CHuG": "upregulates",
+    "CuG": "upregulates",
+    "DRUG_TARGET": "targets",
+    "target": "targets",
+    "DRUG_CARRIER": "carries",
+    "carrier": "carries",
+    "DRUG_ENZYME": "enzyme",
+    "enzyme": "enzyme",
+    "DRUG_TRANSPORTER": "transports",
+    "transporter": "transports",
+    "BINDS_CHbG": "binds",
+    "CbG": "binds",
+    "DRUG_BINDING_GENE": "binds",
+}
+
+EXCLUDED_RELATIONSHIPS = ["DPI", "DRUG_BINDINH_GENE"]
+HUB_COMPOUND_THRESHOLD = 0.999  # 99.9th percentile for filtering hub compounds
+
+
+def create_link_ids(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Create unique identifiers for compound-target pairs.
+    """
+    df = df.copy()
+    df["link_id"] = df["target"] + "_" + df["inchikey"]
+    return df
+
+
+def standardize_relationship_types(
+    df: pd.DataFrame, mapping: Dict[str, str]
+) -> pd.DataFrame:
+    """
+    Standardize relationship type names using provided mapping.
+    """
+    df = df.copy()
+    df["rel_type"] = df["rel_type"].apply(lambda x: mapping.get(x, x))
+    return df
+
+
+def filter_hub_compounds(df: pd.DataFrame, threshold_quantile: float) -> pd.DataFrame:
+    """
+    Remove compounds that appear more frequently than the threshold.
+    """
+    threshold = df.inchikey.value_counts().quantile(threshold_quantile)
+    nohub_cpds = df.inchikey.value_counts()[lambda x: x < threshold].index  # noqa: F841
+    return df.query("inchikey.isin(@nohub_cpds)")
+
+
+def calculate_cooccurrence(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate co-occurrence matrix for relationship types.
+    """
+    crosstab = (
+        pd.pivot_table(
+            df, index="link_id", columns="rel_type", values="inchikey", aggfunc=len
+        )
+        .fillna(0)
+        .astype(int)
+    )
+    return crosstab.T.dot(crosstab)
+
+
+def calculate_normalized_cooccurrence(cooc: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate normalized co-occurrence and create edge list.
+    """
+    n_cooc = cooc / np.diagonal(cooc)
+    mask = np.triu(np.ones(n_cooc.shape), k=1).astype(bool)
+
+    m_edges = n_cooc.where(mask)
+    m_edges = (
+        m_edges.melt(ignore_index=False)
+        .sort_values(by="value", ascending=False)
+        .dropna()
+    )
+
+    m_edges.index.name = "source"
+    m_edges.columns = ["target", "weight"]
+    return m_edges.query("weight > 0").reset_index()
+
+
+def curate_annotations(
+    annotations: pd.DataFrame,
+    relationship_mapping: Dict[str, str] = RELATIONSHIP_TYPE_MAPPING,
+    excluded_relationships: list = EXCLUDED_RELATIONSHIPS,
+    hub_threshold: float = HUB_COMPOUND_THRESHOLD,
+) -> pd.DataFrame:
+    """Curate compound-target annotations by standardizing relationships and filtering hub compounds."""
+    # Clean and standardize
+    df = standardize_relationship_types(annotations, relationship_mapping)
+
+    # Remove excluded relationships
+    df = df.query("not rel_type.isin(@excluded_relationships)")
+
+    # Remove duplicates
+    df = df.drop_duplicates(["inchikey", "rel_type", "target"]).reset_index(drop=True)
+
+    # Create link IDs and filter hub compounds
+    df = create_link_ids(df)
+    df = filter_hub_compounds(df, hub_threshold)
+
+    return df
