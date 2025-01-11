@@ -15,6 +15,7 @@ Current problems:
 - More controls than individual samples, thus we must resample.
 """
 
+from collections.abc import Iterable
 from itertools import product, starmap
 
 import numpy as np
@@ -32,7 +33,7 @@ from jump_portrait.utils import batch_processing, parallel, try_function
 
 def format_cellpainting_s3() -> str:
     """
-    Returns a formatted string for an S3 path to Cell Painting data.
+    Return a formatted string for an S3 path to Cell Painting data.
 
     The returned path includes placeholders for metadata fields.
     It is expected that the caller will replace these placeholders with actual values.
@@ -71,7 +72,7 @@ def format_cellpainting_s3() -> str:
 
 def get_sample(n: int = 2, seed: int = 42) -> pl.DataFrame:
     """
-    Retrieves a sample of cell painting data from S3.
+    Retrieve a sample of cell painting data from S3.
 
     Parameters
     ----------
@@ -112,7 +113,8 @@ def get_jump_image(
     staging: bool = False,
 ) -> np.ndarray:
     """
-    Main function to fetch a JUMP image for AWS.
+    Fetch a single image for of JUMP from Cellpainting Gallery's AWS bucket.
+
     Metadata for most files can be obtained from a set of data frames,
     or itemrated using `get_item_location_metadata` from this module.
 
@@ -134,6 +136,10 @@ def get_jump_image(
         Whether or not to use corrected data. It does not by default., "Orig" or "Illum"
     apply_correction : bool
         When apply_correction=="Illum" apply Illum correction on original image.
+    compressed : bool
+        Whether or not to pull the compressed 'npz' version of the images.
+    staging : bool
+        Whether or not to use the staging prefix on s3.
 
     Returns
     -------
@@ -220,7 +226,8 @@ def get_item_location_metadata(
     input_column: str = "standard_key",
 ) -> pl.DataFrame:
     """
-    Get metadata location for an item by its name.
+    Get metadata location for an item (gene or compound) by its name.
+
     Search for datasets where the item is present and return a tuple
     with its metadata location in order of source, batch, plate, well, and site.
 
@@ -270,10 +277,11 @@ def get_item_location_metadata(
     )
     return well_level_metadata
 
-
 def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame:
     """
-    Filters a dataframe with well info. Loading and filtering happens in a threaded manner. Note that it does not check for whole row duplication.
+    Load and filter a DataFrame by using metadata of the well location.
+
+    Loading and filtering happens in a threaded manner. Note that it does not check for whole row duplication.
 
     Parameters
     ----------
@@ -321,11 +329,11 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
 
     return selected_uris
 
-
 @batch_processing
-def get_well_image_uris(s3_location_uri, wells: list[str]) -> pl.DataFrame:
+def get_well_image_uris(s3_location_uri: str, wells: list[str]) -> pl.DataFrame:
     """
     Return a dataframe indicating the image location of specific wells for a given parquet file.
+
     The function reads a parquet file from S3, filters it by well names and returns the result as a DataFrame.
 
 
@@ -352,15 +360,19 @@ def get_well_image_uris(s3_location_uri, wells: list[str]) -> pl.DataFrame:
 
 def get_item_location_info(
     item_name: str,
-    input_column="standard_key",
+    input_column: str = "standard_key",
 ) -> pl.DataFrame:
     """
-    Wrapper to obtain a dataframe with locations of an item. It removes duplicate rows.
+    Obtain a DataFrame of the metadata with the location (batch, plate, etc.) of an item.
+
+    This wraps `get_item_location_metadata` and gets rid of duplicated entries.
 
     Parameters
     ----------
     item_name : str
         Item of interest to query
+    input_column : str
+        Name of the column where `item_name` is to be looked for.
 
     Returns
     -------
@@ -392,27 +404,30 @@ def get_item_location_info(
 
 def get_gene_images(
     gene: str,
-    channels: str = ("DNA",),
+    channels: Iterable[str] = ("DNA",),
     plate_type: str = "ORF",
     input_column: str or None = None,
     samples_per_plate: int = 1,
 ) -> np.ndarray:
     """
-    Returns a collage of images from a given gene. Returned matrices are arranged in two rows,
-    top row are the perturbations and bottom rows are their plate-per-plate controls.
+    Return a collage of images from a given gene.
+
+    Returned matrices are arranged in two rows:
+     - The top row contains the perturbations
+     - The bottom row are their respective controls on a plate-per-plate basis.
 
     Parameters
     ----------
     gene : str
         input gene in standard format
-    channel : str
-        Channels to provide. Default is "DNA".
+    channels : Iterable[str]
+        Channels to provide. Default is ("DNA",).
     plate_type : str
         plate type, can be "ORF", "CRISPR" or "Compound". Default is "ORF".
     input_column : str
-        Column to pass to broad_babel, it must match one of broad_babel's fields.
-    sample_size : int or None
-        Default 5. Number of images to sample
+        Column to pass to `broad_babel`, it must match one of `broad_babel`'s fields.
+    samples_per_plate : int
+        Number of images to sample per each plate (default is 1).
 
     Returns
     -------
@@ -449,10 +464,11 @@ def get_gene_images(
     image_locations = subdf.group_by(group_by_fields).agg(pl.col(regex))
 
     # Sample items
+    rng = np.random.default_rng(42)
     samples = (
         image_locations.with_columns(pl.all().map_elements(len))
         .get_column(f"{transient_col}_{channels[0]}")
-        .map_elements(lambda x: tuple(np.random.randint(x, size=samples_per_plate)))
+        .map_elements(lambda x: tuple(rng.integers(x, size=samples_per_plate)))
     )
 
     base = samples.to_list()
