@@ -57,15 +57,20 @@ Note: The `pull` command may need to be run multiple times due to API timeouts. 
 
 ### 2. Get Database Annotations
 
-After creating ID mappings, collect and standardize drug-target annotations:
+After creating ID mappings, collect, standardize, and optionally curate drug-target annotations:
 
 ```python
 from jump_compound_annotator.collate import concat_annotations
 from jump_compound_annotator.collate_gene import concat_annotations as concat_gene_annotations
 from jump_compound_annotator.collate_compounds import concat_annotations as concat_compound_annotations
+from jump_compound_annotator.curate import curate_annotations
 
 # Collect drug-gene annotations
 annotations = concat_annotations('./outputs', redownload=False)
+
+# Optional: Apply curation filters to annotations
+curated_annotations = curate_annotations(annotations)
+curated_annotations.to_parquet('./outputs/filtered_annotations.parquet')
 
 # Collect gene-gene interactions
 gene_interactions = concat_gene_annotations('./outputs', redownload=False)
@@ -97,7 +102,8 @@ python -m jump_compound_annotator.collect_external_ids ./outputs
 
 ```
 outputs/
-├── annotations.parquet              # Drug-gene annotations
+├── annotations.parquet              # Raw drug-gene annotations
+├── filtered_annotations.parquet     # Curated drug-gene annotations
 ├── compound_interactions.parquet    # Drug-drug interactions
 ├── gene_interactions.parquet        # Gene-gene interactions
 ├── mychem_chembl_mapper.parquet     # MyChem ChEMBL mapper
