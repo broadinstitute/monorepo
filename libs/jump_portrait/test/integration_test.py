@@ -10,6 +10,7 @@ Pending tests:
 from itertools import product
 
 import pytest
+
 from jump_portrait.fetch import get_item_location_info, get_jump_image
 
 
@@ -36,7 +37,7 @@ def test_get_jump_image(
     site: str,
     correction: str,
     apply_correction: bool,
-    compressed: bool = False, # Compressed images are only on staging branch, see 
+    compressed: bool = False, # Compressed images are only on staging branch, see
     staging: str = False, # We do not test the staging prefix
 ) -> None:
     """
@@ -75,6 +76,7 @@ def test_get_jump_image(
 
     We cannot test compressed images, see
     https://github.com/jump-cellpainting/datasets/issues/143 for details.
+
     """
     # Check that finding image locations from gene or compounds works
     image = get_jump_image(
