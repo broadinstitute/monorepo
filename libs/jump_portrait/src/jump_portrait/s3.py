@@ -109,7 +109,8 @@ def get_image_from_s3uri(
     s3_image_uri = s3_image_uri.removeprefix(f"{bucket_name}/")
 
     try:
-        response = s3client(use_credentials=staging).get_object(
+        client = s3client(use_credentials=staging)
+        response = client.get_object(
             Bucket=bucket_name, Key=s3_image_uri
         )
         response_body = BytesIO(response["Body"].read())
@@ -235,7 +236,7 @@ def build_s3_image_path(
         pattern = r"(images/[^/]+)/(images)/.*"
         replacement = r"\1/\2_compressed/" + image_metadata["Metadata_Plate"] + "/"
         directory = re.sub(pattern, replacement, directory)
-        filename = filename.parent / filename.stem + ".png"
+        filename = filename.parent / (filename.stem + ".png")
     if use_bf_channel:  # Replace the image with the bright field channel
         channel_ids = [
             int(v[-5]) for k, v in image_metadata.items() if k.startswith("FileName_Orig")
