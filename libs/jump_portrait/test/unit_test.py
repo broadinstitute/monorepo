@@ -1,4 +1,5 @@
 #!/usr/bin/env jupyter
+"""Test the unit components."""
 from itertools import groupby, product, starmap
 
 import numpy as np
@@ -14,11 +15,11 @@ from jump_portrait.s3 import get_image_from_s3uri
 
 
 @pytest.mark.parametrize("gene", ["MYT1"])
-def test_get_item_location(gene) -> None:
-    # Check that finding image locations from gene or compounds works
-    result = get_item_location_info(gene).shape
-    assert result[0] > 1
-    assert result[1] == 28
+def test_get_item_location(gene: str) -> None:
+    """Check that finding image locations from gene or compounds works."""
+    result_shape = get_item_location_info(gene).shape
+    assert result_shape[0] > 1
+    assert result_shape[1] == 28
 
 
 @pytest.mark.parametrize(
@@ -28,8 +29,10 @@ def test_get_item_location(gene) -> None:
         "s3://cellpainting-gallery/cpg0016-jump/source_10/images/2021_08_17_U2OS_48_hr_run16/illum/Dest210809-134534/Dest210809-134534_IllumMito.npy",
     ],
 )
-def test_get_image(s3_image_uri) -> None:
-    assert len(get_image_from_s3uri(s3_image_uri)), "Image fetched is empty"
+def test_get_image(s3_image_uri: str) -> None:
+    """Tests whether an image can be successfully retrieved from S3."""
+    result_len = len(get_image_from_s3uri(s3_image_uri))
+    assert result_len, "Image fetched is empty"
 
 
 @pytest.fixture
@@ -49,7 +52,7 @@ def get_sample_location(item: str = "MYT1") -> pl.DataFrame:
     "channel,site,correction",
     product(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"), ["Orig", "Illum"]),
 )
-def test_get_jump_image(get_sample_location, channel, site, correction) -> None:
+def test_get_jump_image(get_sample_location:dict[str,str], channel:str, site:str, correction:str) -> None:
     image = get_jump_image(*get_sample_location.rows()[0], channel, site, correction)
     x, y = image.shape
 
@@ -60,7 +63,7 @@ def test_get_jump_image(get_sample_location, channel, site, correction) -> None:
     "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"))]
 )
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
-def test_get_jump_image_batch(get_sample_location, channel, site, correction) -> None:
+def test_get_jump_image_batch(get_sample_location: dict[str,str], channel: str, site: str, correction) -> None:
     """Test pulling images in batches and dealing with potentially missing values."""
     iterable, img_list = get_jump_image_batch(
         get_sample_location, channel, site, correction, verbose=False
