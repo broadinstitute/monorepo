@@ -199,7 +199,7 @@ def build_s3_image_path(
     """
     Build the path for an image on cellpainting gallery's S3 bucket.
 
-    image_location : dict[str, str]
+    image_metadata : dict[str, str]
         Dictionary containing the location of images on `cellpainting-gallery`.
     It contains keys like 'PathNameOrigDNA", necessary to locate specific images.
     It is a single row of the location DataFrames.
@@ -224,8 +224,8 @@ def build_s3_image_path(
 
     index_suffix = correction + channel
 
-    directory = image_paths["_".join(("PathName", index_suffix))]
-    filename = Path(image_paths["_".join(("FileName", index_suffix))])
+    directory = image_metadata["_".join(("PathName", index_suffix))]
+    filename = Path(image_metadata["_".join(("FileName", index_suffix))])
 
     if staging:
         directory = directory.replace(
@@ -233,12 +233,12 @@ def build_s3_image_path(
         )
     if compressed:
         pattern = r"(images/[^/]+)/(images)/.*"
-        replacement = r"\1/\2_compressed/" + image_paths["Metadata_Plate"] + "/"
+        replacement = r"\1/\2_compressed/" + image_metadata["Metadata_Plate"] + "/"
         directory = re.sub(pattern, replacement, directory)
         filename = filename.parent / filename.stem + ".png"
     if use_bf_channel:  # Replace the image with the bright field channel
         channel_ids = [
-            int(v[-5]) for k, v in image_paths.items() if k.startswith("FileName_Orig")
+            int(v[-5]) for k, v in image_metadata.items() if k.startswith("FileName_Orig")
         ]
         # the one channel not present
         bf_id = list(set(range(1, 7)).difference(channel_ids))[0]

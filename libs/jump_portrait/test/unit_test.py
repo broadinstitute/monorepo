@@ -4,6 +4,7 @@ from itertools import groupby, product, starmap
 import numpy as np
 import polars as pl
 import pytest
+
 from jump_portrait.fetch import (
     get_item_location_info,
     get_jump_image,
@@ -60,13 +61,11 @@ def test_get_jump_image(get_sample_location, channel, site, correction) -> None:
 )
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
 def test_get_jump_image_batch(get_sample_location, channel, site, correction) -> None:
-    """
-    Test pulling images in batches and dealing with potentially missing values.
-    """
+    """Test pulling images in batches and dealing with potentially missing values."""
     iterable, img_list = get_jump_image_batch(
         get_sample_location, channel, site, correction, verbose=False
     )
-    
+
     mask = [x is not None for x in img_list]
     # verify that there is an output for every input parameter stored in iterable
     assert len(iterable) == len(img_list)

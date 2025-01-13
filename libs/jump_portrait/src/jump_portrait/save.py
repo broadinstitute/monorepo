@@ -1,9 +1,6 @@
 #!/usr/bin/env jupyter
 """
 Functions to save images of genes into files.
-- TODO Associate each sample to a control in its plate
-- TODO Save to tiff.
-
 """
 
 from itertools import product
