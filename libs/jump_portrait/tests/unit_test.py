@@ -63,7 +63,7 @@ def test_get_jump_image(get_sample_location:dict[str,str], channel:str, site:str
     "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"))]
 )
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
-def test_get_jump_image_batch(get_sample_location: dict[str,str], channel: str, site: str, correction) -> None:
+def test_get_jump_image_batch(get_sample_location: dict[str,str], channel: str, site: str, correction: str) -> None:
     """Test pulling images in batches and dealing with potentially missing values."""
     iterable, img_list = get_jump_image_batch(
         get_sample_location, channel, site, correction, verbose=False
