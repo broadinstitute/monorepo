@@ -11,14 +11,13 @@
 #     language: python
 #     name: python3
 # ---
-
 """
-Select the perturbations with highest and lowest feature values
-for CRISPR and ORF datasets using a GPU,
-then wrangle information and produce an explorable data frame.
+Generate a table with the most important feature values.
 
+Select the CRISPR and ORF highest and lowest feature values,
+then wrangle information and produce an explorable data frame.
 This is intended for use on a server with GPUs and high RAM to analyse
- data en masse.
+data en masse.
 
 Steps:
 - Group feature names using regular expression

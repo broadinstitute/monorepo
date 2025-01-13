@@ -1,5 +1,4 @@
 #!/usr/bin/env jupyter
-
 # ---
 # jupyter:
 #   jupytext:
@@ -15,9 +14,10 @@
 # ---
 
 """
+Generate a table with the most correlated and anticorrelated pairs.
+
 Calculate cosine distance of CRISPR and ORF profiles using a GPU,
 then wrangle information and produce an explorable data frame.
-
 This is intended for use on a server with GPUs and high RAM to analyse data massively.
 """
 
@@ -69,108 +69,124 @@ ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NC
 img_formatter = '{{"img_src": {}, "href": {}, "width": 200}}'
 
 
+with cupy.cuda.Device(1): # Specify the GPU device
 # %% Processing starts
-for dset in datasets:
-    # %% Load Metadata
-    print(dset)
-    df = pl.read_parquet(get_dataset(dset))
+    for dset in datasets:
+        # %% Load Metadata
+        print(dset)
+        df = pl.read_parquet(get_dataset(dset))
 
-    # %% add build url from individual wells
-    med, _, urls = get_concensus_meta_urls(df, url_colname="Metadata_placeholder")
-    urls = urls.rename({"Metadata_placeholder": url_col})
+        # %% add build url from individual wells
+        med, _, urls = get_concensus_meta_urls(df, url_colname="Metadata_placeholder")
+        urls = urls.rename({"Metadata_placeholder": url_col})
 
-    vals = cp.array(med.select(cs.by_dtype(pl.Float32)).to_numpy())
+        vals = cp.array(med.select(cs.by_dtype(pl.Float32)).to_numpy())
 
-    # %% Calculate cosine distance
-    cosine_dist = spatial.distance.cdist(vals, vals, metric="cosine")
+        # %% Calculate cosine distance
+        cosine_dist = spatial.distance.cdist(vals, vals, metric="cosine")
 
-    # Get most correlated and anticorrelated indices
-    xs, ys = get_bottom_top_indices(cosine_dist, n_vals_used, skip_first=True)
+        # Get most correlated and anticorrelated indices
+        xs, ys = get_bottom_top_indices(cosine_dist, n_vals_used, skip_first=True)
 
-    # Build a dataframe containing matches
-    jcp_ids = urls.select(pl.col(jcp_col)).to_series().to_numpy().astype("<U15")
-    url_vals = urls.get_column(url_col).to_numpy()
-    cycles = get_cycles(dset)
-    cycled_indices = repeat_cycles(len(xs), dset)
+        # Build a dataframe containing matches
+        jcp_ids = urls.select(pl.col(jcp_col)).to_series().to_numpy().astype("<U15")
+        url_vals = urls.get_column(url_col).to_numpy()
+        cycles = get_cycles(dset)
+        cycled_indices = repeat_cycles(len(xs), dset)
 
-    jcp_df = pl.DataFrame(
-        {
-            jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
-            match_jcp_col: jcp_ids[ys].astype("<U15"),
-            dist_col: cosine_dist[xs, ys].get(),
-            url_col: [  # Secuentially produce multiple images
-                format_val("img", (img_src, img_src))
-                for x in url_vals
-                for j in range(n_vals_used * 2)
-                if (img_src := next(x).format(next(cycles)))
-            ],
-            match_url_col: [  # Use indices to fetch matches
-                format_val("img", (img_src, img_src))
-                for url, idx in zip(url_vals[ys], cycled_indices[ys])
-                if (img_src := next(url).format(next(idx)))
-            ],
-        }
-    )
-
-    # %% Translate genes names to standard
-    uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])
-    jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, dset)
-    _, jcp_external_raw_mapper = get_mappers(uniq_jcp, dset, format_output=False)
-
-    # %% Add replicability
-    jcp_df = add_replicability(
-        jcp_df,
-        left_on=jcp_short,
-        right_on=jcp_col,
-        replicability_col=rep_col,
-    )
-    jcp_df = add_replicability(
-        jcp_df,
-        left_on=match_jcp_col,
-        right_on=jcp_col,
-        suffix=" Match",
-        replicability_col=match_rep_col,
-    )
-
-    jcp_translated = jcp_df.with_columns(
-        pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
-        pl.col(match_jcp_col).replace(jcp_std_mapper).alias(match_col),
-        pl.col(match_jcp_col).replace(jcp_external_mapper).alias(ext_links_col),
-        pl.col(jcp_short)  # Add synonyms
-        .replace(jcp_external_raw_mapper)  # Map to NCBI ID
-        .replace(get_synonym_mapper())  # Map synonyms
-        .alias("Synonyms"),
-    )
-
-    if dist_as_sim:  # Convert cosine distance to similarity
-        jcp_translated = jcp_translated.with_columns(
-            (1 - pl.col(dist_col)).alias(dist_col)
+        jcp_df = pl.DataFrame(
+            {
+                jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
+                match_jcp_col: jcp_ids[ys].astype("<U15"),
+                dist_col: cosine_dist[xs, ys].get(),
+                url_col: [  # Secuentially produce multiple images
+                    format_val("img", (img_src, img_src))
+                    for x in url_vals
+                    for j in range(n_vals_used * 2)
+                    if (img_src := next(x).format(next(cycles)))
+                ],
+                match_url_col: [  # Use indices to fetch matches
+                    format_val("img", (img_src, img_src))
+                    for url, idx in zip(url_vals[ys], cycled_indices[ys])
+                    if (img_src := next(url).format(next(idx)))
+                ],
+            }
         )
 
-    # Sort columns
-    order = [
-        std_outname,
-        match_col,
-        url_col,
-        match_url_col,
-        dist_col,
-        ext_links_col,
-        "Synonyms",
-        jcp_short,
-        match_jcp_col,
-        rep_col,
-        match_rep_col,
-    ]
-    matches_translated = jcp_translated.select(order)
+        # %% Translate genes names to standard
+        uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])
+        jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, dset)
+        _, jcp_external_raw_mapper = get_mappers(uniq_jcp, dset, format_output=False)
 
-    # %% Save results
-    output_dir.mkdir(parents=True, exist_ok=True)
-    final_output = output_dir / f"{dset}.parquet"
-    matches_translated.write_parquet(final_output, compression="zstd")
+        # %% Add replicability
+        jcp_df = add_replicability(
+            jcp_df,
+            left_on=jcp_short,
+            right_on=jcp_col,
+            replicability_col=rep_col,
+        )
+        jcp_df = add_replicability(
+            jcp_df,
+            left_on=match_jcp_col,
+            right_on=jcp_col,
+            suffix=" Match",
+            replicability_col=match_rep_col,
+        )
 
-    write_metadata(dset, "matches", (*order, "(*)"))
+        jcp_translated = jcp_df.with_columns(
+            pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
+            pl.col(match_jcp_col).replace(jcp_std_mapper).alias(match_col),
+            pl.col(match_jcp_col).replace(jcp_external_mapper).alias(ext_links_col),
+            pl.col(jcp_short)  # Add synonyms
+            .replace(jcp_external_raw_mapper)  # Map to NCBI ID
+            .replace(get_synonym_mapper())  # Map synonyms
+            .alias("Synonyms"),
+        )
 
-    # Save cosine distance matrix with JCP IDS
-    pl.DataFrame(
-        data=cosine_dist.get(), schema=med.get_column("Metadata_JCP2022").to_list()
-    ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
+        if dist_as_sim:  # Convert cosine distance to similarity
+            jcp_translated = jcp_translated.with_columns(
+                (1 - pl.col(dist_col)).alias(dist_col)
+            )
+
+        # Sort columns
+        order = [
+            std_outname,
+            match_col,
+            url_col,
+            match_url_col,
+            dist_col,
+            ext_links_col,
+            "Synonyms",
+            jcp_short,
+            match_jcp_col,
+            rep_col,
+            match_rep_col,
+        ]
+        matches_translated = jcp_translated.select(order)
+
+        # %% Save results
+        output_dir.mkdir(parents=True, exist_ok=True)
+        final_output = output_dir / f"{dset}.parquet"
+        matches_translated.write_parquet(final_output, compression="zstd")
+
+        write_metadata(dset, "matches", (*order, "(*)"))
+
+        # Save cosine distance matrix with JCP IDS
+        pl.DataFrame(
+            data=cosine_dist.get(), schema=med.get_column("Metadata_JCP2022").to_list()
+        ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,7 +1,7 @@
 """
 Tools to produce labels and explanations for jump_rr web interfaces.
 To get columns:
-import polars as pl
+import polars as pl.
 
 paths = {
     "simile": "https://zenodo.org/api/records/11188477/files/crispr.parquet/content#/data/content",
@@ -13,6 +13,7 @@ columns = sorted(set(col for x in paths.values() for col in pl.scan_parquet(x).c
 
 import json
 from importlib.resources import files
+from typing import Optional
 
 # %% Fetch dataset columns
 
@@ -64,7 +65,7 @@ def get_col_desc(key: str) -> str:
     return _DESCRIPTIONS[key]
 
 
-def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
+def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]) -> None:
     """
     Writes metadata file to customize Datasette.
 
@@ -111,20 +112,22 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]):
         json.dump(data, f, indent=4)
 
 
-def table_type_to_suffix(table_type: str):
-"""Convert a table type to a title suffix.
-This function takes a string representing the type of table and returns the corresponding title suffix.
+def table_type_to_suffix(table_type: str) -> Optional[str]:
+    """
+    Convert a table type to a title suffix.
+    This function takes a string representing the type of table and returns the corresponding title suffix.
 
-Parameters
-----------
-table_type : str
-    The type of table, e.g., "matches" or "feature".
+    Parameters
+    ----------
+    table_type : str
+        The type of table, e.g., "matches" or "feature".
 
-Returns
--------
-str
-    The title suffix for the given table type.
-"""
+    Returns
+    -------
+    str
+        The title suffix for the given table type.
+
+    """
     match table_type:
         case "matches":
             return "Matches"
