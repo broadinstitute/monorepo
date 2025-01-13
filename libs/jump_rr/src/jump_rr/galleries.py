@@ -34,10 +34,28 @@ std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = "NCBI"  # Link to external resources (e.g., NCBI)
 
 
-# %% Processing starts
+def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
+    """
+    Generate a gallery from a remote dataset using only its.
 
+    Parameters
+    ----------
+    dset : str
+        The name of the dataset.
+    write : bool, optional
+        Whether to write the results to a file (default is True).
 
-def generate_gallery(dset: str, write: bool = True):
+    Returns
+    -------
+    df : pl.DataFrame
+        A DataFrame containing the generated gallery.
+
+    Notes
+    -----
+    This function loads metadata from a parquet file, translates gene names to standard,
+    formats existing columns into #foci urls, wraps the urls into html, and writes the results.
+
+    """
     # %% Load Metadata
     df = pl.scan_parquet(get_dataset(dset, return_pooch=False))
 
@@ -87,7 +105,6 @@ def generate_gallery(dset: str, write: bool = True):
         df.write_parquet(final_output, compression="zstd")
     return df
 
-
-# No need for threading, as this is very fast
+# %% Processing starts
 for dset in ("orf", "crispr", "compound"):
     generate_gallery(dset, write=True)

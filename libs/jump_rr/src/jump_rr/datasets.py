@@ -4,8 +4,30 @@ import polars as pl
 import pooch
 
 
-def get_dataset(dataset: str, return_pooch: bool = True):
-    # Convenience function to retrieve pooched dataframes
+def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
+    """
+    Retrieve the latest morphological profiles using standard names.
+
+    Available datasets can be found on the "subset" column on
+    https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv
+
+    Parameters
+    ----------
+    dataset : str
+        The name of the dataset to be retrieved.
+    return_pooch : bool, optional
+        Whether to download the result to a temporal directory result. Defaults to True.
+
+    Returns
+    -------
+    pl.DataFrame or str
+        The retrieved dataframe or the path to the file if return_pooch is False.
+
+    Notes
+    -----
+    This function uses a predefined manifest and md5s dictionary to filter and retrieve the dataset.
+
+    """
     manifest = pl.read_csv(
         "https://raw.githubusercontent.com/jump-cellpainting/datasets/50cd2ab93749ccbdb0919d3adf9277c14b6343dd/manifests/profile_index.csv"
     )

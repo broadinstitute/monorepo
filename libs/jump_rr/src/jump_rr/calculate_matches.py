@@ -69,7 +69,7 @@ ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NC
 img_formatter = '{{"img_src": {}, "href": {}, "width": 200}}'
 
 
-with cupy.cuda.Device(1): # Specify the GPU device
+with cp.cuda.Device(1): # Specify the GPU device
 # %% Processing starts
     for dset in datasets:
         # %% Load Metadata

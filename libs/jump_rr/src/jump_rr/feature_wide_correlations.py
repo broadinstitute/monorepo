@@ -11,10 +11,7 @@
 #     language: python
 #     name: python3
 # ---
-"""
-Calculate all the feature correlations at the global level.
-(e.g., all features vs all features).
-"""
+"""Calculate all the pairwise feature correlations for local profiles."""
 
 from pathlib import Path
 
@@ -23,15 +20,6 @@ import numpy as np
 import polars as pl
 from jump_rr.parse_features import get_feature_groups
 from polars.selectors import numeric
-
-
-def map_back(k, n):
-    # Map from a linear index to an upper triangle
-    i = int(n - 2 - np.floor(np.sqrt(-8 * k + 4 * n * (n - 1) - 7) / 2.0 - 0.5))
-    j = int(k + i + 1 - n * (n - 1) / 2 + (n - i) * ((n - i) - 1) / 2)
-
-    return i, j
-
 
 dir_path = Path("/ssd/data/shared/morphmap_profiles/")
 output_dir = Path("./databases")
