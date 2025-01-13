@@ -473,12 +473,12 @@ def get_gene_images(
         ]
     )
     regex = f"^{transient_col}.*$"
-    image_locations = subdf.group_by(group_by_fields).agg(pl.col(regex))
+    image_metadata = subdf.group_by(group_by_fields).agg(pl.col(regex))
 
     # Sample items
     rng = np.random.default_rng(42)
     samples = (
-        image_locations.with_columns(pl.all().map_elements(len))
+        image_metadata.with_columns(pl.all().map_elements(len))
         .get_column(f"{transient_col}_{channels[0]}")
         .map_elements(lambda x: tuple(rng.integers(x, size=samples_per_plate)))
     )
@@ -488,7 +488,7 @@ def get_gene_images(
     paths = [
         row[-len(channels) + i][k]
         for i, _ in enumerate(channels)
-        for ids, row in zip(base, image_locations.iter_rows())
+        for ids, row in zip(base, image_metadata.iter_rows())
         for k in ids
     ]
     shape = get_image_from_s3uri(paths[0]).shape

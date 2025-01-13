@@ -133,7 +133,7 @@ def get_image_from_s3uri(
 
 
 def get_corrected_image(
-    image_paths: dict,
+    image_metadata: dict,
     channel: str,
     correction: str or None,
     apply_correction: bool = True,
@@ -145,7 +145,7 @@ def get_corrected_image(
 
     Parameters
     ----------
-    image_paths : dict
+    image_metadata : dict
         Dictionary containing image locations.
     channel : str
         Channel of the image to retrieve.
@@ -171,7 +171,7 @@ def get_corrected_image(
 
     """
     s3_image_path = build_s3_image_path(
-        image_paths=image_paths,
+        image_metadata=image_metadata,
         channel=channel,
         correction=correction,
         compressed=compressed,
@@ -182,7 +182,7 @@ def get_corrected_image(
 
     if apply_correction and correction not in ("Orig", None):
         original_image_path = build_s3_image_path(
-            image_paths=image_paths, channel=channel, correction="Orig"
+            image_metadata=image_metadata, channel=channel, correction="Orig"
         )
         result = get_image_from_s3uri(original_image_path) / result
 
@@ -190,7 +190,7 @@ def get_corrected_image(
 
 
 def build_s3_image_path(
-    image_paths: dict[str, str],
+    image_metadata: dict[str, str],
     channel: str,
     correction: None or str = None,
     compressed: bool = False,
