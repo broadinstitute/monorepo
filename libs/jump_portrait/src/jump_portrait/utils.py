@@ -64,11 +64,21 @@ def parallel(
         Timeout for worker processes.
     verbose: bool, optional
         Whether to enable tqdm or not.
+    *args
+        Additional arguments.
+        They additional arguments are passed to `func`.
+    **kwargs
+        Additional parameters for your function.
+        They keyword arguments are passed to `func`.
 
     Returns
     -------
     list[Any]
         A list of outputs genetated by function.
+
+    Notes
+    -----
+    `kwargs` are passed as
 
     """
     jobs = jobs or cpu_count()
@@ -88,11 +98,50 @@ def parallel(
         return list(chain(*[x for x in result if x is not None]))
 
 
-def batch_processing(f: Callable):
+def batch_processing(fn: Callable) -> Callable:
+    """
+    Decorate a function for parallel batch processing.
+
+    Parameters
+    ----------
+    fn: Callable
+        Function to be wrapped for batch processing.
+
+    Returns
+    -------
+    batched_fn : Wrapped function that contains job id information.
+
+    """
     # This assumes parameters are packed in a tuple
     def batched_fn(
-        item_list: Iterable, job_idx: int, verbose: bool = True, *args, **kwargs
-    ):
+        item_list: Iterable,
+        job_idx: int,
+        verbose: bool = True,
+        *args: Iterable,
+        **kwargs: dict,
+    ) -> list:
+        """
+        Process a list of items in batches.
+
+        Parameters
+        ----------
+        item_list : Iterable
+            List of items to be processed.
+        job_idx : int
+            Index of the current job.
+        verbose : bool, optional
+            Whether to display progress bar (default is True).
+        *args :
+            Additional positional arguments to be passed to the function f.
+        **kwargs :
+            Additional keyword arguments to be passed to the function f.
+
+        Returns
+        -------
+        list
+            List of results if any item in the list is not None, otherwise None.
+
+        """
         results = []
         for item in tqdm(
             item_list,
@@ -101,7 +150,7 @@ def batch_processing(f: Callable):
             disable=not verbose,
             desc=f"worker #{job_idx}",
         ):
-            results.append(f(*item, *args, **kwargs))
+            results.append(fn(*item, *args, **kwargs))
 
         if any([x is not None for x in results]):
             return results
@@ -109,30 +158,55 @@ def batch_processing(f: Callable):
     return batched_fn
 
 
-def try_function(f: Callable):
+def try_function(fn: Callable) -> Callable:
     """
-    Wrap a function into an instance which will Try to call the function:
-        If it success, return the output of the function.
-        If it fails, return None.
+    Wrap a function into an instance which will Try to call the function.
+
+    If it success, return the output of the function.
+    If it fails, return None.
 
     Parameters
     ----------
-    f : Callable
+    fn : Callable
+        Function to wrap inside a try-except block.
 
     Returns
     -------
-    tryed_fn : Callable
+    tried_fn : Callable
+        Wrapped function.
 
     """
 
     # This assumes parameters are packed in a tuple
-    def tryed_fn(*item, **kwargs):
+    def try_exc_block(*item: Iterable, **kwargs:dict) -> any:
+        """
+        Execute a function with exception handling.
+
+        Parameters
+        ----------
+        f : callable
+            The function to be executed.
+        *item : Iterable
+            Variable length argument list for the function f.
+        **kwargs : dict
+            Arbitrary keyword arguments for the function f.
+
+        Returns
+        -------
+        result : any
+            Result of the function execution, or None if an exception occurs.
+
+        Notes
+        -----
+        This function wraps a given function with a try-except block to handle exceptions.
+        If an exception occurs during the function execution, it returns None.
+
+        """
         try:
-            result = f(*item, **kwargs)
-
-        except:
+            result = fn(*item, **kwargs)
+        except Exception as e:
+            print(f"An error occurred: {e}")
             result = None
-
         return result
 
-    return tryed_fn
+    return try_exc_block

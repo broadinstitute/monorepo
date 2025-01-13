@@ -74,18 +74,19 @@ def save_image(
     apply_correction: bool = False,
 ) -> None:
     """
-    Saves an image to a file after applying the specified corrections.
+    Save an image to a file for a given channel, possibly selecting .
 
     Parameters
     ----------
-    image_location : dict[str, str]
+    image_metadata : dict[str, str]
         Dictionary containing the location of images on `cellpainting-gallery`.
         It contains keys like 'PathNameOrigDNA", necessary to locate specific images.
         It is a single row of the location DataFrames.
     channel : str
-        Channel of the image to be saved.
+        Channel (e.g., DNA, RNA) of the image to be saved.
     correction : str, optional
-        Type of correction to apply (default is "Orig").
+        Whether to apply illumination correction, "Orig" if not, otherwise "Illum".
+        Default is "Orig".
     output_dir : str, optional
         Directory where the image will be saved (default is "imgs").
     pad : int, optional
