@@ -6,9 +6,9 @@
             "tables": {
                 "content": {
                     "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a>",
-                    "title": "CRISPR_INTERPRETABLE Feature Ranking",
+                    "title": "ORF Feature Ranking",
                     "columns": {
-                        "Cell region": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
+                        "Compartment": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
                         "Feature": "Morphological feature obtained from CellProfiler. This value is the result after data normalization. Its units are the number of median absolute deviations (MAD) from the median.",
                         "Channel": "Image channel, which shows the stain for DNA, Mito (mitochondria), RNA, AGP (actin, Golgi, plasma membrane) or ER (Endoplasmic Reticulum).",
                         "Suffix": "Suffix associated with a CellProfiler feature.",
