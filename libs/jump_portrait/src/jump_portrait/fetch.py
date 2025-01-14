@@ -159,12 +159,12 @@ def get_jump_image(
         (pl.col("Metadata_Well") == well) & (pl.col("Metadata_Site") == str(site))
     )
 
-    assert (
-        len(unique_site) > 0
-    ), f"No valid site was found: {source, batch, plate, well, site}"
-    assert (
-        len(unique_site) < 2
-    ), f"More than one site found: {source, batch, plate, well, site}"
+    assert len(unique_site) > 0, (
+        f"No valid site was found: {source, batch, plate, well, site}"
+    )
+    assert len(unique_site) < 2, (
+        f"More than one site found: {source, batch, plate, well, site}"
+    )
 
     first_row = unique_site.row(0, named=True)
 
@@ -261,9 +261,9 @@ def get_item_location_metadata(
         If the item_name is "JCP2022_033924", which is not supported as it is a negative control and fills the memory of most computers.
 
     """
-    assert (
-        item_name != "JCP2022_033924"
-    ), "The negative control is not supported, please use a smaller selection before fetching plate information"
+    assert item_name != "JCP2022_033924", (
+        "The negative control is not supported, please use a smaller selection before fetching plate information"
+    )
 
     # Get plates
     jcp_ids = query.run_query(
@@ -399,9 +399,9 @@ def get_item_location_info(
     well_level_metadata = get_item_location_metadata(
         item_name, input_column=input_column
     )
-    assert len(
-        well_level_metadata
-    ), f"Item {item_name} was not found in column {input_column}"
+    assert len(well_level_metadata), (
+        f"Item {item_name} was not found in column {input_column}"
+    )
 
     # Note that this breaks if we pass item_name="JCP2022_033924" and
     # input_column="JCP2022" due to the negative control. There is an assertion on the top

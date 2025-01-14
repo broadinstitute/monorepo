@@ -110,9 +110,7 @@ def get_image_from_s3uri(
 
     try:
         client = s3client(use_credentials=staging)
-        response = client.get_object(
-            Bucket=bucket_name, Key=s3_image_uri
-        )
+        response = client.get_object(Bucket=bucket_name, Key=s3_image_uri)
         response_body = BytesIO(response["Body"].read())
     except Exception as e:
         print(
@@ -239,7 +237,9 @@ def build_s3_image_path(
         filename = filename.parent / (filename.stem + ".png")
     if use_bf_channel:  # Replace the image with the bright field channel
         channel_ids = [
-            int(v[-5]) for k, v in image_metadata.items() if k.startswith("FileName_Orig")
+            int(v[-5])
+            for k, v in image_metadata.items()
+            if k.startswith("FileName_Orig")
         ]
         # the one channel not present
         bf_id = list(set(range(1, 7)).difference(channel_ids))[0]

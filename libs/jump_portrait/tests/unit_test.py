@@ -1,5 +1,6 @@
 #!/usr/bin/env jupyter
 """Test the unit components."""
+
 from itertools import groupby, product, starmap
 
 import numpy as np
@@ -52,18 +53,23 @@ def get_sample_location(item: str = "MYT1") -> pl.DataFrame:
     "channel,site,correction",
     product(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"), ["Orig", "Illum"]),
 )
-def test_get_jump_image(get_sample_location:dict[str,str], channel:str, site:str, correction:str) -> None:
+def test_get_jump_image(
+    get_sample_location: dict[str, str], channel: str, site: str, correction: str
+) -> None:
     image = get_jump_image(*get_sample_location.rows()[0], channel, site, correction)
     x, y = image.shape
 
     assert x == 1080, "Wrong x axis size"
     assert y >= 1080, "Wrong y axis size"
 
+
 @pytest.mark.parametrize(
     "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"))]
 )
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
-def test_get_jump_image_batch(get_sample_location: dict[str,str], channel: str, site: str, correction: str) -> None:
+def test_get_jump_image_batch(
+    get_sample_location: dict[str, str], channel: str, site: str, correction: str
+) -> None:
     """Test pulling images in batches and dealing with potentially missing values."""
     iterable, img_list = get_jump_image_batch(
         get_sample_location, channel, site, correction, verbose=False

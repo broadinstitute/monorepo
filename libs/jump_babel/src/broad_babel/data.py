@@ -4,6 +4,7 @@ Convenience function to get JUMP data tables.
 
 The hashes of these datasets are defined in this documents.
 """
+
 from functools import cache
 
 import polars as pl

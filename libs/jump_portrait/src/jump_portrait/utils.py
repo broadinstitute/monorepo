@@ -112,6 +112,7 @@ def batch_processing(fn: Callable) -> Callable:
     batched_fn : Wrapped function that contains job id information.
 
     """
+
     # This assumes parameters are packed in a tuple
     def batched_fn(
         item_list: Iterable,
@@ -178,7 +179,7 @@ def try_function(fn: Callable) -> Callable:
     """
 
     # This assumes parameters are packed in a tuple
-    def try_exc_block(*item: Iterable, **kwargs:dict) -> any:
+    def try_exc_block(*item: Iterable, **kwargs: dict) -> any:
         """
         Execute a function with exception handling.
 

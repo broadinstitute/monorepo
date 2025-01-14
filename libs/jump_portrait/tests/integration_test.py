@@ -37,8 +37,8 @@ def test_get_jump_image(
     site: str,
     correction: str,
     apply_correction: bool,
-    compressed: bool = False, # Compressed images are only on staging branch, see
-    staging: str = False, # We do not test the staging prefix
+    compressed: bool = False,  # Compressed images are only on staging branch, see
+    staging: str = False,  # We do not test the staging prefix
 ) -> None:
     """
     Tests that finding image locations from gene or compounds works.
@@ -97,8 +97,8 @@ def test_get_jump_image(
 
     return None
 
-@pytest.mark.xfail
 
+@pytest.mark.xfail
 @pytest.mark.xfail
 def test_negcon_image_metadata(item_name: str = "JCP2022_033924") -> None:
     """

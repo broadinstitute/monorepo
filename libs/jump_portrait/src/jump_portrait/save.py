@@ -99,7 +99,9 @@ def save_image(
     None
 
     """
-    build_s3_image_path(image_metadata=image_metadata, channel=channel, correction=correction)
+    build_s3_image_path(
+        image_metadata=image_metadata, channel=channel, correction=correction
+    )
     image = get_corrected_image(image_metadata, channel, correction, apply_correction)
     image_metadata["padded_ix"] = str(image_metadata["ix"]).rjust(pad, "0")
     out_file = "{standard_key}_{Metadata_PlateType}_{Metadata_Plate}_{padded_ix}"

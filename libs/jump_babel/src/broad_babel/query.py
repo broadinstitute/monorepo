@@ -135,16 +135,17 @@ def broad_to_standard(query: str or list[str]) -> str or dict[str, str]:
     if len(result) == 1:
         return result[0][0]
 
-    assert len(query) == len(
-        result
-    ), f"Value {query} for broad_sample led to {len(result)} results"
+    assert len(query) == len(result), (
+        f"Value {query} for broad_sample led to {len(result)} results"
+    )
 
     for broad_sample, results in zip(query, result):
-        assert (
-            len(results) == 1
-        ), f"Invalid number of results for broad_sample {broad_sample}"
+        assert len(results) == 1, (
+            f"Invalid number of results for broad_sample {broad_sample}"
+        )
 
     return {brd: std[0] for brd, std in zip(query, result)}
+
 
 def export_csv(output: str = "exported.csv", table: str = TABLE) -> None:
     """
