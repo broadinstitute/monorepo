@@ -2,7 +2,7 @@
 """
 Convenience function to get JUMP data tables.
 
-The hashes of these datasets are defined in this documents.
+The hashes of these datasets are defined in this document.
 """
 
 from functools import cache
