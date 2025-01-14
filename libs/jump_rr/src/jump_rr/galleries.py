@@ -21,7 +21,7 @@ import polars as pl
 from jump_rr.concensus import get_range
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import get_formatter
-from jump_rr.translate import get_mappers
+from jump_rr.translate import get_mapper
 
 # %% Setup Local
 ## Paths
@@ -61,7 +61,7 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
 
     # %% Translate genes names to standard
     uniq_jcp = tuple(df.select("Metadata_JCP2022").unique().collect().to_numpy()[:, 0])
-    jcp_std_mapper, jcp_external_mapper = get_mappers(
+    jcp_std_mapper, jcp_external_mapper = get_mapper(
         uniq_jcp, dset, format_output=False
     )
 
@@ -104,6 +104,7 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
         final_output = output_dir / f"{dset}_gallery.parquet"
         df.write_parquet(final_output, compression="zstd")
     return df
+
 
 # %% Processing starts
 for dset in ("orf", "crispr", "compound"):

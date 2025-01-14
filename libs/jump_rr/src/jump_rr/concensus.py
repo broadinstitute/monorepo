@@ -47,7 +47,9 @@ def get_concensus_meta_urls(profiles: pl.DataFrame, url_colname: str) -> tuple:
     return med, meta, urls
 
 
-def get_group_median(med: pl.DataFrame, group_by: list[str] or None = None) -> pl.DataFrame:
+def get_group_median(
+    med: pl.DataFrame, group_by: list[str] or None = None
+) -> pl.DataFrame:
     """
     Calculate the median of a set of features grouped by their metadata.
 
@@ -104,6 +106,7 @@ def get_range(dataset: str) -> range:
     rng = range(offset, 9 + offset + max_offset)
     return rng
 
+
 def get_cycles(dataset: str) -> cycle:
     """
     Obtain cycled ranges based on which dataset we are using.
@@ -124,6 +127,7 @@ def get_cycles(dataset: str) -> cycle:
 
     """
     return cycle(get_range(dataset))
+
 
 def repeat_cycles(n: int, dataset: str) -> np.ndarray:
     """

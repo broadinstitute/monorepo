@@ -44,7 +44,7 @@ from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type, pvals_from_path
 from jump_rr.synonyms import get_synonym_mapper
-from jump_rr.translate import get_mappers
+from jump_rr.translate import get_mapper
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -93,7 +93,9 @@ with cp.cuda.Device(1): # Specify the GPU device
         filtered_med = med.filter(
             pl.col(jcp_col).is_in(corrected_pvals.get_column(jcp_col))
         )
-        median_vals = cp.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
+        median_vals = cp.array(
+            filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy()
+        )
 
         phenact = cp.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
 
@@ -131,8 +133,8 @@ with cp.cuda.Device(1): # Specify the GPU device
         )
 
         uniq = tuple(df.get_column(jcp_short).unique())
-        jcp_std_mapper, jcp_external_mapper = get_mappers(uniq, dset)
-        _, jcp_external_raw_mapper = get_mappers(uniq, dset, format_output=False)
+        jcp_std_mapper, jcp_external_mapper = get_mapper(uniq, dset)
+        _, jcp_external_raw_mapper = get_mapper(uniq, dset, format_output=False)
 
         # Add phenotypic activity from a previously-calculated
         df = add_replicability(

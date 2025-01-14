@@ -39,7 +39,7 @@ from jump_rr.index_selection import get_bottom_top_indices
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
 from jump_rr.synonyms import get_synonym_mapper
-from jump_rr.translate import get_mappers
+from jump_rr.translate import get_mapper
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -69,8 +69,8 @@ ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NC
 img_formatter = '{{"img_src": {}, "href": {}, "width": 200}}'
 
 
-with cp.cuda.Device(1): # Specify the GPU device
-# %% Processing starts
+with cp.cuda.Device(1):  # Specify the GPU device
+    # %% Processing starts
     for dset in datasets:
         # %% Load Metadata
         print(dset)
@@ -115,8 +115,8 @@ with cp.cuda.Device(1): # Specify the GPU device
 
         # %% Translate genes names to standard
         uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])
-        jcp_std_mapper, jcp_external_mapper = get_mappers(uniq_jcp, dset)
-        _, jcp_external_raw_mapper = get_mappers(uniq_jcp, dset, format_output=False)
+        jcp_std_mapper, jcp_external_mapper = get_mapper(uniq_jcp, dset)
+        _, jcp_external_raw_mapper = get_mapper(uniq_jcp, dset, format_output=False)
 
         # %% Add replicability
         jcp_df = add_replicability(
@@ -175,18 +175,3 @@ with cp.cuda.Device(1): # Specify the GPU device
         pl.DataFrame(
             data=cosine_dist.get(), schema=med.get_column("Metadata_JCP2022").to_list()
         ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

@@ -1,5 +1,6 @@
 #!/usr/bin/env jupyter
 """Parse feature names to divide it into its components."""
+
 import re
 from functools import cache
 
@@ -9,7 +10,7 @@ import polars as pl
 @cache
 def get_feature_groups(
     feature_fullnames: tuple[str],
-    feature_names: tuple[str] =  ("Compartment", "Feature", "Channel", "Suffix"),
+    feature_names: tuple[str] = ("Compartment", "Feature", "Channel", "Suffix"),
 ) -> pl.DataFrame:
     """
     Group features in a consistent manner using a regex.

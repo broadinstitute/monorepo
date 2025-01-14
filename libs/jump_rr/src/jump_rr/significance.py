@@ -13,7 +13,8 @@
 # ---
 
 """
-Generate aggregated statistics for feature values
+Generate aggregated statistics for the values of features.
+
 Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/issues/4#issuecomment-1918019212.
 
 1. Calculate the p value of all features
@@ -22,7 +23,7 @@ Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vig
 4. then correct the p values from step 5 (fdr_bh)
 """
 
-from math import sqrt
+from collections.abc import Iterable
 from time import perf_counter
 
 import numpy as np
@@ -31,50 +32,17 @@ import polars.selectors as cs
 from broad_babel.query import get_mapper
 from cachier import cachier
 from pathos.multiprocessing import Pool
-from scipy.stats import mannwhitneyu, t
+from scipy.stats import mannwhitneyu
 from statsmodels.stats.multitest import multipletests
 from tqdm import tqdm
 
 try:
-    import cupy as cp
+    pass
 except Exception:
-    import numpy as cp
+    pass
 
-# TODO try to reimplement statsmodels on cupy
 
 np.seterr(divide="ignore")
-
-
-def sample_ids(
-    df: pl.DataFrame,
-    column: str = "Metadata_JCP2022",
-    n: int = 100,
-    negcons: bool = True,
-    seed: int = 42,
-) -> pl.DataFrame:
-    """Sample all occurrences of n ids in a given column, adding their negative controls."""
-    identifiers = (
-        df.filter(pl.col("Metadata_pert_type") != pl.lit("negcon"))
-        .get_column(column)
-        .sample(n)
-    )
-    index_filter = pl.col(column).is_in(identifiers)
-    if negcons:
-        unique_plates = (
-            (
-                df.filter(pl.col(column).is_in(identifiers)).select(
-                    pl.col("Metadata_Plate")
-                )
-            )
-            .to_series()
-            .unique()
-        )
-        index_filter = index_filter | (
-            pl.col("Metadata_Plate").is_in(unique_plates)
-            & (pl.col("Metadata_pert_type") == pl.lit("negcon"))
-        )
-    result = df.filter(index_filter)
-    return result
 
 
 @cachier()
@@ -85,6 +53,28 @@ def partition_parquet_by_trt(
     negcons_per_plate: int = 2,
     seed: int = 42,
 ) -> dict[str, tuple[pl.DataFrame, pl.DataFrame]]:
+    """
+    Partitions a Parquet file by treatment.
+
+    Parameters
+    ----------
+    path : str
+        Path to the Parquet file.
+    dataset : str
+        Name of the dataset.
+    column : str, optional
+        Column name for treatment information (default is "Metadata_JCP2022").
+    negcons_per_plate : int, optional
+        Number of negative controls per plate (default is 2).
+    seed : int, optional
+        Random seed for reproducibility (default is 42).
+
+    Returns
+    -------
+    dict[str, tuple[pl.DataFrame, pl.DataFrame]]
+        Dictionary with treatment as key and a tuple of DataFrames as value.
+
+    """
     profiles = pl.read_parquet(path)
     profiles = add_pert_type(profiles, dataset=dataset)
     return partition_by_trt(profiles, dataset, column, negcons_per_plate, seed)
@@ -98,12 +88,30 @@ def partition_by_trt(
     seed: int = 42,
 ) -> dict[str, tuple[np.ndarray, np.ndarray]]:
     """
-    Partition a dataframe by using identifier column (by default Metadata_JCP2022)
-    and then further split into two dataframes, one for positive controls and one
-    for negative controls.
+    Partition a dataframe by using the identifier column.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input dataframe to be partitioned.
+    dataset : str
+        Name of the dataset.
+    column : str, optional
+        Column name used for partitioning (default is "Metadata_JCP2022").
+    negcons_per_plate : int, optional
+        Number of negative controls to sample per plate (default is 2).
+    seed : int, optional
+        Random seed for shuffling (default is 42).
+
+    Returns
+    -------
+    dict[str, tuple[np.ndarray, np.ndarray]]
+        A dictionary where each key is an identifier and the value is a tuple
+        containing the treatment profile as a numpy array and the negative control
+        profiles as a numpy array.
+
     """
     meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
-    # TODO Refactor these sections to increase performance
     partitions = {
         k[0]: v
         for k, v in df.select(
@@ -114,13 +122,6 @@ def partition_by_trt(
         .items()
     }
 
-    # partitions = {
-    #     v.head(1).get_column("Metadata_pert_type")[0]: v
-    #     .select(
-    #         pl.exclude("Metadata_pert_type")
-    #     )
-    #     for v in partitions
-    # }
     partitions["negcon"] = partitions["negcon"].drop(column)
     if negcons_per_plate:  # Sample $negcons_per_plate elements from each plate
         partitions["negcon"] = partitions["negcon"].filter(
@@ -139,8 +140,6 @@ def partition_by_trt(
         .partition_by(column, include_key=False, as_dict=True)
         .items()
     }
-    # .drop("Metadata_pert_type", "Metadata_Plate")
-    # .partition_by(column, as_dict=True, maintain_order=False, include_key=False)
 
     # TODO is there a better way to return only float values?
     id_trt_negcon = {
@@ -156,78 +155,34 @@ def partition_by_trt(
     return id_trt_negcon
 
 
-def get_p_value(a, b, seed: int = 42):
+def get_pvalue_mwu(a: np.ndarray, b: np.ndarray, axis: int = 0) -> float:
     """
-    Calculate the p value of two matrices in a column fashion.
-    TODO check if we should sample independently or if we can sample once and used all features from a given sample set.
-    Challenge:
-    - Multiple genes likely share multiple negative controls.
+    Calculate the p-value using the Mann-Whitney U test.
 
-    Solution:
-    1. Find gene
-    2. Find its negative controls
-    3. Sample negative controls
-    4. Calculate p value of both distributions
+    This function is a wrapper around scipy.stats.mannwhitneyu and returns
+    the p-value of the two-sample Mann-Whitney rank test on the provided input arrays.
+
+    Parameters
+    ----------
+    a : np.ndarray
+        Input array 1.
+    b : np.ndarray
+        Input array 2.
+    axis : int, optional
+        Axis over which to compute the statistic. By default, the statistic is
+        computed over all the values given (axis=0).
+
+    Returns
+    -------
+    pvalue : float
+        The p-value of the two-sample Mann-Whitney rank test.
+
+    Notes
+    -----
+    This function assumes that the input arrays are not empty and contain at least one element.
+
     """
-    # Convert relevant values to cupy
-    matrix_a = cp.array(a)
-    matrix_b = cp.array(b)
-
-    # Calculate t statistic
-    mean_a, mean_b = (matrix_a.mean(axis=0), matrix_b.mean(axis=0))
-    std_a, std_b = matrix_a.std(axis=0, ddof=1), matrix_b.std(axis=0, ddof=1)
-    n_a, n_b = (len(a), len(b))
-    se_a, se_b = std_a / sqrt(n_a), std_b / sqrt(n_b)
-    sed = cp.sqrt(se_a**2 + se_b**2)
-    t_stat = (mean_a - mean_b) / sed
-    # Calculate p value
-    df = n_a + n_b - 2
-    p = (1 - t.cdf((np.abs(t_stat).get()), df)) ** 2  # TODO cupy remove scipy dep
-
-    return np.nan_to_num(p, nan=1.0)
-
-
-def get_pvalue_mwu(a, b, axis=0):
-    """Wrapper over scipy ttest_ind."""
     return mannwhitneyu(a, b, axis=axis).pvalue
-
-
-def calculate_mw(
-    profiles: pl.DataFrame,
-    negcons_per_plate: int = 2,
-    seed: int = 42,
-):
-    """
-    Calculate the pvalues of each feature against a sample of their negative controls.
-    1. Calculate the MW test
-    2. then adjust the p value to account for multiple testing.
-    """
-    partitioned = partition_by_trt(profiles, seed=seed)
-    features = tuple(
-        list(partitioned.values())[0][0]
-        .select(pl.all().exclude("^Metadata.*$"))
-        .columns
-    )
-
-    print("Calculating p values")
-    timer = perf_counter()
-
-    n_items = len(partitioned)
-    p_values = np.ones((n_items, len(features)), dtype=np.float32)
-    for i, k in tqdm(enumerate(partitioned.keys()), total=n_items):
-        p_values[i, :] = get_p_value(
-            *partitioned[k],
-            negcons_per_plate=negcons_per_plate,
-            seed=seed,
-        )
-    print(f"{perf_counter() - timer}")
-
-    print("FDR correction")
-    timer = perf_counter()
-    corrected = pl.DataFrame([multipletests(x, method="fdr_bh")[1] for x in p_values])
-    print(f"{perf_counter() - timer}")
-
-    return corrected
 
 
 def calculate_pvals(
@@ -235,6 +190,7 @@ def calculate_pvals(
 ) -> tuple[tuple[str], pl.DataFrame]:
     """
     Calculate the pvalues of each feature against a sample of their negative controls.
+
     1. Calculate the p value of all features
     2. then adjust the p value to account for multiple testing.
     """
@@ -259,7 +215,6 @@ def calculate_pvals(
             for a, b in tqdm(partitioned.values())
         ]
         print(f"Linear: {perf_counter() - timer}")
-        # print(f"FDR correction performed in {perf_counter()-timer}")
 
     return (tuple(partitioned.keys()), corrected)
 
@@ -269,7 +224,25 @@ def add_pert_type(
 ) -> pl.DataFrame:
     """
     Add metadata with perturbation type from the JCP2022 ID.
-    poscons: Ensure all outputs are trt or negcon. Drop nulls.
+
+    Parameters
+    ----------
+    profiles : pl.DataFrame
+        Input DataFrame containing metadata.
+    dataset : str
+        Name of the dataset to use for mapping (crispr, orf or compound).
+    poscons : bool, optional
+        Ensure all outputs are 'trt' or 'negcon'. Drop nulls. Defaults to False.
+
+    Returns
+    -------
+    pl.DataFrame
+        Updated DataFrame with perturbation type metadata.
+
+    Notes
+    -----
+    If "Metadata_pert_type" is not present in the input profiles, it will be added.
+
     """
     pert_type = "Metadata_pert_type"
     if "Metadata_pert_type" not in profiles.select(pl.col("^Metadata.*$")).columns:
@@ -296,10 +269,35 @@ def add_pert_type(
 
 
 @cachier()
-def pvals_from_path(path: str, dataset: str, *args, **kwargs) -> pl.DataFrame:
+def pvals_from_path(
+    path: str, dataset: str, *args: Iterable, **kwargs: dict
+) -> pl.DataFrame:
     """
-    Use the path to cache pvals
-    Locally cached version of pvals. To clean cache run <function>.clean_cache().
+    Calculate p-values from the path of a set of profiles.
+
+    Calculate p values from a profiles file to cache p-values.
+    To clean cache run `clean_cache()` function.
+
+    Parameters
+    ----------
+    path : str
+        Path to the profiles parquet file.
+    dataset : str
+        Name of the dataset (orf, crispr or compound).
+    *args
+        Additional positional arguments passed to `calculate_pvals` function.
+    **kwargs
+        Additional keyword arguments passed to `calculate_pvals` function.
+
+    Returns
+    -------
+    pl.DataFrame
+        DataFrame containing p-values with added metadata column 'Metadata_JCP2022'.
+
+    Notes
+    -----
+    This function uses local caching for efficient computation of p-values.
+
     """
     timer = perf_counter()
     partitioned = partition_parquet_by_trt(path, dataset)
