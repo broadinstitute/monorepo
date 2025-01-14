@@ -65,8 +65,8 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
         uniq_jcp, dset, format_output=False
     )
 
-    df = df.with_columns(  # Format existing columns into #foci urls
-        [
+    df = df.with_columns(  # Format existing columns into urls with sites
+        [ 
             pl.format(
                 get_formatter("url_flat"),
                 *[pl.col(f"Metadata_{x}") for x in ("Source", "Plate", "Well")],
@@ -95,8 +95,9 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
         ]
     )
 
-    order = [pl.col(x) for x in (std_outname, ext_links_col, jcp_col, "^Site.*$")]
-    df = df.select(order).collect()
+    # Add the Plate id for convenient filtering of controls
+    order = [pl.col(x) for x in (std_outname, ext_links_col, jcp_col, "^Site.*$", "Metadata_Source", "Metadata_Plate")]
+    df = df.select(order).collect().rename(lambda c: c.removeprefix("Metadata_"))
 
     # %% Write results
     if write:
