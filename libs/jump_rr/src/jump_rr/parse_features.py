@@ -77,6 +77,7 @@ def get_feature_groups(
     feature_meta = pl.DataFrame(
         [x for x in results],
         schema=[(col, str) for col in feature_names],
+        orient="row",
     )
 
     return feature_meta

@@ -38,7 +38,7 @@ from jump_rr.concensus import (
 )
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import format_val
-from jump_rr.index_selection import get_edge_indices
+from jump_rr.index_selection import get_ranks
 from jump_rr.metadata import write_metadata
 from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
@@ -57,7 +57,7 @@ datasets = (
 )
 
 ## Parameters
-n_vals_used = 200  # Number of top and bottom matches used
+n_vals_used = 20  # Number of top and bottom matches used
 feat_decomposition = ("Compartment", "Feature", "Channel", "Suffix")
 
 ## Column names
@@ -69,6 +69,8 @@ url_col = "Gene/Compound example image"
 rep_col = "Phenotypic activity"  # Column containing reproducibility
 val_col = "Median"  # Value col
 stat_col = "Feature significance"
+rank_feat_col = "Feature Rank"
+rank_gene_col = "Gene Rank"
 
 with cp.cuda.Device(1): # Specify the GPU device
     for dset in datasets:
@@ -99,12 +101,9 @@ with cp.cuda.Device(1): # Specify the GPU device
 
         phenact = cp.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
 
-        # Find bottom $n_values_used
-        xs, ys = get_edge_indices(
-            phenact.T,
-            n_vals_used,
-        )
+        (xs, ys), ranks = get_ranks(phenact.T, n_vals_used)
 
+        # Get the Gene Rank and Feature Rank
         decomposed_feats = get_feature_groups(
             tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
             feat_decomposition,
@@ -117,10 +116,7 @@ with cp.cuda.Device(1): # Specify the GPU device
         # %% Build Data Frame
         df = pl.DataFrame(
             {
-                **{
-                    col: np.repeat(vals, n_vals_used)
-                    for col, vals in decomposed_feats.to_dict().items()
-                },
+                **{k:v for k,v in zip(decomposed_feats.columns,decomposed_feats.to_numpy()[xs].T)},
                 stat_col: phenact[xs, ys].get(),
                 val_col: median_vals[xs, ys].get(),
                 jcp_short: med[jcp_col][ys],
@@ -129,6 +125,8 @@ with cp.cuda.Device(1): # Specify the GPU device
                     for url, idx in zip(url_vals[ys], cycled_indices[ys])
                     if (img_src := next(url).format(next(idx)))
                 ],
+                rank_gene_col : ranks[1],
+                rank_feat_col : ranks[0],
             }
         )
 
@@ -162,6 +160,8 @@ with cp.cuda.Device(1): # Specify the GPU device
             "Synonyms",
             jcp_short,
             ext_links_col,
+            rank_gene_col,
+            rank_feat_col,
         ]
         sorted_df = jcp_translated.select(order)
 

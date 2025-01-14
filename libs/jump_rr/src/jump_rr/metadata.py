@@ -38,6 +38,8 @@ _DESCRIPTIONS = {
     "Feature significance": "Adjusted p-value (*) indicating the statistical significance of the difference between a specific morphological feature in the perturbed condition compared to the control condition. Lower values suggest a stronger effect of the perturbation on that particular feature.",
     "Phenotypic activity Match": "P-value indicating that the feature is significantly different from the feature in the controls (for the match). ",
     "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
+    "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
+    "Gene Rank": "The rank of the feature for a given gene when compared to that feature in all other genes.",
     "Match differential activity": "P-value indicating the statistical significance of the difference between the perturbation's morphological profile and its closest match's profile. Lower values suggest stronger dissimilarity between the perturbation and its best match.",  # <2024-07-17 Wed> This is currently unused
     "(*)": "Benjamini-Hochberg FDR correction",
 }
