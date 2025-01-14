@@ -1,4 +1,5 @@
 #!/usr/bin/env jupyter
+"""Parse feature names to divide it into its components."""
 import re
 from functools import cache
 
@@ -7,19 +8,30 @@ import polars as pl
 
 @cache
 def get_feature_groups(
-    feature_fullnames: tuple[str], feature_names: tuple[str]
+    feature_fullnames: tuple[str],
+    feature_names: tuple[str] =  ("Compartment", "Feature", "Channel", "Suffix"),
 ) -> pl.DataFrame:
     """
-    Group features in a consistent manner
-    apples with apples, oranges with oranges
-    Two cases
-    - Channel-based
-    - Non-channel based shape.
+    Group features in a consistent manner using a regex.
 
-    Apply regular expressions
-    Convert to format MASK,FEATURE,CHANNEL(opt),SUFFIX, merging channels
-    where necessary
-    NOTE: CURRENTLY UNUSED in favour of processing all features
+    Parameters
+    ----------
+    feature_fullnames : tuple[str]
+        Tuple of full names of the features.
+    feature_names : tuple[str]
+        Tuple of names of the features to be extracted.
+
+    Returns
+    -------
+    pl.DataFrame
+        DataFrame containing the grouped feature information.
+
+    Notes
+    -----
+    The function supports two cases: Channel-based and Non-channel based shape.
+    It applies regular expressions, converts to format MASK,FEATURE,CHANNEL(opt),SUFFIX,
+    merging channels where necessary.
+
     """
     masks = "|".join(("Cells", "Nuclei", "Cytoplasm", "Image"))
     channels = "|".join(

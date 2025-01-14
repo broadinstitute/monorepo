@@ -58,7 +58,7 @@ datasets = (
 
 ## Parameters
 n_vals_used = 200  # Number of top and bottom matches used
-feat_decomposition = ("Cell region", "Feature", "Channel", "Suffix")
+feat_decomposition = ("Compartment", "Feature", "Channel", "Suffix")
 
 ## Column names
 jcp_short = "JCP2022 ID"  # Shortened input data frame

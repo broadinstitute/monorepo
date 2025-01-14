@@ -1,5 +1,6 @@
 """
 Tools to produce labels and explanations for jump_rr web interfaces.
+
 To get columns:
 import polars as pl.
 
@@ -24,7 +25,7 @@ _DESCRIPTIONS = {
     "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
     "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
     "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
-    "Cell region": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
+    "Compartment": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
     "Match": "Perturbations with the highest correlation or anti-correlation relative to 'Gene/Compound'.",
     "Match Example": "Sample image of the matched perturbation. It cycles over the available images.",
     "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
@@ -65,9 +66,9 @@ def get_col_desc(key: str) -> str:
     return _DESCRIPTIONS[key]
 
 
-def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]) -> None:
+def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
     """
-    Writes metadata file to customize Datasette.
+    Write metadata file to customize Datasette.
 
     Parameters
     ----------
@@ -115,6 +116,7 @@ def write_metadata(dset: str, table_type: str, colnames: [tuple[str]]) -> None:
 def table_type_to_suffix(table_type: str) -> Optional[str]:
     """
     Convert a table type to a title suffix.
+
     This function takes a string representing the type of table and returns the corresponding title suffix.
 
     Parameters

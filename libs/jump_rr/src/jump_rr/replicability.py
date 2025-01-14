@@ -1,5 +1,5 @@
 #!/usr/bin/env jupyter
-"""Tools to fetch replicability information from existing databases, and to recalculate it efficiently when necessary."""
+"""Fetch replicability information from existing databases or recalculate it."""
 
 import polars as pl
 from cachier import cachier
