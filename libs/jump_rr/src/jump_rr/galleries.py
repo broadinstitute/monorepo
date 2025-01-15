@@ -21,7 +21,7 @@ import polars as pl
 from jump_rr.concensus import get_range
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import get_formatter
-from jump_rr.translate import get_mapper
+from jump_rr.translate import get_external_mappers
 
 # %% Setup Local
 ## Paths
@@ -60,13 +60,10 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
     df = pl.scan_parquet(get_dataset(dset, return_pooch=False))
 
     # %% Translate genes names to standard
-    uniq_jcp = tuple(df.select("Metadata_JCP2022").unique().collect().to_numpy()[:, 0])
-    jcp_std_mapper, jcp_external_mapper = get_mapper(
-        uniq_jcp, dset, format_output=False
-    )
+    jcp_std_mapper, jcp_external_mapper, _ = get_external_mappers(df.select("Metadata_JCP2022").unique().collect(), "Metadata_JCP2022", dset)
 
     df = df.with_columns(  # Format existing columns into urls with sites
-        [ 
+        [
             pl.format(
                 get_formatter("url_flat"),
                 *[pl.col(f"Metadata_{x}") for x in ("Source", "Plate", "Well")],
@@ -75,6 +72,7 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
             for foci in get_range(dset)
         ]
     )
+
     df = df.with_columns(  # Wrap the urls into html
         [
             pl.format(
@@ -85,6 +83,8 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
             for foci in get_range(dset)
         ]
     )
+
+
     df = df.with_columns(
         [
             pl.col(jcp_col).replace(jcp_std_mapper).alias(std_outname),

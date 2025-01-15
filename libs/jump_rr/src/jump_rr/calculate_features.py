@@ -29,7 +29,6 @@ Steps:
 from pathlib import Path
 
 import cupy as cp
-import numpy as np
 import polars as pl
 from jump_rr.concensus import (
     get_concensus_meta_urls,
@@ -44,7 +43,7 @@ from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type, pvals_from_path
 from jump_rr.synonyms import get_synonym_mapper
-from jump_rr.translate import get_mapper
+from jump_rr.translate import get_external_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -130,9 +129,7 @@ with cp.cuda.Device(1): # Specify the GPU device
             }
         )
 
-        uniq = tuple(df.get_column(jcp_short).unique())
-        jcp_std_mapper, jcp_external_mapper = get_mapper(uniq, dset)
-        _, jcp_external_raw_mapper = get_mapper(uniq, dset, format_output=False)
+        jcp_std_mapper, jcp_external_mapper, jcp_external_raw_mapper = get_external_mappers(df, jcp_short, dset.removesuffix("_interpretable"))
 
         # Add phenotypic activity from a previously-calculated
         df = add_replicability(
@@ -158,21 +155,21 @@ with cp.cuda.Device(1): # Specify the GPU device
             val_col,
             rep_col,
             "Synonyms",
-            jcp_short,
-            ext_links_col,
             rank_gene_col,
             rank_feat_col,
+            jcp_short,
+            ext_links_col,
         ]
         sorted_df = jcp_translated.select(order)
 
         # Output
         output_dir.mkdir(parents=True, exist_ok=True)
-        jcp_translated.write_parquet(
+        sorted_df.write_parquet(
             output_dir / f"{dset}_features.parquet", compression="zstd"
         )
 
         # Update metadata
-        write_metadata(dset_type, "feature", (*jcp_translated.columns, "(*)"))
+        write_metadata(dset_type, "feature", (*sorted_df.columns, "(*)"))
 
         # Save phenotypic activity matrix in case it is of use to others
         pl.DataFrame(

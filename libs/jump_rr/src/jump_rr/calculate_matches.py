@@ -39,7 +39,7 @@ from jump_rr.index_selection import get_bottom_top_indices
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
 from jump_rr.synonyms import get_synonym_mapper
-from jump_rr.translate import get_mapper
+from jump_rr.translate import get_external_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -114,9 +114,7 @@ with cp.cuda.Device(1):  # Specify the GPU device
         )
 
         # %% Translate genes names to standard
-        uniq_jcp = tuple(jcp_df.unique(subset=jcp_short).to_numpy()[:, 0])
-        jcp_std_mapper, jcp_external_mapper = get_mapper(uniq_jcp, dset)
-        _, jcp_external_raw_mapper = get_mapper(uniq_jcp, dset, format_output=False)
+        jcp_std_mapper, jcp_external_mapper, jcp_external_raw_mapper = get_external_mappers(df, jcp_col, dset)
 
         # %% Add replicability
         jcp_df = add_replicability(
