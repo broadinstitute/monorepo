@@ -56,7 +56,7 @@ datasets = (
 )
 
 ## Parameters
-n_vals_used = 20  # Number of top and bottom matches used
+n_vals_used = 30  # Number of top and bottom matches used
 feat_decomposition = ("Compartment", "Feature", "Channel", "Suffix")
 
 ## Column names

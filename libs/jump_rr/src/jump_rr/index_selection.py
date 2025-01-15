@@ -39,48 +39,6 @@ def get_bottom_top_indices(
     ys = indices.flatten().get()
     return xs, ys
 
-
-def get_edge_indices(mat: cp.array, n: int, which: str = "bottom") -> tuple[cp.array]:
-    """
-    Get the top n or bottom n indices from a matrix for each row.
-
-    Parameters
-    ----------
-    mat : cp.array
-        The input matrix.
-    n : int
-        The number of top or bottom indices to get.
-    which : str, optional
-        Whether to get 'top' or 'bottom' indices. Defaults to "bottom".
-
-    Returns
-    -------
-    xs : np.ndarray
-        The row indices of the top or bottom indices.
-    ys : np.ndarray
-        The column indices of the top or bottom indices.
-
-    Raises
-    ------
-    AssertionError
-        If `which` is not either 'top' or 'bottom'.
-
-    """
-    mask = cp.ones(mat.shape[1], dtype=bool)
-
-    assert which in ("top", "bottom"), "which must be either top or bottom"
-
-    if which == "bottom":
-        mask[n:] = False
-    else:
-        mask[: -n - 1] = False
-
-    indices = mat.argsort(axis=1)[:, mask]
-
-    xs = cp.indices(indices.shape)[0].flatten().get()
-    ys = indices.flatten().get()
-    return xs, ys
-
 def get_ranks(mat: cp.array, n_vals_used: int = 20) -> tuple[np.array, list[cp.array]]:
     """Get a binary mask of the edges and ranks in every dimension."""
     ranks = [mat.argsort(i) for i in range(mat.ndim)]
@@ -89,6 +47,6 @@ def get_ranks(mat: cp.array, n_vals_used: int = 20) -> tuple[np.array, list[cp.a
 
     # Get the location of the largest/smallest values in every dimension
     for rank in ranks:
-        mask |= (rank < n_vals_used) | (rank > (rank.max() - n_vals_used))
+        mask |= (rank < n_vals_used)
 
     return ([x.get() for x in cp.where(mask)], [rank[mask].get() for rank in ranks])

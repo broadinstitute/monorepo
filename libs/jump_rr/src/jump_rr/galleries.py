@@ -88,10 +88,7 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
     df = df.with_columns(
         [
             pl.col(jcp_col).replace(jcp_std_mapper).alias(std_outname),
-            pl.format(
-                get_formatter("external_flat"),
-                pl.col(jcp_col).replace(jcp_external_mapper),
-            ).alias(ext_links_col),
+            pl.col(jcp_col).replace(jcp_external_mapper).alias(ext_links_col),
         ]
     )
 
