@@ -100,6 +100,13 @@ def get_range(dataset: str) -> range:
     rng : range
         A range object representing the cycle of indices for the given dataset.
 
+    Notes
+    -----
+    The number of images per well in the data is as follows:
+    - crispr: 9 (0-8)
+    - orf: 9 (1-9)
+    - compound: 7 ()
+
     """
     offset = dataset != "crispr"
     max_offset = (dataset == "compound") * (-3)

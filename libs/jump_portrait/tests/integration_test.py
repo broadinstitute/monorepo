@@ -10,7 +10,6 @@ Pending tests:
 from itertools import product
 
 import pytest
-
 from jump_portrait.fetch import get_item_location_info, get_jump_image
 
 
