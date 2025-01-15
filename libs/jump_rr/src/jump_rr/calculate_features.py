@@ -154,11 +154,11 @@ with cp.cuda.Device(1): # Specify the GPU device
             url_col,
             val_col,
             rep_col,
-            "Synonyms",
             rank_gene_col,
             rank_feat_col,
             jcp_short,
             ext_links_col,
+            "Synonyms",
         ]
         sorted_df = jcp_translated.select(order)
 
