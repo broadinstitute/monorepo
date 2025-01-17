@@ -57,7 +57,7 @@ Note: The `pull` command may need to be run multiple times due to API timeouts. 
 
 ### 2. Get Database Annotations
 
-After creating ID mappings, collect and standardize drug-target annotations:
+After creating ID mappings, collect, standardize, and optionally curate drug-target annotations:
 
 ```python
 from jump_compound_annotator.collate import concat_annotations
@@ -78,10 +78,31 @@ from jump_compound_annotator.find_inchikeys import add_inchikeys
 add_inchikeys('./outputs')
 ```
 
+### 3. Curate Annotations
+
+```python
+from pathlib import Path
+from jump_compound_annotator.curate import curate_annotations
+import pandas as pd
+import logging
+logging.basicConfig(level=logging.INFO)
+
+# Load annotations
+annotations = pd.read_parquet(Path('./outputs') / "annotations.parquet")
+
+# Curate annotations
+curated_annotations = curate_annotations(annotations)
+
+# Save curated annotations
+curated_annotations.to_parquet('./outputs/filtered_annotations.parquet')
+```
+
 This creates three main output files in parquet format:
 - `annotations.parquet`: Drug-gene relationships
 - `compound_interactions.parquet`: Drug-drug interactions  
 - `gene_interactions.parquet`: Gene-gene interactions
+- (optional) `filtered_annotations.parquet`: Curated drug-gene relationships
+
 
 ### 3. Export External IDs (Optional)
 
@@ -97,44 +118,51 @@ python -m jump_compound_annotator.collect_external_ids ./outputs
 
 ```
 outputs/
-├── annotations.parquet           # Main drug-gene annotations
-├── compound_interactions.parquet # Drug-drug interactions
-├── gene_interactions.parquet    # Gene-gene interactions
-├── pointers.csv                # Compound ID mappings from UniChem
-├── ids/                        # UniChem mapping batch files
-│   └── ids_*.csv
-├── errors/                     # Failed UniChem queries
-│   └── errors_*.csv
-├── external_ids/               # Plain text ID files by source
-│   ├── pubchem.txt
-│   ├── chembl.txt
-│   └── drugbank.txt
-├── biokg/                      # BioKG data
-│   └── biokg.zip
-├── dgidb/                      # DGIdb data
-│   ├── drugs.tsv
-│   ├── genes.tsv  
-│   ├── interactions.tsv
-│   └── categories.tsv
-├── drugrep/                    # Drug repurposing data
-│   ├── drugs.txt
-│   └── samples.txt
-├── hetionet/                   # Hetionet data
-│   └── hetionet.zip
-├── hgnc/                       # HGNC gene data
-│   └── complete_set.txt
-├── ncbi/                       # NCBI gene data
-│   └── gene_info.gz
-├── openbiolink/               # OpenBioLink data
-│   └── HQ_UNDIR.zip
-├── opentargets/               # OpenTargets data
-│   └── molecule/              # Contains multiple parquet files
-├── pharmebinet/               # PharmeBiNet data
-│   ├── nodes.parquet
-│   ├── edges.parquet
-│   └── pharmebinet.tar.gz
-└── primekg/                   # PrimeKG data
-    └── data.csv
+├── annotations.parquet              # Raw drug-gene annotations
+├── filtered_annotations.parquet     # Curated drug-gene annotations
+├── compound_interactions.parquet    # Drug-drug interactions
+├── gene_interactions.parquet        # Gene-gene interactions
+├── mychem_chembl_mapper.parquet     # MyChem ChEMBL mapper
+├── mychem_drugbank_mapper.parquet   # MyChem DrugBank mapper
+├── mychem_pubchem_mapper.parquet    # MyChem PubChem mapper
+├── unichem_chembl_mapper.parquet    # UniChem ChEMBL mapper
+├── unichem_drugbank_mapper.parquet  # UniChem DrugBank mapper
+├── unichem_pubchem_mapper.parquet   # UniChem PubChem mapper
+├── pointers.csv                     # Compound ID mappings from UniChem
+├── external_ids                     # External IDs for each compound
+│   ├── chembl.txt
+│   ├── drugbank.txt
+│   └── pubchem.txt
+├── ids/                             # UniChem mapping batch files
+│   └── ids_*.csv
+├── errors
+│   └── errors_*.csv                 # UniChem mapping errors
+├── biokg/                           # BioKG data
+│   └── biokg.zip
+├── dgidb/                           # DGIdb data
+│   ├── categories.tsv
+│   ├── drugs.tsv
+│   ├── genes.tsv
+│   └── interactions.tsv
+├── drugrep                          # Drug repurposing data
+│   ├── drugs.txt
+│   └── samples.txt
+├── hetionet/                        # Hetionet data
+│   └── hetionet.zip
+├── hgnc/                            # HGNC gene data
+│   └── complete_set.txt
+├── ncbi/                            # NCBI gene data
+│   └── gene_info.gz
+├── openbiolink/                     # OpenBioLink data
+│   └── HQ_UNDIR.zip
+├── opentargets/                     # OpenTargets data
+│   └── molecule
+├── pharmebinet/                     # PharmeBiNet data
+│   ├── edges.parquet
+│   ├── nodes.parquet
+│   └── pharmebinet.tar.gz
+└── primekg/                         # PrimeKG data
+    └── data.csv
 ```
 
 ### Data Sources
