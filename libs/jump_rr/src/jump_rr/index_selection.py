@@ -39,6 +39,7 @@ def get_bottom_top_indices(
     ys = indices.flatten().get()
     return xs, ys
 
+
 def get_ranks(mat: cp.array, n_vals_used: int = 20) -> tuple[np.array, list[cp.array]]:
     """Get a binary mask of the edges and ranks in every dimension."""
     ranks = [mat.argsort(i) for i in range(mat.ndim)]
@@ -47,6 +48,6 @@ def get_ranks(mat: cp.array, n_vals_used: int = 20) -> tuple[np.array, list[cp.a
 
     # Get the location of the largest/smallest values in every dimension
     for rank in ranks:
-        mask |= (rank < n_vals_used)
+        mask |= rank < n_vals_used
 
     return ([x.get() for x in cp.where(mask)], [rank[mask].get() for rank in ranks])

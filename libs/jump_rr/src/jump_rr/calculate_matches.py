@@ -36,10 +36,9 @@ from jump_rr.concensus import (
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_bottom_top_indices
+from jump_rr.mappers import get_external_mappers, get_synonym_mapper
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
-from jump_rr.synonyms import get_synonym_mapper
-from jump_rr.translate import get_external_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -113,9 +112,6 @@ with cp.cuda.Device(1):  # Specify the GPU device
             }
         )
 
-        # %% Translate genes names to standard
-        jcp_std_mapper, jcp_external_mapper, jcp_external_raw_mapper = get_external_mappers(df, jcp_col, dset)
-
         # %% Add replicability
         jcp_df = add_replicability(
             jcp_df,
@@ -131,12 +127,17 @@ with cp.cuda.Device(1):  # Specify the GPU device
             replicability_col=match_rep_col,
         )
 
+        # %% Translate genes names to standard
+        jcp_to_std, jcp_to_ncbi, entrez_to_omim, enterz_to_ensembl = (
+            get_external_mappers(df, jcp_col, dset)
+        )
+
         jcp_translated = jcp_df.with_columns(
             pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
             pl.col(match_jcp_col).replace(jcp_std_mapper).alias(match_col),
-            pl.col(match_jcp_col).replace(jcp_external_mapper).alias(ext_links_col),
+            pl.col(match_jcp_col).replace(jcp_ncbi_mapper).alias(ext_links_col),
             pl.col(jcp_short)  # Add synonyms
-            .replace(jcp_external_raw_mapper)  # Map to NCBI ID
+            .replace(jcp_ncbi_raw_mapper)  # Map to NCBI ID
             .replace(get_synonym_mapper())  # Map synonyms
             .alias("Synonyms"),
         )

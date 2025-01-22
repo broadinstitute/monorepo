@@ -1,87 +1,54 @@
 #!/usr/bin/env jupyter
 """Format strings to deal with nested URLs and HTML elements."""
 
+import json
+from collections.abc import Iterable
 from functools import cache
 
 import polars as pl
 
 
 @cache
-def get_formatter(kind: str) -> str:
-    """
-    Return a formatter string based on the given kind.
-
-    Parameters
-    ----------
-    kind : str
-        The type of formatter to return. Options are 'external', 'url', 'img',
-        'external_flat', 'url_flat', and 'img_flat'.
-
-    Returns
-    -------
-    str
-        A formatter string corresponding to the given kind.
-
-    Notes
-    -----
-    The available formatters are:
-    - external: NCBI gene id
-    - url: URL of the image where the field of view space is double-nested ({{}}).
-    - img: href of the image surrounded by double nesting ({{}}).
-    - external_flat: Raw href of the ncbi id.
-    - url_flat: Raw URL of the image.
-    - img_flat: href with no nesting.
-
-    Raises
-    ------
-    KeyError
-        If the given kind is not one of the available formatters.
-
-    """
-    formatters = dict(
-        external='{{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"NCBI"}}',
-        url='"https://phenaid.ardigen.com/static-jumpcpexplorer/images/{}_{{}}.jpg"',
-        img='{{"img_src": {}, "href": {}, "width": 200}}',
-        external_flat='{"href": "https://www.ncbi.nlm.nih.gov/gene/{}", "label":"NCBI"}',
-        url_flat='"https://phenaid.ardigen.com/static-jumpcpexplorer/images/{}/{}/{}_{}.jpg"',
-        img_flat='{"img_src": {}, "href": {}, "width": 200}',
+def get_url_label(key: str) -> tuple[str, str]:
+    vendors = dict(
+        entrez=("https://www.ncbi.nlm.nih.gov/gene/{}", "NCBI"),
+        genecards=(
+            "https://www.genecards.org/cgi-bin/carddisp.pl?gene={}",
+            "GeneCards",
+        ),
+        omim=("https://www.omim.org/entry/{}", "OMIM"),
+        ensembl=("https://useast.ensembl.org/Homo_sapiens/Gene/Splice?g={}", "Ensembl"),
+        # ugb="USCB Genome Browser",
+        # url='"https://phenaid.ardigen.com/static-jumpcpexplorer/images/{}_{{}}.jpg"',
+        phenaid=(
+            "https://phenaid.ardigen.com/static-jumpcpexplorer/images/{}/{}/{}_{}.jpg",
+            None,
+        ),
     )
-    return formatters[kind]
+    return vendors[key]
 
 
-def format_val(kind: str, input_value: str or int or list or None) -> str:
-    """
-    Apply html formatting for Datasette hyperlinks and visualisation.
-
-    Parameters
-    ----------
-    kind : str
-        The type of formatting to apply.
-    input_value : str or int or list or None
-        The value to be formatted. Can be a string, integer, list or None.
-
-    Returns
-    -------
-    str
-        The formatted value as a string.
-
-    Notes
-    -----
-    If input_value is None, an empty string is returned.
-    If input_value is not a list, it is converted to a list before formatting.
-
-    """
-    if input_value is None:
-        return ""
-    elif isinstance(input_value, str) or isinstance(input_value, int):
-        input_value = [input_value]
-
-    result = get_formatter(kind).format(*input_value)
-
-    return result
+def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str, str]:
+    url_template, label = get_url_label(vendor)
+    if isinstance(value, (str, int)):
+        url = url_template.format(value)
+    else:
+        url = url_template.format(*value)
+    match fmt:
+        case "href":
+            return {"href": url, "label": label}
+        case "img":
+            return {"img": url, "href": url, "width": 200}
 
 
-def add_url_col(
+@cache
+def format_value(fmt: str, vendor: str, value: str or int):
+    d = build_dict(fmt, vendor, value)
+    html = str(json.dumps(d))
+    return html
+
+
+def add_phenaid_url_col(
     profiles: pl.DataFrame, url_colname: str = "Metadata_image"
 ) -> pl.DataFrame:
     """
@@ -101,10 +68,6 @@ def add_url_col(
         DataFrame with new column added.
 
     """
-    # assert url_colname.startswith(
-    #     "Metadata"
-    # ), "New URL column must start with 'Metadata'"
-
     profiles = profiles.with_columns(
         pl.concat_str(
             pl.col("Metadata_Source"),
@@ -112,7 +75,7 @@ def add_url_col(
             pl.col("Metadata_Well"),
             separator="/",
         )
-        .map_elements(lambda x: format_val("url", x), return_dtype=pl.String)
+        .map_elements(lambda x: format_value("url", *x), return_dtype=pl.String)
         .alias(url_colname)
     )
     return profiles
