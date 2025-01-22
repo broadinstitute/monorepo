@@ -38,12 +38,11 @@ from jump_rr.concensus import (
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import format_val
 from jump_rr.index_selection import get_ranks
+from jump_rr.mappers import get_external_mappers, get_synonym_mapper
 from jump_rr.metadata import write_metadata
 from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
 from jump_rr.significance import add_pert_type, pvals_from_path
-from jump_rr.synonyms import get_synonym_mapper
-from jump_rr.translate import get_external_mappers
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
@@ -71,7 +70,7 @@ stat_col = "Feature significance"
 rank_feat_col = "Feature Rank"
 rank_gene_col = "Gene Rank"
 
-with cp.cuda.Device(1): # Specify the GPU device
+with cp.cuda.Device(1):  # Specify the GPU device
     for dset in datasets:
         print(f"Processing features for {dset} dataset")
 
@@ -115,7 +114,12 @@ with cp.cuda.Device(1): # Specify the GPU device
         # %% Build Data Frame
         df = pl.DataFrame(
             {
-                **{k:v for k,v in zip(decomposed_feats.columns,decomposed_feats.to_numpy()[xs].T)},
+                **{
+                    k: v
+                    for k, v in zip(
+                        decomposed_feats.columns, decomposed_feats.to_numpy()[xs].T
+                    )
+                },
                 stat_col: phenact[xs, ys].get(),
                 val_col: median_vals[xs, ys].get(),
                 jcp_short: med[jcp_col][ys],
@@ -124,12 +128,15 @@ with cp.cuda.Device(1): # Specify the GPU device
                     for url, idx in zip(url_vals[ys], cycled_indices[ys])
                     if (img_src := next(url).format(next(idx)))
                 ],
-                rank_gene_col : ranks[1],
-                rank_feat_col : ranks[0],
+                rank_gene_col: ranks[1],
+                rank_feat_col: ranks[0],
             }
         )
 
-        jcp_std_mapper, jcp_external_mapper, jcp_external_raw_mapper = get_external_mappers(df, jcp_short, dset.removesuffix("_interpretable"))
+        (
+            jcp_std_mapper,
+            jcp_entrez_mapper,
+        ) = get_external_mappers(df, jcp_short, dset.removesuffix("_interpretable"))
 
         # Add phenotypic activity from a previously-calculated
         df = add_replicability(
@@ -141,7 +148,7 @@ with cp.cuda.Device(1): # Specify the GPU device
             pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
             pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
             pl.col(jcp_short)  # Add synonyms
-            .replace(jcp_external_raw_mapper)  # Map to NCBI ID
+            .replace(jcp_to_entrez)  # Map to entrez ID
             .replace(get_synonym_mapper())  # Map synonyms
             .alias("Synonyms"),
         )

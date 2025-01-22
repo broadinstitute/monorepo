@@ -20,8 +20,8 @@ from pathlib import Path
 import polars as pl
 from jump_rr.concensus import get_range
 from jump_rr.datasets import get_dataset
-from jump_rr.formatters import get_formatter
-from jump_rr.translate import get_external_mappers
+from jump_rr.formatters import format_value
+from jump_rr.mappers import get_external_mappers
 
 # %% Setup Local
 ## Paths
@@ -31,7 +31,7 @@ output_dir = Path("./databases")
 jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
-ext_links_col = "NCBI"  # Link to external resources (e.g., NCBI)
+ext_links_col = "External Links"  # Link to external resources (e.g., NCBI)
 
 
 def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
@@ -53,47 +53,45 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
     Notes
     -----
     This function loads metadata from a parquet file, translates gene names to standard,
-    formats existing columns into #foci urls, wraps the urls into html, and writes the results.
+    formats existing columns into #site urls, wraps the urls into html, and writes the results.
 
     """
     # %% Load Metadata
     df = pl.scan_parquet(get_dataset(dset, return_pooch=False))
 
     # %% Translate genes names to standard
-    jcp_std_mapper, jcp_external_mapper, _ = get_external_mappers(df.select("Metadata_JCP2022").unique().collect(), "Metadata_JCP2022", dset)
-
-    df = df.with_columns(  # Format existing columns into urls with sites
-        [
-            pl.format(
-                get_formatter("url_flat"),
-                *[pl.col(f"Metadata_{x}") for x in ("Source", "Plate", "Well")],
-                foci,
-            ).alias(f"Site {foci}")
-            for foci in get_range(dset)
-        ]
+    collected_df = df.select("Metadata_JCP2022").unique().collect()
+    jcp_std_mapper, jcp_entrez_mapper, std_to_mim, std_to_ensembl = (
+        get_external_mappers(collected_df, "Metadata_JCP2022", dset)
     )
 
     df = df.with_columns(  # Wrap the urls into html
-        [
+        *[
             pl.format(
-                get_formatter("img_flat"),
-                pl.col(f"Site {foci}"),
-                pl.col(f"Site {foci}"),
-            ).alias(f"Site {foci}")
-            for foci in get_range(dset)
-        ]
-    )
-
-
-    df = df.with_columns(
-        [
-            pl.col(jcp_col).replace(jcp_std_mapper).alias(std_outname),
-            pl.col(jcp_col).replace(jcp_external_mapper).alias(ext_links_col),
-        ]
+                format_value("img", "phenaid", tuple("{}" for _ in range(8))),
+                *[pl.col(f"Metadata_{x}") for x in ("Source", "Plate", "Well")],
+                site,
+                *[pl.col(f"Metadata_{x}") for x in ("Source", "Plate", "Well")],
+                site,
+            ).alias(f"Site {site}")
+            for site in get_range(dset)
+        ],
+        pl.col(jcp_col).replace_strict(jcp_std_mapper, default="").alias(std_outname),
+        pl.col(jcp_col).replace(jcp_entrez_mapper).alias("entrez"),
     )
 
     # Add the Plate id for convenient filtering of controls
-    order = [pl.col(x) for x in (std_outname, ext_links_col, jcp_col, "^Site.*$", "Metadata_Source", "Metadata_Plate")]
+    order = [
+        pl.col(x)
+        for x in (
+            std_outname,
+            ext_links_col,
+            jcp_col,
+            "^Site.*$",
+            "Metadata_Source",
+            "Metadata_Plate",
+        )
+    ]
     df = df.select(order).collect().rename(lambda c: c.removeprefix("Metadata_"))
 
     # %% Write results
@@ -106,4 +104,35 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
 
 # %% Processing starts
 for dset in ("orf", "crispr", "compound"):
-    generate_gallery(dset, write=True)
+    tmp = generate_gallery(dset, write=True)
+    break
+
+
+def add_external_sites(df: pl.DataFrame, std_outname: str, entrez_col: str = "entrez"):
+    # Add other names and links that depend on standard ids
+    external_sites = dict(omim=std_to_mim, ensembl=std_to_ensembl)
+    df = df.with_columns(
+        [
+            pl.col(std_outname).replace_strict(v, default="").alias(k)
+            for k, v in external_sites.items()
+        ]
+    )
+
+    # Format all links to create the column that links to external sites
+
+    cols_to_aggregate = (
+        ("entrez", "entrez"),
+        ("genecards", std_outname),
+        *list(zip(external_sites, external_sites)),
+    )
+
+    df = df.with_columns(
+        pl.concat_str(
+            [
+                pl.format(format_value("href", k, "{}"), pl.col(v))
+                for k, v in cols_to_aggregate
+            ]
+        ).alias(ext_links_col),
+        separator=", ",
+    )
+    return df

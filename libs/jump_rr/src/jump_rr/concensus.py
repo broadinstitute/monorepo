@@ -5,7 +5,7 @@ from itertools import cycle
 
 import numpy as np
 import polars as pl
-from jump_rr.formatters import add_url_col
+from jump_rr.formatters import add_phenaid_url_col
 from jump_rr.parse_features import get_feature_groups
 
 # Names
@@ -34,7 +34,7 @@ def get_concensus_meta_urls(profiles: pl.DataFrame, url_colname: str) -> tuple:
         Dataframe containing urls composed of cycling iterators for grouped contents during concensus.
 
     """
-    profiles = add_url_col(profiles, url_colname=url_colname)
+    profiles = add_phenaid_url_col(profiles, url_colname=url_colname)
 
     grouped = profiles.group_by(jcp_col, maintain_order=True)
     med = grouped.median()
