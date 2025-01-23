@@ -91,7 +91,7 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
         ]
 
     # Define the external references to use in genetic or chemical datasets
-    if dset != "compound": # TODO Add databases to 
+    if dset != "compound": # TODO Add databases for compounds and ensure that 0-case works
         key_source_mapper = (("entrez", jcp_col, jcp_to_entrez),
                              ("omim", std_outname, std_to_omim),
                              ("genecards", std_outname, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
@@ -113,5 +113,4 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
 # %% Processing starts
 for dset in ("orf", "crispr", "compound"):
     tmp = generate_gallery(dset, write=True)
-    break
     
