@@ -30,8 +30,8 @@ from pathlib import Path
 
 import cupy as cp
 import polars as pl
-from jump_rr.concensus import (
-    get_concensus_meta_urls,
+from jump_rr.consensus import (
+    get_consensus_meta_urls,
     get_cycles,
     repeat_cycles,
 )
@@ -79,9 +79,9 @@ with cp.cuda.Device(1):  # Specify the GPU device
         dset_type = dset.removesuffix("_interpretable")
         precor = add_pert_type(precor, dataset=dset_type)
 
-        # %% Split data into med (concensus), meta and urls
+        # %% Split data into med (consensus), meta and urls
         # Note that we remove the negcons from these analysis, as they are used to produce p-values on significance.py
-        med, _, urls = get_concensus_meta_urls(
+        med, _, urls = get_consensus_meta_urls(
             precor.filter(pl.col("Metadata_pert_type") != "negcon"),
             url_colname="Metadata_placeholder",
         )

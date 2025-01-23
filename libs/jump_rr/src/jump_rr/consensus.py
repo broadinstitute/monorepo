@@ -5,7 +5,8 @@ from itertools import cycle
 
 import numpy as np
 import polars as pl
-from jump_rr.formatters import add_phenaid_url_col
+from jump_rr.consensus import get_range
+from jump_rr.formatters import add_phenaid_url_col, format_value
 from jump_rr.parse_features import get_feature_groups
 
 # Names
@@ -13,7 +14,7 @@ jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 
 
-def get_concensus_meta_urls(profiles: pl.DataFrame, url_colname: str) -> tuple:
+def get_consensus_meta_urls(profiles: pl.DataFrame, url_colname: str) -> tuple:
     """
     Compute aggregated median values and metadata with urls for a given dataframe.
 
@@ -29,22 +30,22 @@ def get_concensus_meta_urls(profiles: pl.DataFrame, url_colname: str) -> tuple:
     med : pl.DataFrame
         Dataframe containing aggregated median values.
     meta : pl.DataFrame
-        Dataframe containing metadata composed of cycling iterators for grouped contents during concensus.
+        Dataframe containing metadata composed of cycling iterators for grouped contents during consensus.
     urls : pl.DataFrame
-        Dataframe containing urls composed of cycling iterators for grouped contents during concensus.
+        Dataframe containing urls composed of cycling iterators for grouped contents during consensus.
 
     """
     profiles = add_phenaid_url_col(profiles, url_colname=url_colname)
 
     grouped = profiles.group_by(jcp_col, maintain_order=True)
     med = grouped.median()
-    meta = grouped.agg(pl.col("^Metadata_.*$").map_elements(cycle))
-    urls = grouped.agg(pl.col(url_colname).map_elements(cycle))
+    meta = grouped.agg(pl.col("^Metadata_.*$"))
+    # urls = grouped.agg(pl.col(url_colname).map_elements(cycle))
 
     for srs in meta.iter_columns():
         med.replace_column(med.columns.index(srs.name), srs)
 
-    return med, meta, urls
+    return med, meta
 
 
 def get_group_median(
@@ -85,7 +86,6 @@ def get_group_median(
 
     return grouped.median()
 
-
 def get_range(dataset: str) -> range:
     """
     Generate a range of indices based on the dataset.
@@ -112,50 +112,13 @@ def get_range(dataset: str) -> range:
     max_offset = (dataset == "compound") * (-3)
     rng = range(offset, 9 + offset + max_offset)
     return rng
-
-
-def get_cycles(dataset: str) -> cycle:
-    """
-    Obtain cycled ranges based on which dataset we are using.
-
-    Parameters
-    ----------
-    dataset : str
-        The input dataset string.
-
-    Returns
-    -------
-    cycles : Iterable[list[int]]
-        The calculated cycles. Iterable of lists containing indices.
-
-    Notes
-    -----
-    This function uses the get_range and cycle functions to generate cycled ranges.
-
-    """
-    return cycle(get_range(dataset))
-
-
-def repeat_cycles(n: int, dataset: str) -> np.ndarray:
-    """
-    Repeat cycles to iterate over multiple next() while keeping track of each individual cycle.
-
-    The main goal is to randomise the same range independently so we ensure that we are
-    displaying all the images of a perturbation independently of each other.
-
-    Parameters
-    ----------
-    n : int
-        Number of times to repeat the cycles.
-    dataset : str
-        Input dataset used to generate cycles.
-
-    Returns
-    -------
-    cycled_indices : ndarray
-        Array of repeated cycle indices.
-
-    """
-    cycles = get_cycles(dataset)
-    cycled_indices = np.repeat(cycles, n)
-    return cycled_indices
+    
+def add_sample_images(df:pl.DataFrame, meta_df:pl.DataFrame, col_outname:str, left_col: str = "JCP2022 ID", right_col: str = "JCP2022 ID", sorter_col:str = "modulo", seed:int=2) -> pl.DataFrame:
+    df = df.join_where(df_meta, pl.col("Metadata_JCP2022")==pl.col(left_col))
+    df = df.sample(fraction=1.0,shuffle=True, seed=seed).group_by((left_col, sorter_col), maintain_order=True).first()
+    df = df.with_columns(sample_site = pl.col(sorter_col) % max(get_range(dset))+ min(get_range(dset)))
+    df = df.with_columns( pl.format(
+                format_value("img", "phenaid", tuple("{}" for _ in range(8))),
+                *[pl.col(x) for _ in range(2) for x in ("Metadata_Source", "Metadata_Plate", "Metadata_Well", "sample_site")],).alias(col_outname)
+)
+    return df
