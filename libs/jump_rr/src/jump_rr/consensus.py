@@ -5,16 +5,11 @@ from itertools import cycle
 
 import numpy as np
 import polars as pl
-from jump_rr.consensus import get_range
 from jump_rr.formatters import add_phenaid_url_col, format_value
 from jump_rr.parse_features import get_feature_groups
 
-# Names
-jcp_short = "JCP2022"  # Shortened input data frame
-jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 
-
-def get_consensus_meta_urls(profiles: pl.DataFrame, url_colname: str) -> tuple:
+def get_consensus_meta_urls(profiles: pl.DataFrame, col:str) -> tuple:
     """
     Compute aggregated median values and metadata with urls for a given dataframe.
 
@@ -22,25 +17,22 @@ def get_consensus_meta_urls(profiles: pl.DataFrame, url_colname: str) -> tuple:
     ----------
     profiles : pl.DataFrame
         Input dataframe containing profile information.
-    url_colname : str
-        Name of the column in the dataframe that contains urls.
-
+    col : str
+        Name of the column to group by.
+    
     Returns
     -------
     med : pl.DataFrame
         Dataframe containing aggregated median values.
     meta : pl.DataFrame
         Dataframe containing metadata composed of cycling iterators for grouped contents during consensus.
-    urls : pl.DataFrame
-        Dataframe containing urls composed of cycling iterators for grouped contents during consensus.
 
     """
-    profiles = add_phenaid_url_col(profiles, url_colname=url_colname)
+    # profiles = add_phenaid_url_col(profiles, url_colname=url_colname)
 
-    grouped = profiles.group_by(jcp_col, maintain_order=True)
+    grouped = profiles.group_by(col, maintain_order=True)
     med = grouped.median()
     meta = grouped.agg(pl.col("^Metadata_.*$"))
-    # urls = grouped.agg(pl.col(url_colname).map_elements(cycle))
 
     for srs in meta.iter_columns():
         med.replace_column(med.columns.index(srs.name), srs)
@@ -113,10 +105,10 @@ def get_range(dataset: str) -> range:
     rng = range(offset, 9 + offset + max_offset)
     return rng
     
-def add_sample_images(df:pl.DataFrame, meta_df:pl.DataFrame, col_outname:str, left_col: str = "JCP2022 ID", right_col: str = "JCP2022 ID", sorter_col:str = "modulo", seed:int=2) -> pl.DataFrame:
-    df = df.join_where(df_meta, pl.col("Metadata_JCP2022")==pl.col(left_col))
+def add_sample_images(df:pl.DataFrame, meta_df:pl.DataFrame, rng:range, col_outname:str, left_col: str = "JCP2022 ID", right_col: str = "Metadata_JCP2022", sorter_col:str = "modulo", seed:int=2) -> pl.DataFrame:
+    df = df.join_where(meta_df, pl.col("Metadata_JCP2022")==pl.col(left_col))
     df = df.sample(fraction=1.0,shuffle=True, seed=seed).group_by((left_col, sorter_col), maintain_order=True).first()
-    df = df.with_columns(sample_site = pl.col(sorter_col) % max(get_range(dset))+ min(get_range(dset)))
+    df = df.with_columns(sample_site = pl.col(sorter_col) % max(rng)+ min(rng))
     df = df.with_columns( pl.format(
                 format_value("img", "phenaid", tuple("{}" for _ in range(8))),
                 *[pl.col(x) for _ in range(2) for x in ("Metadata_Source", "Metadata_Plate", "Metadata_Well", "sample_site")],).alias(col_outname)

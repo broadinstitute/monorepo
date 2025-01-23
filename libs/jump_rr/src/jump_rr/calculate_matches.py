@@ -30,7 +30,8 @@ import polars as pl
 import polars.selectors as cs
 from jump_rr.consensus import (
     get_consensus_meta_urls,
-    add_sample_images
+    add_sample_images,
+    get_range
 )
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites
@@ -72,7 +73,7 @@ with cp.cuda.Device(0):  # Specify the GPU device
         df = pl.read_parquet(get_dataset(dset))
 
         # %% add build url from individual wells
-        med, meta = get_consensus_meta_urls(df, url_colname="Metadata_placeholder")
+        med, meta = get_consensus_meta_urls(df, "Metadata_JCP2022")
 
         vals = cp.array(med.select(cs.by_dtype(pl.Float32)).to_numpy())
 
@@ -92,15 +93,18 @@ with cp.cuda.Device(0):  # Specify the GPU device
                 dist_col: cosine_dist[xs, ys].get(),
             }
         )
+        
+        # Add images for both queries and matches
         df_meta = df.select("^Metadata.*$")
-
         jcp_df = jcp_df.with_columns(modulo=pl.int_range(pl.len()).over("JCP2022 ID")%(n_vals_used*2))
         jcp_df = jcp_df.with_row_index()
-        side_a = add_sample_images(jcp_df, df_meta, img_col)
+        side_a = add_sample_images(jcp_df, df_meta, get_range(dset), img_col)
 
         jcp_df = jcp_df.with_columns(modulo=pl.int_range(pl.len()).over("Match JCP2022 ID")%(n_vals_used*2))
-        side_b = add_sample_images(jcp_df, df_meta, img_col)
-        
+        side_b = add_sample_images(jcp_df, df_meta, get_range(dset), match_img_col, left_col="Match JCP2022 ID")
+        jcp_cols = (jcp_short, match_jcp_col)
+        jcp_df = jcp_df.join(side_a.select(pl.col((*jcp_cols, img_col))), on=jcp_cols)
+        jcp_df = jcp_df.join(side_b.select(pl.col((*jcp_cols, match_img_col))), on=jcp_cols)
 
         # %% Add replicability
         jcp_df = add_replicability(
@@ -135,8 +139,8 @@ with cp.cuda.Device(0):  # Specify the GPU device
         order = [
             std_outname,
             match_col,
-            # img_col,
-            # match_img_col,
+            img_col,
+            match_img_col,
             dist_col,
             # ext_links_col,
             "Synonyms",
@@ -156,10 +160,8 @@ with cp.cuda.Device(0):  # Specify the GPU device
                                      )
                 jcp_translated = add_external_sites(jcp_translated, ext_links_col, key_source_mapper)
                 
-                order.insert(3, ext_links_col)
+                order.insert(5, ext_links_col)
                 
-        # pl.col(match_jcp_col).replace(jcp_ncbi_mapper).alias(ext_links_col),
-        
         if dist_as_sim:  # Convert cosine distance to similarity
             jcp_translated = jcp_translated.with_columns(
                 (1 - pl.col(dist_col))
