@@ -10,6 +10,33 @@ import polars as pl
 
 @cache
 def get_url_label(key: str) -> tuple[str, str]:
+    """
+    Retrieve a URL template and label for a given url source (vendor).
+
+    Parameters
+    ----------
+    key : str
+        The identifier of the vendor (e.g., 'entrez', 'genecards', etc.).
+
+    Returns
+    -------
+    tuple[str, str]
+        A tuple containing the URL template and the label for the specified vendor.
+
+    Notes
+    -----
+    The supported vendors are:
+    - entrez: NCBI entry. Requires an Entrez Id
+    - genecards: GeneCards entry. Requires a gene symbol.
+    - omim: OMIM entry. Requires an OMIM id.
+    - ensembl: Ensembl entry. Requires an Ensmbl id.
+    - phenaid: Images from the Phenaid platform.
+
+    Raises
+    ------
+    KeyError
+        If the provided key is not a valid vendor identifier.
+    """
     vendors = dict(
         entrez=("https://www.ncbi.nlm.nih.gov/gene/{}", "NCBI"),
         genecards=(
@@ -18,8 +45,6 @@ def get_url_label(key: str) -> tuple[str, str]:
         ),
         omim=("https://www.omim.org/entry/{}", "OMIM"),
         ensembl=("https://useast.ensembl.org/Homo_sapiens/Gene/Splice?g={}", "Ensembl"),
-        # ugb="USCB Genome Browser",
-        # url='"https://phenaid.ardigen.com/static-jumpcpexplorer/images/{}_{{}}.jpg"',
         phenaid=(
             "https://phenaid.ardigen.com/static-jumpcpexplorer/images/{}/{}/{}_{}.jpg",
             None,
@@ -27,8 +52,28 @@ def get_url_label(key: str) -> tuple[str, str]:
     )
     return vendors[key]
 
-
 def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str, str]:
+    """
+    Construct a dictionary containing URL and label information.
+
+    Parameters
+    ----------
+    fmt : str
+        Format of the output dictionary (e.g., "href" or "img").
+    vendor : str
+        Vendor identifier.
+    value : str or int or Iterable
+        Value to be used in constructing the URL.
+
+    Returns
+    -------
+    dict[str, str]
+        Dictionary containing URL and label information.
+
+    Notes
+    -----
+    The function uses the `get_url_label` function to obtain the URL template and label for the given vendor.
+    """
     url_template, label = get_url_label(vendor)
     if isinstance(value, (str, int)):
         url = url_template.format(value)
@@ -40,13 +85,29 @@ def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str
         case "img":
             return {"img": url, "href": url, "width": 200}
 
-
 @cache
-def format_value(fmt: str, vendor: str, value: str or int):
+def format_value(fmt: str, vendor: str, value: str or int) -> str:
+    """
+    Formats a given url according to a specific format and url source (vendor)
+    and replaces a placeholder value.
+
+    Parameters
+    ----------
+    fmt : str
+        The format string.
+    vendor : str
+        The vendor name. See `get_url_label` for available vendors.
+    value : str or int
+        The value to be formatted.
+
+    Returns
+    -------
+    html : str
+        The formatted value as an HTML string.
+    """
     d = build_dict(fmt, vendor, value)
     html = str(json.dumps(d))
     return html
-
 
 def add_phenaid_url_col(
     profiles: pl.DataFrame, url_colname: str = "Metadata_image"
@@ -79,3 +140,52 @@ def add_phenaid_url_col(
         .alias(url_colname)
     )
     return profiles
+    
+def add_external_sites(df: pl.DataFrame, ext_links_col: str, key_source_mapper:tuple[str,str,dict[str,str]] ) -> pl.DataFrame:
+    """
+    Adds external site information to a given DataFrame.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        Input DataFrame containing standard identifiers.
+    std_outname : str
+        Name of the column in the output DataFrame that will contain the standard identifier.
+    entrez_col : str, optional
+        Name of the column in the input DataFrame that contains Entrez IDs.
+    ext_links_col : str, optional
+        Name of the column in the output DataFrame that will contain links to external sites.
+
+    Returns
+    -------
+    pl.DataFrame
+        The input DataFrame with additional columns containing links to external sites.
+
+    Notes
+    -----
+    The function uses a dictionary to map standard identifiers to their corresponding 
+    external site URLs. It then constructs the URLs by replacing the standard identifiers 
+    in the input DataFrame and aggregating them into a single column.
+    """
+    # Add other names and links that depend on standard ids
+    df = df.with_columns(
+        [
+            pl.col(source).replace_strict(mapper, default="").alias(key)
+            for key, source, mapper in key_source_mapper
+        ]
+    )
+
+    # Format all links to create the column that links to external sites
+
+
+    df = df.with_columns(
+        pl.concat_str(
+            [
+                pl.format(format_value("href", key, "{}"), pl.col(key))
+                for key, _, _ in key_source_mapper
+            ],
+        separator=", "
+        ).alias(ext_links_col),
+
+    )
+    return df

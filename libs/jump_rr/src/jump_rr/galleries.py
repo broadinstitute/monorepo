@@ -20,7 +20,7 @@ from pathlib import Path
 import polars as pl
 from jump_rr.concensus import get_range
 from jump_rr.datasets import get_dataset
-from jump_rr.formatters import format_value
+from jump_rr.formatters import add_external_sites, format_value
 from jump_rr.mappers import get_external_mappers
 
 # %% Setup Local
@@ -31,6 +31,7 @@ output_dir = Path("./databases")
 jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
+entrez_col = "entrez" #transient col to hold entrez id
 ext_links_col = "External Links"  # Link to external resources (e.g., NCBI)
 
 
@@ -61,7 +62,7 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
 
     # %% Translate genes names to standard
     collected_df = df.select("Metadata_JCP2022").unique().collect()
-    jcp_std_mapper, jcp_entrez_mapper, std_to_mim, std_to_ensembl = (
+    jcp_to_std, jcp_to_entrez, std_to_omim, std_to_ensembl = (
         get_external_mappers(collected_df, "Metadata_JCP2022", dset)
     )
 
@@ -76,23 +77,30 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
             ).alias(f"Site {site}")
             for site in get_range(dset)
         ],
-        pl.col(jcp_col).replace_strict(jcp_std_mapper, default="").alias(std_outname),
-        pl.col(jcp_col).replace(jcp_entrez_mapper).alias("entrez"),
+        pl.col(jcp_col).replace_strict(jcp_to_std, default="").alias(std_outname),
+        # pl.col(jcp_col).replace(jcp_entrez_mapper).alias(entrez_col),
     )
-
+    
     # Add the Plate id for convenient filtering of controls
     order = [
-        pl.col(x)
-        for x in (
             std_outname,
-            ext_links_col,
             jcp_col,
             "^Site.*$",
             "Metadata_Source",
             "Metadata_Plate",
-        )
-    ]
-    df = df.select(order).collect().rename(lambda c: c.removeprefix("Metadata_"))
+        ]
+
+    # Define the external references to use in genetic or chemical datasets
+    if dset != "compound": # TODO Add databases to 
+        key_source_mapper = (("entrez", jcp_col, jcp_to_entrez),
+                             ("omim", std_outname, std_to_omim),
+                             ("genecards", std_outname, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
+                             ("ensembl", std_outname, std_to_ensembl),
+                             )
+        df = add_external_sites(df, ext_links_col, key_source_mapper)
+        order.insert(1, ext_links_col)
+
+    df = df.select(pl.col(order)).collect().rename(lambda c: c.removeprefix("Metadata_"))
 
     # %% Write results
     if write:
@@ -106,33 +114,4 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
 for dset in ("orf", "crispr", "compound"):
     tmp = generate_gallery(dset, write=True)
     break
-
-
-def add_external_sites(df: pl.DataFrame, std_outname: str, entrez_col: str = "entrez"):
-    # Add other names and links that depend on standard ids
-    external_sites = dict(omim=std_to_mim, ensembl=std_to_ensembl)
-    df = df.with_columns(
-        [
-            pl.col(std_outname).replace_strict(v, default="").alias(k)
-            for k, v in external_sites.items()
-        ]
-    )
-
-    # Format all links to create the column that links to external sites
-
-    cols_to_aggregate = (
-        ("entrez", "entrez"),
-        ("genecards", std_outname),
-        *list(zip(external_sites, external_sites)),
-    )
-
-    df = df.with_columns(
-        pl.concat_str(
-            [
-                pl.format(format_value("href", k, "{}"), pl.col(v))
-                for k, v in cols_to_aggregate
-            ]
-        ).alias(ext_links_col),
-        separator=", ",
-    )
-    return df
+    
