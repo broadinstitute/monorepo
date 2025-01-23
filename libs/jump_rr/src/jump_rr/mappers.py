@@ -86,14 +86,19 @@ def get_external_mappers(
     """
     uniq = tuple(profiles.get_column(col).unique())
     jcp_to_std, jcp_to_entrez = get_mapper(uniq, dset)
-    # entrez_ids = pl.DataFrame(tuple(jcp_to_entrez.values()))
+    assert len(jcp_to_std), f"No mappers were found {col=}, {dset=}"
+    
+    entrez_to_omim = {}
+    entrez_to_ensembl = {}
+
     other_ids = pl.DataFrame(
         {"entrez": jcp_to_entrez.values(), "std": jcp_to_std.values()}
     )
-    other_ids = other_ids.filter(~pl.col("entrez").str.contains("[A-Z]")).unique()
-    entrez_to_omim, entrez_to_ensembl = get_omim_mappers(other_ids)
 
-    assert len(jcp_to_std), f"No mappers were found {col=}, {dset=}"
+    if any(jcp_to_entrez.values()):
+        other_ids = other_ids.filter(~pl.col("entrez").str.contains("[A-Z]")).unique()
+        entrez_to_omim, entrez_to_ensembl = get_omim_mappers(other_ids)
+
     return jcp_to_std, jcp_to_entrez, entrez_to_omim, entrez_to_ensembl
 
 
