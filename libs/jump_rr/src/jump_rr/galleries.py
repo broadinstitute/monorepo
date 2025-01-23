@@ -18,7 +18,7 @@
 from pathlib import Path
 
 import polars as pl
-from jump_rr.concensus import get_range
+from jump_rr.consensus import get_range
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites, format_value
 from jump_rr.mappers import get_external_mappers
@@ -78,7 +78,6 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
             for site in get_range(dset)
         ],
         pl.col(jcp_col).replace_strict(jcp_to_std, default="").alias(std_outname),
-        # pl.col(jcp_col).replace(jcp_entrez_mapper).alias(entrez_col),
     )
     
     # Add the Plate id for convenient filtering of controls

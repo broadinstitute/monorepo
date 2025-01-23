@@ -86,7 +86,7 @@ def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str
             return {"img": url, "href": url, "width": 200}
 
 @cache
-def format_value(fmt: str, vendor: str, value: str or int) -> str:
+def format_value(fmt: str, vendor: str, value: str or int or Iterable) -> str:
     """
     Formats a given url according to a specific format and url source (vendor)
     and replaces a placeholder value.
@@ -141,13 +141,13 @@ def add_phenaid_url_col(
     )
     return profiles
     
-def add_external_sites(df: pl.DataFrame, ext_links_col: str, key_source_mapper:tuple[str,str,dict[str,str]] ) -> pl.DataFrame:
+def add_external_sites(df: pl.DataFrame or pl.LazyFrame, ext_links_col: str, key_source_mapper:tuple[str,str,dict[str,str]] ) -> pl.DataFrame or pl.LazyFrame:
     """
     Adds external site information to a given DataFrame.
 
     Parameters
     ----------
-    df : pl.DataFrame
+    df : pl.DataFrame or pl.LazyFrame
         Input DataFrame containing standard identifiers.
     std_outname : str
         Name of the column in the output DataFrame that will contain the standard identifier.
