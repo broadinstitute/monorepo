@@ -5,7 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a>",
+                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found on broad.io/orf_feature",
                     "title": "ORF Feature Ranking",
                     "columns": {
                         "Compartment": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
@@ -17,11 +17,11 @@
                         "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
                         "Median": "Median value of the feature for the perturbation when aggregating all replicates.",
                         "Phenotypic activity": "Adjusted p-value (*) indicating the statistical significance of the difference between the perturbation's morphological profile and its corresponding control profile. Lower values suggest stronger phenotypic effects. An empty value indicates that the value was discarded due to low infection efficiency.",
-                        "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
                         "Gene Rank": "The rank of the feature for a given gene when compared to that feature in all other genes.",
                         "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
                         "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
                         "Resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
+                        "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
                         "(*)": "Benjamini-Hochberg FDR correction"
                     }
                 }
