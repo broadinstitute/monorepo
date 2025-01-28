@@ -1,1 +1,23 @@
-{"databases": {"data": {"tables": {"content": {"title": "CRISPR Gallery"}}}}}
+{
+    "databases": {
+        "data": {
+            "source": "JUMP Consortium",
+            "source_url": "http://broad.io/jump",
+            "tables": {
+                "content": {
+                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found on broad.io/crispr_gallery",
+                    "title": "CRISPR None",
+                    "columns": {
+                        "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
+                        "Resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
+                        "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Source": "Identifier of the partner that produced the data numbered between 1 and 15.",
+                        "Plate": "Identifier of the plate.",
+                        "Well": "Identifier of the well. Generally 384-well plates, ranging from A01 to P24.",
+                        "Site X": "Identifier of the Field of View (FoV). Ranging from 0 to 9 (depending on the dataset)."
+                    }
+                }
+            }
+        }
+    }
+}
