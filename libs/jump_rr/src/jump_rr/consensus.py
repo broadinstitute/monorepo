@@ -1,11 +1,9 @@
 #!/usr/bin/env jupyter
 """Functions to group multiple wells."""
 
-from itertools import cycle
 
-import numpy as np
 import polars as pl
-from jump_rr.formatters import add_phenaid_url_col, format_value
+from jump_rr.formatters import format_value
 from jump_rr.parse_features import get_feature_groups
 
 
@@ -19,7 +17,7 @@ def get_consensus_meta_urls(profiles: pl.DataFrame, col:str) -> tuple:
         Input dataframe containing profile information.
     col : str
         Name of the column to group by.
-    
+
     Returns
     -------
     med : pl.DataFrame
@@ -104,13 +102,45 @@ def get_range(dataset: str) -> range:
     max_offset = (dataset == "compound") * (-3)
     rng = range(offset, 9 + offset + max_offset)
     return rng
-    
-def add_sample_images(df:pl.DataFrame, meta_df:pl.DataFrame, rng:range, col_outname:str, left_col: str = "JCP2022 ID", right_col: str = "Metadata_JCP2022", sorter_col:str = "modulo", seed:int=2) -> pl.DataFrame:
-    df = df.join_where(meta_df, pl.col("Metadata_JCP2022")==pl.col(left_col))
-    df = df.sample(fraction=1.0,shuffle=True, seed=seed).group_by((left_col, sorter_col), maintain_order=True).first()
-    df = df.with_columns(sample_site = pl.col(sorter_col) % max(rng)+ min(rng))
-    df = df.with_columns( pl.format(
-                format_value("img", "phenaid", tuple("{}" for _ in range(8))),
-                *[pl.col(x) for _ in range(2) for x in ("Metadata_Source", "Metadata_Plate", "Metadata_Well", "sample_site")],).alias(col_outname)
-)
+def add_sample_images(df: pl.DataFrame, meta_df: pl.DataFrame, rng: range, col_outname: str, left_col: str = "JCP2022 ID", right_col: str = "Metadata_JCP2022", sorter_col: str = "modulo", seed: int = 2) -> pl.DataFrame:
+    """
+    Add sample images to a Polars DataFrame.
+
+    This function takes in two DataFrames, `df` and `meta_df`, as well as a range object `rng`. It joins the two DataFrames based on
+    the columns specified by `left_col` and `right_col`, then samples the resulting DataFrame. The sampled DataFrame is then
+    grouped by the columns specified by `left_col` and `sorter_col`, and the first row of each group is selected.
+
+    Parameters
+    ----------
+    df : pl.DataFrame
+        The input DataFrame.
+    meta_df : pl.DataFrame
+        The metadata DataFrame to join with the input DataFrame.
+    rng : range
+        A range object used to generate sample site values.
+    col_outname : str
+        The name of the output column.
+    left_col : str, optional
+        The column in `df` to use for joining with `meta_df`. Defaults to "JCP2022 ID".
+    right_col : str, optional
+        The column in `meta_df` to use for joining with `df`. Defaults to "Metadata_JCP2022".
+    sorter_col : str, optional
+        The column to use for sorting the sampled DataFrame. Defaults to "modulo".
+    seed : int, optional
+        The seed to use for shuffling the DataFrame. Defaults to 2.
+
+    Returns
+    -------
+    pl.DataFrame
+        The resulting DataFrame with sample images added.
+
+    """
+    df = df.with_columns(modulo=pl.int_range(pl.len()).over(left_col))
+    df = df.join_where(meta_df, pl.col(left_col) == pl.col(right_col))
+    df = df.sample(fraction=1.0, shuffle=True, seed=seed).group_by((left_col, sorter_col), maintain_order=True).first()
+    df = df.with_columns(sample_site=pl.col(sorter_col) % max(rng) + min(rng))
+    df = df.with_columns(pl.format(
+        format_value("img", "phenaid", tuple("{}" for _ in range(8))),
+        *[pl.col(x) for _ in range(2) for x in ("Metadata_Source", "Metadata_Plate", "Metadata_Well", "sample_site")],
+    ).alias(col_outname))
     return df

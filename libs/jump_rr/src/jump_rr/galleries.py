@@ -32,7 +32,7 @@ jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
 entrez_col = "entrez" #transient col to hold entrez id
-ext_links_col = "External Links"  # Link to external resources (e.g., NCBI)
+ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
 
 
 def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
@@ -79,7 +79,7 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
         ],
         pl.col(jcp_col).replace_strict(jcp_to_std, default="").alias(std_outname),
     )
-    
+
     # Add the Plate id for convenient filtering of controls
     order = [
             std_outname,
@@ -111,5 +111,5 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
 
 # %% Processing starts
 for dset in ("orf", "crispr", "compound"):
-    tmp = generate_gallery(dset, write=True)
-    
+    tmp = generate_gallery(dset, write=True
+)
