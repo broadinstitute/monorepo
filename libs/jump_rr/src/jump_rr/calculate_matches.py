@@ -134,7 +134,6 @@ with cp.cuda.Device(1):  # Specify the GPU device
             img_col,
             match_img_col,
             dist_col,
-            # ext_links_col,
             "Synonyms",
             jcp_short,
             match_jcp_col,
@@ -145,12 +144,6 @@ with cp.cuda.Device(1):  # Specify the GPU device
         if dset!="compound":
             # Define the external references to use in genetic or chemical datasets
             if dset != "compound": # TODO Add databases for compounds and ensure that 0-case works
-                # To match
-                # key_source_mapper = (("entrez", jcp_short, jcp_to_entrez),
-                #                      ("omim", std_outname, std_to_omim),
-                #                      ("genecards", std_outname, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
-                #                      ("ensembl", std_outname, std_to_ensembl),
-                #                      )
                 key_source_mapper = (("entrez", match_jcp_col, jcp_to_entrez),
                                      ("omim", match_col, std_to_omim),
                                      ("genecards", match_col, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
