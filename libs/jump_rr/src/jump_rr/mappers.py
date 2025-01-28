@@ -87,7 +87,7 @@ def get_external_mappers(
     uniq = tuple(profiles.get_column(col).unique())
     jcp_to_std, jcp_to_entrez = get_mapper(uniq, dset)
     assert len(jcp_to_std), f"No mappers were found {col=}, {dset=}"
-    
+
     entrez_to_omim = {}
     entrez_to_ensembl = {}
 
@@ -129,9 +129,21 @@ def get_synonym_mapper() -> dict[str, str]:
     res = nonempty.select(pl.col(["GeneID", "Synonyms"]).cast(str))
     return dict(res.iter_rows())
 
-
-# %%
 def get_omim_mappers(other_ids: pl.DataFrame) -> tuple[dict, dict]:
+    """
+    Retrieve omim and ensembl mappers from a dataframe.
+
+    Parameters
+    ----------
+    other_ids : pl.DataFrame
+        A DataFrame containing gene identifiers.
+
+    Returns
+    -------
+    tuple[dict, dict]
+        Two dictionaries containing the mapped OMIM data.
+
+    """
     filepath = "https://www.omim.org/static/omim/data/mim2gene.txt"
 
     with duckdb.connect("main"):

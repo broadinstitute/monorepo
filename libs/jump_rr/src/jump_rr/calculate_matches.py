@@ -28,11 +28,7 @@ import cupyx.scipy.spatial as spatial
 import numpy as np
 import polars as pl
 import polars.selectors as cs
-from jump_rr.consensus import (
-    get_consensus_meta_urls,
-    add_sample_images,
-    get_range
-)
+from jump_rr.consensus import add_sample_images, get_consensus_meta_urls, get_range
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites
 from jump_rr.index_selection import get_bottom_top_indices
@@ -64,16 +60,16 @@ match_rep_col = f"{rep_col} {match_col}"
 dist_col = "Perturbation-Match Similarity"  # Metric name
 ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NCBI)
 
-        
 
-with cp.cuda.Device(0):  # Specify the GPU device
+
+with cp.cuda.Device(1):  # Specify the GPU device
     # %% Processing starts
     for dset in datasets:
         # %% Load Metadata
         df = pl.read_parquet(get_dataset(dset))
 
         # %% add build url from individual wells
-        med, meta = get_consensus_meta_urls(df, "Metadata_JCP2022")
+        med, _ = get_consensus_meta_urls(df, "Metadata_JCP2022")
 
         vals = cp.array(med.select(cs.by_dtype(pl.Float32)).to_numpy())
 
@@ -93,15 +89,11 @@ with cp.cuda.Device(0):  # Specify the GPU device
                 dist_col: cosine_dist[xs, ys].get(),
             }
         )
-        
+
         # Add images for both queries and matches
         df_meta = df.select("^Metadata.*$")
-        jcp_df = jcp_df.with_columns(modulo=pl.int_range(pl.len()).over("JCP2022 ID")%(n_vals_used*2))
-        jcp_df = jcp_df.with_row_index()
-        side_a = add_sample_images(jcp_df, df_meta, get_range(dset), img_col)
-
-        jcp_df = jcp_df.with_columns(modulo=pl.int_range(pl.len()).over("Match JCP2022 ID")%(n_vals_used*2))
-        side_b = add_sample_images(jcp_df, df_meta, get_range(dset), match_img_col, left_col="Match JCP2022 ID")
+        side_a = add_sample_images(jcp_df, df_meta, get_range(dset), img_col, left_col="JCP2022 ID", right_col="Metadata_JCP2022")
+        side_b = add_sample_images(jcp_df, df_meta, get_range(dset), match_img_col, left_col="Match JCP2022 ID", right_col="Metadata_JCP2022")
         jcp_cols = (jcp_short, match_jcp_col)
         jcp_df = jcp_df.join(side_a.select(pl.col((*jcp_cols, img_col))), on=jcp_cols)
         jcp_df = jcp_df.join(side_b.select(pl.col((*jcp_cols, match_img_col))), on=jcp_cols)
@@ -125,7 +117,7 @@ with cp.cuda.Device(0):  # Specify the GPU device
         jcp_to_std, jcp_to_entrez, std_to_omim, std_to_ensembl = (
         get_external_mappers(df, jcp_col, dset)
     )
-        
+
         jcp_translated = jcp_df.with_columns(
             pl.col(jcp_short).replace(jcp_to_std).alias(std_outname),
             pl.col(match_jcp_col).replace(jcp_to_std).alias(match_col),
@@ -153,18 +145,24 @@ with cp.cuda.Device(0):  # Specify the GPU device
         if dset!="compound":
             # Define the external references to use in genetic or chemical datasets
             if dset != "compound": # TODO Add databases for compounds and ensure that 0-case works
-                key_source_mapper = (("entrez", jcp_short, jcp_to_entrez),
-                                     ("omim", std_outname, std_to_omim),
-                                     ("genecards", std_outname, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
-                                     ("ensembl", std_outname, std_to_ensembl),
+                # To match
+                # key_source_mapper = (("entrez", jcp_short, jcp_to_entrez),
+                #                      ("omim", std_outname, std_to_omim),
+                #                      ("genecards", std_outname, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
+                #                      ("ensembl", std_outname, std_to_ensembl),
+                #                      )
+                key_source_mapper = (("entrez", match_jcp_col, jcp_to_entrez),
+                                     ("omim", match_col, std_to_omim),
+                                     ("genecards", match_col, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
+                                     ("ensembl", match_col, std_to_ensembl),
                                      )
                 jcp_translated = add_external_sites(jcp_translated, ext_links_col, key_source_mapper)
-                
+
                 order.insert(5, ext_links_col)
-                
+
         if dist_as_sim:  # Convert cosine distance to similarity
             jcp_translated = jcp_translated.with_columns(
-                (1 - pl.col(dist_col))
+                1 - pl.col(dist_col)
             )
 
         matches_translated = jcp_translated.select(order)

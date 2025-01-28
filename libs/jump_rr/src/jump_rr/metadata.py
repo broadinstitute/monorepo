@@ -5,9 +5,9 @@ To get columns:
 import polars as pl.
 
 paths = {
-    "simile": "https://zenodo.org/api/records/11188477/files/crispr.parquet/content#/data/content",
-    "feature": "https://zenodo.org/api/records/11188477/files/crispr_features.parquet/content#/data/content",
-    "gallery": "https://zenodo.org/api/records/11188477/files/orf_gallery.parquet/content#/data/content",
+    "simile": "https://zenodo.org/api/records/14751826/files/crispr.parquet/content#/data/content",
+    "feature": "https://zenodo.org/api/records/14751826/files/crispr_features.parquet/content#/data/content",
+    "gallery": "https://zenodo.org/api/records/14751826/files/orf_gallery.parquet/content#/data/content",
 }
 columns = sorted(set(col for x in paths.values() for col in pl.scan_parquet(x).columns))
 """
@@ -98,7 +98,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
                 "source_url": "http://broad.io/jump",
                 "tables": {
                     "content": {
-                        "description_html": f"{prefix}<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a>",
+                        "description_html": f"{prefix}<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found on broad.io/{dset if table_type=='matches' else '_'.join((dset,table_type))}",
                         "title": f"{dset.upper()} {table_type_to_suffix(table_type)}",
                     }
                 },

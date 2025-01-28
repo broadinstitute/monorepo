@@ -31,12 +31,12 @@ from pathlib import Path
 import cupy as cp
 import polars as pl
 from jump_rr.consensus import (
+    add_sample_images,
     get_consensus_meta_urls,
-    get_cycles,
-    repeat_cycles,
+    get_range,
 )
 from jump_rr.datasets import get_dataset
-from jump_rr.formatters import format_val
+from jump_rr.formatters import add_external_sites
 from jump_rr.index_selection import get_ranks
 from jump_rr.mappers import get_external_mappers, get_synonym_mapper
 from jump_rr.metadata import write_metadata
@@ -63,7 +63,7 @@ jcp_short = "JCP2022 ID"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
-url_col = "Gene/Compound example image"
+img_col = "Gene/Compound example image"
 rep_col = "Phenotypic activity"  # Column containing reproducibility
 val_col = "Median"  # Value col
 stat_col = "Feature significance"
@@ -81,11 +81,10 @@ with cp.cuda.Device(1):  # Specify the GPU device
 
         # %% Split data into med (consensus), meta and urls
         # Note that we remove the negcons from these analysis, as they are used to produce p-values on significance.py
-        med, _, urls = get_consensus_meta_urls(
+        med, _ = get_consensus_meta_urls(
             precor.filter(pl.col("Metadata_pert_type") != "negcon"),
-            url_colname="Metadata_placeholder",
+            "Metadata_JCP2022",
         )
-        urls = urls.rename({"Metadata_placeholder": url_col})
 
         # This function also performs a filter to remove controls (as there are too many)
         corrected_pvals = pvals_from_path(get_dataset(dset), dataset=dset_type)
@@ -107,10 +106,6 @@ with cp.cuda.Device(1):  # Specify the GPU device
             feat_decomposition,
         )
 
-        url_vals = urls.get_column(url_col).to_numpy()
-        cycles = get_cycles(dset)
-        cycled_indices = repeat_cycles(len(xs), dset)
-
         # %% Build Data Frame
         df = pl.DataFrame(
             {
@@ -123,20 +118,18 @@ with cp.cuda.Device(1):  # Specify the GPU device
                 stat_col: phenact[xs, ys].get(),
                 val_col: median_vals[xs, ys].get(),
                 jcp_short: med[jcp_col][ys],
-                url_col: [  # Use indices to fetch matches
-                    format_val("img", (img_src, img_src))
-                    for url, idx in zip(url_vals[ys], cycled_indices[ys])
-                    if (img_src := next(url).format(next(idx)))
-                ],
                 rank_gene_col: ranks[1],
                 rank_feat_col: ranks[0],
             }
         )
 
-        (
-            jcp_std_mapper,
-            jcp_entrez_mapper,
-        ) = get_external_mappers(df, jcp_short, dset.removesuffix("_interpretable"))
+        # Add images
+        df_meta = precor.select("^Metadata.*$")
+        df = add_sample_images(df, df_meta, get_range(dset.removesuffix("_interpretable")), img_col, left_col="JCP2022 ID", right_col="Metadata_JCP2022")
+
+        jcp_to_std, jcp_to_entrez, std_to_omim, std_to_ensembl = (
+        get_external_mappers(precor, jcp_col, dset.removesuffix("_interpretable"))
+    )
 
         # Add phenotypic activity from a previously-calculated
         df = add_replicability(
@@ -145,8 +138,8 @@ with cp.cuda.Device(1):  # Specify the GPU device
 
         # Add aliases and external links
         jcp_translated = df.with_columns(
-            pl.col(jcp_short).replace(jcp_std_mapper).alias(std_outname),
-            pl.col(jcp_short).replace(jcp_external_mapper).alias(ext_links_col),
+            pl.col(jcp_short).replace(jcp_to_std).alias(std_outname),
+            # pl.col(jcp_short).replace(jcp_to_external).alias(ext_links_col),
             pl.col(jcp_short)  # Add synonyms
             .replace(jcp_to_entrez)  # Map to entrez ID
             .replace(get_synonym_mapper())  # Map synonyms
@@ -158,16 +151,26 @@ with cp.cuda.Device(1):  # Specify the GPU device
             *decomposed_feats.columns,
             stat_col,
             std_outname,
-            url_col,
+            img_col,
             val_col,
             rep_col,
             rank_gene_col,
             rank_feat_col,
             jcp_short,
-            ext_links_col,
+            #ext_links_col,
             "Synonyms",
         ]
-        sorted_df = jcp_translated.select(order)
+
+        key_source_mapper = (("entrez", jcp_short, jcp_to_entrez),
+                             ("omim", std_outname, std_to_omim),
+                             ("genecards", std_outname, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
+                             ("ensembl", std_outname, std_to_ensembl),
+                             )
+        w_external_sites = add_external_sites(jcp_translated, ext_links_col, key_source_mapper)
+        order.insert(-1, ext_links_col)
+
+
+        sorted_df = w_external_sites.select(order)
 
         # Output
         output_dir.mkdir(parents=True, exist_ok=True)
