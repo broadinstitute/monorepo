@@ -41,6 +41,10 @@ _DESCRIPTIONS = {
     "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
     "Gene Rank": "The rank of the feature for a given gene when compared to that feature in all other genes.",
     "Match differential activity": "P-value indicating the statistical significance of the difference between the perturbation's morphological profile and its closest match's profile. Lower values suggest stronger dissimilarity between the perturbation and its best match.",  # <2024-07-17 Wed> This is currently unused
+    "Source": "Identifier of the partner that produced the data numbered between 1 and 15.",
+    "Plate": "Identifier of the plate.",
+    "Well": "Identifier of the well. Generally 384-well plates, ranging from A01 to P24.",
+    "Site X": "Identifier of the Field of View (FoV). Ranging from 0 to 9 (depending on the dataset).",
     "(*)": "Benjamini-Hochberg FDR correction",
 }
 
@@ -65,7 +69,7 @@ def get_col_desc(key: str) -> str:
     FIXME: Add docs.
 
     """
-    return _DESCRIPTIONS[key]
+    return _DESCRIPTIONS.get(key)
 
 
 def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
@@ -82,14 +86,15 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
         Names of the columns to insert (pass the columns of the
         dataframe in the desired order).
 
-    Examples
-    --------
-    FIXME: Add docs.
-
     """
     prefix = ""
     if table_type == "matches":
         prefix = "Only top 50 matches for each perturbation are shown. "
+
+    if table_type != "gallery": # Add statistical method for non-galleries
+        valid_names = (*colnames, ("(*)"))
+    else: # Reduce "Site X' redundancy for galleries
+        valid_names = (*[x for x in colnames if not x.startswith("Site")], "Site X")
 
     data = {
         "databases": {
@@ -105,12 +110,14 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
             }
         }
     }
+
+
     with open(
         str(files("jump_rr") / ".." / ".." / "metadata" / f"{dset}_{table_type}.json"),
         "w",
     ) as f:
         data["databases"]["data"]["tables"]["content"]["columns"] = {
-            x: get_col_desc(x) for x in (*colnames, "(*)")
+            x: get_col_desc(x) for x in valid_names
         }
 
         json.dump(data, f, indent=4)

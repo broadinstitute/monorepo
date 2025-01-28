@@ -22,48 +22,27 @@ from jump_rr.consensus import get_range
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites, format_value
 from jump_rr.mappers import get_external_mappers
+from jump_rr.metadata import write_metadata
 
 # %% Setup Local
 ## Paths
 output_dir = Path("./databases")
 
 ## Column names
-jcp_short = "JCP2022"  # Shortened input data frame
-jcp_col = f"Metadata_{jcp_short}"  # Traditional JUMP metadata colname
+jcp_short = "JCP2022 ID"  # Shortened input data frame
+jcp_col = "Metadata_JCP2022"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
 entrez_col = "entrez" #transient col to hold entrez id
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
 
-
-def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
-    """
-    Generate a gallery from a remote dataset using only its.
-
-    Parameters
-    ----------
-    dset : str
-        The name of the dataset.
-    write : bool, optional
-        Whether to write the results to a file (default is True).
-
-    Returns
-    -------
-    df : pl.DataFrame
-        A DataFrame containing the generated gallery.
-
-    Notes
-    -----
-    This function loads metadata from a parquet file, translates gene names to standard,
-    formats existing columns into #site urls, wraps the urls into html, and writes the results.
-
-    """
+for dset in ("orf", "crispr", "compound"):
     # %% Load Metadata
     df = pl.scan_parquet(get_dataset(dset, return_pooch=False))
 
     # %% Translate genes names to standard
-    collected_df = df.select("Metadata_JCP2022").unique().collect()
+    collected_df = df.select(jcp_col).unique().collect()
     jcp_to_std, jcp_to_entrez, std_to_omim, std_to_ensembl = (
-        get_external_mappers(collected_df, "Metadata_JCP2022", dset)
+        get_external_mappers(collected_df, jcp_col, dset)
     )
 
     df = df.with_columns(  # Wrap the urls into html
@@ -87,6 +66,7 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
             "^Site.*$",
             "Metadata_Source",
             "Metadata_Plate",
+            "Metadata_Well",
         ]
 
     # Define the external references to use in genetic or chemical datasets
@@ -99,17 +79,16 @@ def generate_gallery(dset: str, write: bool = True) -> pl.DataFrame:
         df = add_external_sites(df, ext_links_col, key_source_mapper)
         order.insert(1, ext_links_col)
 
-    df = df.select(pl.col(order)).collect().rename(lambda c: c.removeprefix("Metadata_"))
+    # Replace Metadata_JCP2022 ID to JCP2022 ID
+    df = df.select(pl.col(order)).collect().rename(lambda c: c.removeprefix("Metadata_")).rename({"JCP2022":"JCP2022 ID"})
 
     # %% Write results
-    if write:
-        output_dir.mkdir(parents=True, exist_ok=True)
-        final_output = output_dir / f"{dset}_gallery.parquet"
-        df.write_parquet(final_output, compression="zstd")
-    return df
+    output_dir.mkdir(parents=True, exist_ok=True)
+    final_output = output_dir / f"{dset}_gallery.parquet"
+    df.write_parquet(final_output, compression="zstd")
+
+    # Update metadata
+    write_metadata(dset, "gallery", df.columns)
 
 
-# %% Processing starts
-for dset in ("orf", "crispr", "compound"):
-    tmp = generate_gallery(dset, write=True
-)
+
