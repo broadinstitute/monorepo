@@ -5,7 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found <a href = broad.io/crispr_gallery>here</a>.",
+                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found <a href = http://broad.io/crispr_gallery>here</a>.",
                     "title": "CRISPR Gallery",
                     "columns": {
                         "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",

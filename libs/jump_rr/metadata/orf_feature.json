@@ -5,7 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found <a href = broad.io/orf_feature>here</a>.",
+                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found <a href = http://broad.io/orf_feature>here</a>.",
                     "title": "ORF Feature Ranking",
                     "columns": {
                         "Compartment": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
