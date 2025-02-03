@@ -48,13 +48,24 @@ def get_sample_location(item: str = "MYT1") -> pl.DataFrame:
 
 
 @pytest.mark.parametrize(
-    "channel,site,correction",
-    product(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"), ["Orig", "Illum"]),
+    "channel,site,correction,lazy",
+    product(
+        ["DNA", "AGP", "Mito", "ER", "RNA"],
+        (1, 5, 8),
+        ["Orig", "Illum"],
+        [True, False],
+    ),
 )
 def test_get_jump_image(
-    get_sample_location: dict[str, str], channel: str, site: str, correction: str
+    get_sample_location: dict[str, str],
+    channel: str,
+    site: int,
+    correction: str,
+    lazy: bool,
 ) -> None:
-    image = get_jump_image(*get_sample_location.rows()[0], channel, site, correction)
+    image = get_jump_image(
+        *get_sample_location.rows()[0], channel, site, correction, lazy
+    )
     x, y = image.shape
 
     assert x == 1080, "Wrong x axis size"
@@ -62,7 +73,7 @@ def test_get_jump_image(
 
 
 @pytest.mark.parametrize(
-    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], ("1", "5", "8"))]
+    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], (1, 5, 8))]
 )
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
 def test_get_jump_image_batch(
@@ -85,7 +96,7 @@ def test_get_jump_image_batch(
     img_list_filt = [param for i, param in enumerate(img_list) if mask[i]]
     assert sum([img.ndim == 2 for img in img_list_filt]) == len(iterable_filt)
 
-    # NOTE: @HugoHakem: aution with the following test:
+    # NOTE: @HugoHakem: Caution with the following test:
     # it might be too restrictive as there could be one channel missing
     # Though in theory this should not happen
     # stack img per channel and assert img.shape[0] == len(channel)

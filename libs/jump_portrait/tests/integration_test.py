@@ -54,7 +54,7 @@ def test_get_jump_image(
         The well number of the image.
     channel : str
         The channel number of the image.
-    site : str
+    site : int
         The site number of the image.
     correction : str
         The correction to be applied to the image.

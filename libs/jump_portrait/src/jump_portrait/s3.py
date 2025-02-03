@@ -7,21 +7,16 @@ prefix = "/cpg0020-varchamp/broad/images/".
 """
 
 import os
-import re
 from io import BytesIO
-from pathlib import Path
 
 import boto3
 import matplotlib.image as mpimg
 import numpy as np
 import polars as pl
-import pyarrow as pa
 from botocore import UNSIGNED
 from botocore.config import Config
 from matplotlib import pyplot as plt
-from pyarrow.dataset import dataset
-from s3fs import S3FileSystem
-from s3path import PureS3Path, S3Path
+from s3path import PureS3Path
 
 
 def s3client(use_credentials: bool = False) -> boto3.client:
@@ -237,7 +232,6 @@ def read_ldcsv_s3(path: str, lazy: bool = False) -> pl.DataFrame or pl.LazyFrame
     FIXME: Add docs.
 
     """
-
     if lazy:
         result = pl.scan_csv(path)
     else:
