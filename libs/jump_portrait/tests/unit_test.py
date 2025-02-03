@@ -6,6 +6,7 @@ from itertools import groupby, product, starmap
 import numpy as np
 import polars as pl
 import pytest
+
 from jump_portrait.fetch import (
     get_item_location_info,
     get_jump_image,
@@ -19,7 +20,7 @@ def test_get_item_location(gene: str) -> None:
     """Check that finding image locations from gene or compounds works."""
     result_shape = get_item_location_info(gene).shape
     assert result_shape[0] > 1
-    assert result_shape[1] == 28
+    assert result_shape[1] == 47
 
 
 @pytest.mark.parametrize(
@@ -38,14 +39,12 @@ def test_get_image(s3_image_uri: str) -> None:
 @pytest.fixture
 def get_sample_location(item: str = "MYT1") -> pl.DataFrame:
     metadata = get_item_location_info(item)
-    return metadata.select(
-        [
-            "Metadata_Source",
-            "Metadata_Batch",
-            "Metadata_Plate",
-            "Metadata_Well",
-        ]
-    ).unique()
+    return metadata.select([
+        "Metadata_Source",
+        "Metadata_Batch",
+        "Metadata_Plate",
+        "Metadata_Well",
+    ]).unique()
 
 
 @pytest.mark.parametrize(

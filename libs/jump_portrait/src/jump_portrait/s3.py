@@ -136,7 +136,6 @@ def get_corrected_image(
     channel: str,
     correction: str or None,
     apply_correction: bool = True,
-    compressed: bool = False,
     staging: bool = False,
 ) -> np.ndarray:
     """
@@ -152,8 +151,6 @@ def get_corrected_image(
         Type of correction to apply (or None for no correction).
     apply_correction : bool, optional
         Whether to apply the correction (default is True).
-    compressed : bool, optional
-        Whether the image is compressed (default is False).
     staging : bool, optional
         Whether to use the "staging-cellpainting-gallery" instead of the public one.
     Default is False. If True, it requires valid credentials in the environment.
@@ -173,11 +170,10 @@ def get_corrected_image(
         image_metadata=image_metadata,
         channel=channel,
         correction=correction,
-        compressed=compressed,
         staging=staging,
     )
 
-    result = get_image_from_s3uri(s3_image_path, s3_image_path.bucket, staging=staging)
+    result = get_image_from_s3uri(s3_image_path, staging=staging)
 
     if apply_correction and correction not in ("Orig", None):
         original_image_path = build_s3_image_path(
@@ -192,7 +188,6 @@ def build_s3_image_path(
     image_metadata: dict[str, str],
     channel: str,
     correction: None or str = None,
-    compressed: bool = False,
     staging: bool = False,
 ) -> PureS3Path:
     """
@@ -206,8 +201,6 @@ def build_s3_image_path(
         Channel of the image to retrieve.
     correction : str or None
         Type of correction to apply (or None for no correction).
-    compressed : bool, optional
-        Whether the image is compressed (default is False).
     staging : bool, optional
         Whether to use the "staging-cellpainting-gallery" instead of the public one.
     Default is False. If True, it requires valid credentials in the environment.
@@ -215,47 +208,20 @@ def build_s3_image_path(
     if correction is None:
         correction = "Orig"
 
-    use_bf_channel = None
-    # Special case to fetch bright field images (Fails if non-existent)
-    if channel == "bf":
-        use_bf_channel = True
-        channel, correction = "DNA", "Orig"
+    key = correction + channel
+    url = image_metadata.get(f"URL_{key}")
 
-    index_suffix = correction + channel
-
-    directory = image_metadata["_".join(("PathName", index_suffix))]
-    filename = Path(image_metadata["_".join(("FileName", index_suffix))])
+    assert url, f"{key} not available for {image_metadata.values}"
 
     if staging:
-        directory = directory.replace(
-            "cellpainting-gallery", "staging-cellpainting-gallery"
-        )
-    if compressed:
-        pattern = r"(images/[^/]+)/(images)/.*"
-        replacement = r"\1/\2_compressed/" + image_metadata["Metadata_Plate"] + "/"
-        directory = re.sub(pattern, replacement, directory)
-        filename = filename.parent / (filename.stem + ".png")
-    if use_bf_channel:  # Replace the image with the bright field channel
-        channel_ids = [
-            int(v[-5])
-            for k, v in image_metadata.items()
-            if k.startswith("FileName_Orig")
-        ]
-        # the one channel not present
-        bf_id = list(set(range(1, 7)).difference(channel_ids))[0]
-        filename_as_lst = list(filename)
-        filename_as_lst[-5] = str(bf_id)
-        filename_as_lst[-11] = "4"  # I found that C06 finishes with A04
-        filename = "".join(filename_as_lst)
+        url = url.replace("cellpainting-gallery", "staging-cellpainting-gallery")
 
-    final_path = S3Path.from_uri(directory) / filename
-
-    return final_path
+    return url
 
 
-def read_parquet_s3(path: str, lazy: bool = False) -> pl.DataFrame or pl.LazyFrame:
+def read_ldcsv_s3(path: str, lazy: bool = False) -> pl.DataFrame or pl.LazyFrame:
     """
-    Read parquet file from S3 onto memory.
+    Read `load data csv` file from S3 onto memory.
 
     Parameters
     ----------
@@ -271,24 +237,10 @@ def read_parquet_s3(path: str, lazy: bool = False) -> pl.DataFrame or pl.LazyFra
     FIXME: Add docs.
 
     """
+
     if lazy:
-        raise Exception(
-            "Lazy-loading does not currently work for image location parquets."
-        )
-        fs = S3FileSystem(anon=True)
-        ds = dataset(path, filesystem=fs)
-        # Replace schema to remove metadata, bypassing the fringe case
-        # where it is corrupted, see here for details:
-        # https://github.com/broadinstitute/monorepo/issues/21
-        # This can be simplified once the datasets are fixed:
-        # https://github.com/jump-cellpainting/datasets-private/issues/83
-        schema = pa.schema([pa.field(k, pa.utf8()) for k in ds.schema.names])
-        result = pl.scan_pyarrow_dataset(ds.replace_schema(schema))  # .collect()
+        result = pl.scan_csv(path)
     else:
-        # Read whole dataframe
-        result = pl.read_parquet(
-            path,
-            use_pyarrow=True,
-            storage_options={"anon": True},
-        )
+        result = pl.read_csv(path)
+
     return result

@@ -9,11 +9,8 @@ import polars as pl
 from joblib import Parallel, delayed
 from tqdm import tqdm
 
-from jump_portrait.fetch import (
-    build_s3_image_path,
-    get_item_location_info,
-)
-from jump_portrait.s3 import get_corrected_image
+from jump_portrait.fetch import get_item_location_info
+from jump_portrait.s3 import build_s3_image_path, get_corrected_image
 
 
 def download_item_images(
@@ -22,7 +19,6 @@ def download_item_images(
     sites: None or list[int] = None,
     corrections: list[str] = ["Orig"],
     output_dir: str = "imgs",
-    controls: bool or int = True,
 ) -> None:
     """
     Download images for a given item across different channels and corrections.
@@ -39,15 +35,13 @@ def download_item_images(
         A list of correction types to apply to the images.
     output_dir : str, default="imgs"
         The directory to save the downloaded images in.
-    controls : bool or int, default=True
-        Whether to also download images from controls in the same plates as the item.
 
     Returns
     -------
     None
 
     """
-    item_location_info = get_item_location_info(item_name, controls=controls)
+    item_location_info = get_item_location_info(item_name)
 
     # Select channels if specified
     if sites is not None:

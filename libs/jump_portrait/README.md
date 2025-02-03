@@ -8,8 +8,7 @@ Fetch, visualize and.or download images from the JUMP dataset (cpg0016 in the [C
 
 ```python
 item_name = "MYT1"  # Item or Compound of interest - (GC)OI
-# channels = ["bf"]  # Standard channels are ER, AGP, Mito DNA and RNA
-channels = ["DNA"]  # Standard channels are ER, AGP, Mito DNA and RNA
+channels = ["DNA"]  # Standard channels are ER, AGP, Mito, DNA, RNA and (for most plates) Brightfield
 corrections = ["Orig"]  # Can also be "Illum"
 controls = True  # Fetch controls in plates alongside (GC)OI?
 
@@ -18,31 +17,16 @@ download_item_images(item_name, channels, corrections=corrections, controls=cont
 
 ### Workflow 2: get images from explicit metadata
 
-Fetch one image for a given item and a control
+Fetch one image for a given item.
 ```python
 from jump_portrait.fetch import get_jump_image, get_sample
 
 sample = get_sample()
 
-source, batch, plate, well, site, *rest = sample.row(0)
+source, batch, plate, well, site = sample.select(pl.col(f"Metadata_{x}" for x in ("Source", "Batch", "Plate", "Well", "Site"))).row(0)
 channel = "DNA"
 correction = None # or "Illum"
 
-img = get_jump_image(source, batch, plate, well, channel, site, correction)
-```
-
-
-### Workflow 3: Fetch bright field channel
-Note that this is hacky and may not work for all sources.
-```python
-from jump_portrait.fetch import get_jump_image, get_sample
-
-sample = get_sample()
-
-channel = "bf"
-correction = None
-
-source, batch, plate, well, site, *rest = sample.row(0)
 img = get_jump_image(source, batch, plate, well, channel, site, correction)
 ```
 
