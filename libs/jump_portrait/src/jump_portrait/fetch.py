@@ -100,7 +100,6 @@ def get_sample(n: int = 2, seed: int = 42) -> pl.DataFrame:
 
     ldcsv = read_ldcsv_s3(s3_path)
     return ldcsv
-def get_jump_image(
 
 
 def get_jump_image(
@@ -155,6 +154,7 @@ def get_jump_image(
     -----
     Metadata for most files can be obtained from a set of data frames,
     or retrieved using `get_item_location_metadata` from this module.
+
     """
     s3_location_frame_uri = format_cellpainting_s3().format(
         Metadata_Source=source, Metadata_Batch=batch, Metadata_Plate=plate
