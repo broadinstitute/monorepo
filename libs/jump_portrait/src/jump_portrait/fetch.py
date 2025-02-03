@@ -25,13 +25,12 @@ from broad_babel.data import get_table
 
 from jump_portrait.s3 import (
     get_corrected_image,
-    get_image_from_s3uri,
-    read_parquet_s3,
+    read_ldcsv_s3,
 )
 from jump_portrait.utils import batch_processing, parallel, try_function
 
 
-def format_cellpainting_s3() -> str:
+def format_cellpainting_s3(dataset="cpg0016-jump", suffix="csv") -> str:
     """
     Return a formatted string for an S3 path to Cell Painting data.
 
@@ -57,16 +56,20 @@ def format_cellpainting_s3() -> str:
     Examples
     --------
     >>> format_cellpainting_s3()
-    's3://cellpainting-gallery/cpg0016-jump/{Metadata_Source}/workspace/load_data_csv/{Metadata_Batch}/{Metadata_Plate}/load_data_with_illum.parquet'
+    'http://cellpainting-gallery/cpg0016-jump/{Metadata_Source}/workspace/load_data_csv/{Metadata_Batch}/{Metadata_Plate}/load_data_with_illum.csv'
 
     """
+    ldcsv = "load_data_csv"
+    if suffix == "parquet":
+        ldcsv += "_orig"
     return (
-        "s3://cellpainting-gallery/cpg0016-jump/"
+        # f"s3://cellpainting-gallery/{dataset}/"
+        f"https://cellpainting-gallery.s3.amazonaws.com/{dataset}/"
         "{Metadata_Source}/"
-        "workspace/load_data_csv/"
+        f"workspace/{ldcsv}/"
         "{Metadata_Batch}/"
         "{Metadata_Plate}/"
-        "load_data_with_illum.parquet"
+        f"load_data_with_illum.{suffix}"
     )
 
 
@@ -91,13 +94,14 @@ def get_sample(n: int = 2, seed: int = 42) -> pl.DataFrame:
         get_table("plate")
         .filter(pl.col("Metadata_PlateType") == "TARGET2")
         .filter(
-            pl.int_range(0, pl.count()).shuffle(seed=seed).over("Metadata_Source") < n
+            pl.int_range(0, pl.len()).shuffle(seed=seed).over("Metadata_Source") < n
         )
     )
+
     s3_path = format_cellpainting_s3().format(**sample.to_dicts()[0])
 
-    parquet_meta = read_parquet_s3(s3_path)
-    return parquet_meta
+    ldcsv = read_ldcsv_s3(s3_path)
+    return ldcsv
 
 
 def get_jump_image(
@@ -109,12 +113,11 @@ def get_jump_image(
     site: str = 1,
     correction: str = "Orig",
     apply_correction: bool = True,
-    compressed: bool = False,
     staging: bool = False,
+    lazy: bool = True,
 ) -> np.ndarray:
     """
     Fetch a single image for of JUMP from Cellpainting Gallery's AWS bucket.
-
     Metadata for most files can be obtained from a set of data frames,
     or itemrated using `get_item_location_metadata` from this module.
 
@@ -136,8 +139,6 @@ def get_jump_image(
         Whether or not to use corrected data. It does not by default., "Orig" or "Illum"
     apply_correction : bool
         When apply_correction=="Illum" apply Illum correction on original image.
-    compressed : bool
-        Whether or not to pull the compressed 'npz' version of the images.
     staging : bool
         Whether or not to use the staging prefix on s3.
 
@@ -154,10 +155,12 @@ def get_jump_image(
     s3_location_frame_uri = format_cellpainting_s3().format(
         Metadata_Source=source, Metadata_Batch=batch, Metadata_Plate=plate
     )
-    location_frame = read_parquet_s3(s3_location_frame_uri)
+    location_frame = read_ldcsv_s3(s3_location_frame_uri, lazy=lazy)
     unique_site = location_frame.filter(
-        (pl.col("Metadata_Well") == well) & (pl.col("Metadata_Site") == str(site))
+        (pl.col("Metadata_Well") == well) & (pl.col("Metadata_Site") == site)
     )
+    if lazy:
+        unique_site = unique_site.collect()
 
     assert len(unique_site) > 0, (
         f"No valid site was found: {source, batch, plate, well, site}"
@@ -168,12 +171,8 @@ def get_jump_image(
 
     first_row = unique_site.row(0, named=True)
 
-    # Compressed images are already corrected
-    if compressed:
-        correction = None
-
     result = get_corrected_image(
-        first_row, channel, correction, apply_correction, compressed, staging
+        first_row, channel, correction, apply_correction, staging
     )
     return result
 
@@ -222,10 +221,6 @@ def get_jump_image_batch(
     img_list = parallel(
         iterable, batch_processing(try_function(get_jump_image)), verbose=verbose
     )
-    # img_list = []
-    # for x in iterable:
-    #     tmp = get_jump_image(*x)
-    #     img_list.append(tmp)
 
     return iterable, img_list
 
@@ -336,7 +331,7 @@ def load_filter_well_metadata(well_level_metadata: pl.DataFrame) -> pl.DataFrame
     )
     well_images_uri = parallel(iterable, get_well_image_uris)
 
-    selected_uris = pl.concat(well_images_uri)
+    selected_uris = pl.concat(well_images_uri, how="diagonal")
 
     return selected_uris
 
@@ -366,7 +361,7 @@ def get_well_image_uris(s3_location_uri: str, wells: list[str]) -> pl.DataFrame:
     It uses a decorator for batch processing.
 
     """
-    locations_df = read_parquet_s3(s3_location_uri)
+    locations_df = read_ldcsv_s3(s3_location_uri)
     return locations_df.filter(pl.col("Metadata_Well").is_in(wells))
 
 
@@ -412,93 +407,3 @@ def get_item_location_info(
         on=("Metadata_Source", "Metadata_Batch", "Metadata_Plate"),
     )
     return joint.unique()
-
-
-def get_gene_images(
-    gene: str,
-    channels: Iterable[str] = ("DNA",),
-    plate_type: str = "ORF",
-    input_column: str or None = None,
-    samples_per_plate: int = 1,
-) -> np.ndarray:
-    """
-    Return a collage of images from a given gene.
-
-    Returned matrices are arranged in two rows:
-     - The top row contains the perturbations
-     - The bottom row are their respective controls on a plate-per-plate basis.
-
-    Parameters
-    ----------
-    gene : str
-        input gene in standard format
-    channels : Iterable[str]
-        Channels to provide. Default is ("DNA",).
-    plate_type : str
-        plate type, can be "ORF", "CRISPR" or "Compound". Default is "ORF".
-    input_column : str
-        Column to pass to `broad_babel`, it must match one of `broad_babel`'s fields.
-    samples_per_plate : int
-        Number of images to sample per each plate (default is 1).
-
-    Returns
-    -------
-    np.ndarray
-        Concatenated array of dimensions (CHANNELS,PLATES,SAMPLES_PER_PLATE,Y,X) in which the gene is present.
-
-    Examples
-    --------
-    FIXME: Add docs.
-
-    """
-    # Convenience variables
-    transient_col = "fullpath"
-    group_by_fields = (
-        "Metadata_Source",
-        "Metadata_Batch",
-        "Metadata_Plate",
-        "Metadata_PlateType",
-    )
-
-    # Find location
-    all_locations = get_item_location_info(gene, input_column=input_column)
-    subdf = all_locations.filter(
-        pl.col(input_column) == gene, pl.col("Metadata_PlateType") == plate_type
-    )
-    # Columns are reversed so joining columns generates PATH/FILE
-    subdf = subdf.select(reversed(subdf.columns)).with_columns(
-        [
-            pl.concat_str(f"^.*Orig{ch}.*$").alias(f"{transient_col}_{ch}")
-            for ch in channels
-        ]
-    )
-    regex = f"^{transient_col}.*$"
-    image_metadata = subdf.group_by(group_by_fields).agg(pl.col(regex))
-
-    # Sample items
-    rng = np.random.default_rng(42)
-    samples = (
-        image_metadata.with_columns(pl.all().map_elements(len))
-        .get_column(f"{transient_col}_{channels[0]}")
-        .map_elements(lambda x: tuple(rng.integers(x, size=samples_per_plate)))
-    )
-
-    base = samples.to_list()
-
-    paths = [
-        row[-len(channels) + i][k]
-        for i, _ in enumerate(channels)
-        for ids, row in zip(base, image_metadata.iter_rows())
-        for k in ids
-    ]
-    shape = get_image_from_s3uri(paths[0]).shape
-    images = np.array([get_image_from_s3uri(x) for x in paths]).reshape(
-        (
-            len(channels),
-            len(base),
-            samples_per_plate,
-            *shape,
-        )
-    )
-
-    return images

@@ -10,6 +10,7 @@ Pending tests:
 from itertools import product
 
 import pytest
+
 from jump_portrait.fetch import get_item_location_info, get_jump_image
 
 
@@ -22,7 +23,7 @@ from jump_portrait.fetch import get_item_location_info, get_jump_image
         ("source_5", "JUMPCPE-20210702-Run04_20210703_060202", "APTJUM128", "O04"),
     ],
 )
-@pytest.mark.parametrize("channel", ["DNA", "AGP", "Mito", "ER", "RNA"])
+@pytest.mark.parametrize("channel", ["DNA", "AGP", "Mito", "ER", "RNA", "Brightfield"])
 @pytest.mark.parametrize("site", [1])
 @pytest.mark.parametrize(
     "correction,apply_correction", product(("Orig", "Illum"), ("True", "False"))
@@ -36,7 +37,6 @@ def test_get_jump_image(
     site: str,
     correction: str,
     apply_correction: bool,
-    compressed: bool = False,  # Compressed images are only on staging branch, see
     staging: str = False,  # We do not test the staging prefix
 ) -> None:
     """
@@ -60,8 +60,6 @@ def test_get_jump_image(
         The correction to be applied to the image.
     apply_correction : bool
         Whether or not to apply the correction.
-    compressed : bool
-        Whether or not the image is compressed.
     staging : str
         The staging area for the image.
 
@@ -73,10 +71,11 @@ def test_get_jump_image(
     -----
     This function checks that the get_jump_image function returns a valid 2D image.
 
-    We cannot test compressed images, see
-    https://github.com/jump-cellpainting/datasets/issues/143 for details.
-
     """
+    # This source does not have brightfield
+    if source == "source_8" and channel == "Brightfield":
+        return None
+
     # Check that finding image locations from gene or compounds works
     image = get_jump_image(
         source,
@@ -87,7 +86,6 @@ def test_get_jump_image(
         site,
         correction,
         apply_correction,
-        compressed,
         staging,
     )
     assert len(image.shape) == 2  # Two-dimensional image
