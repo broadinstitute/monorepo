@@ -1,6 +1,6 @@
 # Table of Contents
 
-Fetch, visualize and.or download images from the JUMP dataset.
+Fetch, visualize and.or download images from the JUMP dataset (cpg0016 in the [Cell Painting Gallery](https://github.com/broadinstitute/cellpainting-gallery)). 
 
 ## Workflow
 
