@@ -7,6 +7,8 @@ Fetch, visualize and.or download images from the JUMP dataset (cpg0016 in the [C
 ### Workflow 1: Download all images for a given item and their controls
 
 ```python
+from jump_portrait.save import download_item_images
+
 item_name = "MYT1"  # Item or Compound of interest - (GC)OI
 channels = ["DNA"]  # Standard channels are ER, AGP, Mito, DNA, RNA and (for most plates) Brightfield
 corrections = ["Orig"]  # Can also be "Illum"
@@ -19,6 +21,7 @@ download_item_images(item_name, channels, corrections=corrections, controls=cont
 
 Fetch one image for a given item.
 ```python
+import polars as pl
 from jump_portrait.fetch import get_jump_image, get_sample
 
 sample = get_sample()
