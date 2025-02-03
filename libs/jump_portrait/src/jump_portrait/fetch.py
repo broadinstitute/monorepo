@@ -15,7 +15,6 @@ Current problems:
 - More controls than individual samples, thus we must resample.
 """
 
-from collections.abc import Iterable
 from itertools import product, starmap
 
 import numpy as np
@@ -30,21 +29,21 @@ from jump_portrait.s3 import (
 from jump_portrait.utils import batch_processing, parallel, try_function
 
 
-def format_cellpainting_s3(dataset="cpg0016-jump", suffix="csv") -> str:
+def format_cellpainting_s3(dataset: str = "cpg0016-jump", suffix: str = "csv") -> str:
     """
     Return a formatted string for an S3 path to Cell Painting data.
 
-    The returned path includes placeholders for metadata fields.
-    It is expected that the caller will replace these placeholders with actual values.
-
     Parameters
     ----------
-    None
+    dataset : str, optional
+        The dataset name (default is "cpg0016-jump").
+    suffix : str, optional
+        The file suffix (default is "csv").
 
     Returns
     -------
     str
-        A formatted string representing the S3 path.
+        A formatted string representing the S3 path with placeholders for metadata fields.
 
     Notes
     -----
@@ -56,14 +55,13 @@ def format_cellpainting_s3(dataset="cpg0016-jump", suffix="csv") -> str:
     Examples
     --------
     >>> format_cellpainting_s3()
-    'http://cellpainting-gallery/cpg0016-jump/{Metadata_Source}/workspace/load_data_csv/{Metadata_Batch}/{Metadata_Plate}/load_data_with_illum.csv'
+    'https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump/{Metadata_Source}/workspace/load_data_csv/{Metadata_Batch}/{Metadata_Plate}/load_data_with_illum.csv'
 
     """
     ldcsv = "load_data_csv"
     if suffix == "parquet":
         ldcsv += "_orig"
     return (
-        # f"s3://cellpainting-gallery/{dataset}/"
         f"https://cellpainting-gallery.s3.amazonaws.com/{dataset}/"
         "{Metadata_Source}/"
         f"workspace/{ldcsv}/"
@@ -102,7 +100,7 @@ def get_sample(n: int = 2, seed: int = 42) -> pl.DataFrame:
 
     ldcsv = read_ldcsv_s3(s3_path)
     return ldcsv
-
+def get_jump_image(
 
 def get_jump_image(
     source: str,
@@ -110,47 +108,52 @@ def get_jump_image(
     plate: str,
     well: str,
     channel: str,
-    site: str = 1,
+    site: int = 1,
     correction: str = "Orig",
     apply_correction: bool = True,
     staging: bool = False,
     lazy: bool = True,
 ) -> np.ndarray:
     """
-    Fetch a single image for of JUMP from Cellpainting Gallery's AWS bucket.
-    Metadata for most files can be obtained from a set of data frames,
-    or itemrated using `get_item_location_metadata` from this module.
+    Fetch a single image from JUMP from Cellpainting Gallery's AWS bucket.
 
     Parameters
     ----------
     source : str
-        Which collaborator (data source) itemrated the images.
+        The collaborator (data source) that contributed the images.
     batch : str
-        Batch name.
+        The name of the batch.
     plate : str
-        Plate name.
+        The name of the plate.
     well : str
-        Well number (e.g., A01).
+        The well number (e.g., A01).
     channel : str
-        Channel to fetch, the standard ones are DNA, Mito, ER and AGP.
-    site : int
-        Site identifier (also called foci), default is 1.
-    correction : str
-        Whether or not to use corrected data. It does not by default., "Orig" or "Illum"
-    apply_correction : bool
-        When apply_correction=="Illum" apply Illum correction on original image.
-    staging : bool
-        Whether or not to use the staging prefix on s3.
+        The channel to fetch, standard channels include DNA, Mito, ER, and AGP.
+    site : int, optional
+        Site identifier (also called foci), by default 1.
+    correction : str, optional
+        Whether or not to use corrected data ("Orig" or "Illum"), by default "Orig".
+    apply_correction : bool, optional
+        When correction is "Illum", apply Illum correction on the original image, by default True.
+    staging : bool, optional
+        Whether or not to use the staging prefix on S3, by default False.
+    lazy : bool, optional
+        Whether or not to load data lazily, by default True.
 
     Returns
     -------
     np.ndarray
-        Selected image as a numpy array.
+        The selected image as a numpy array.
 
-    Examples
-    --------
-    FIXME: Add docs.
+    Raises
+    ------
+    AssertionError
+        If no valid site is found or if more than one site is found.
 
+    Notes
+    -----
+    Metadata for most files can be obtained from a set of data frames,
+    or retrieved using `get_item_location_metadata` from this module.
     """
     s3_location_frame_uri = format_cellpainting_s3().format(
         Metadata_Source=source, Metadata_Batch=batch, Metadata_Plate=plate
@@ -162,12 +165,12 @@ def get_jump_image(
     if lazy:
         unique_site = unique_site.collect()
 
-    assert len(unique_site) > 0, (
-        f"No valid site was found: {source, batch, plate, well, site}"
-    )
-    assert len(unique_site) < 2, (
-        f"More than one site found: {source, batch, plate, well, site}"
-    )
+    assert (
+        len(unique_site) > 0
+    ), f"No valid site was found: {source, batch, plate, well, site}"
+    assert (
+        len(unique_site) < 2
+    ), f"More than one site found: {source, batch, plate, well, site}"
 
     first_row = unique_site.row(0, named=True)
 
@@ -193,11 +196,11 @@ def get_jump_image_batch(
         must have the column in this specific order ("Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well")
     channel : list of string
         list of channel desired
-        Must be in ['DNA', 'ER', 'AGP', 'Mito', 'RNA']
-    site : list of string
+        Must be in ['DNA', 'ER', 'AGP', 'Mito', 'RNA', 'Brightfield']
+    site : list of int
         list of site desired
-        - For compound, must be in ['1' - '6']
-        - For ORF, CRISPR, must be in ['1' - '9']
+        - For compound, must be in [1 - 6]
+        - For ORF, CRISPR, must be in [1 - 9]
     correction : str
         Must be 'Illum' or 'Orig'
     verbose : bool
@@ -256,9 +259,9 @@ def get_item_location_metadata(
         If the item_name is "JCP2022_033924", which is not supported as it is a negative control and fills the memory of most computers.
 
     """
-    assert item_name != "JCP2022_033924", (
-        "The negative control is not supported, please use a smaller selection before fetching plate information"
-    )
+    assert (
+        item_name != "JCP2022_033924"
+    ), "The negative control is not supported, please use a smaller selection before fetching plate information"
 
     # Get plates
     jcp_ids = query.run_query(
@@ -394,9 +397,9 @@ def get_item_location_info(
     well_level_metadata = get_item_location_metadata(
         item_name, input_column=input_column
     )
-    assert len(well_level_metadata), (
-        f"Item {item_name} was not found in column {input_column}"
-    )
+    assert len(
+        well_level_metadata
+    ), f"Item {item_name} was not found in column {input_column}"
 
     # Note that this breaks if we pass item_name="JCP2022_033924" and
     # input_column="JCP2022" due to the negative control. There is an assertion on the top
