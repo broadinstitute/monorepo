@@ -113,6 +113,7 @@ def get_jump_image(
     apply_correction: bool = True,
     staging: bool = False,
     lazy: bool = True,
+    dataset :str = None,
 ) -> np.ndarray:
     """
     Fetch a single image from JUMP from Cellpainting Gallery's AWS bucket.
@@ -139,7 +140,9 @@ def get_jump_image(
         Whether or not to use the staging prefix on S3, by default False.
     lazy : bool, optional
         Whether or not to load data lazily, by default True.
-
+    dataset: string, optional
+        Which Cell Painting Gallery to download from, by default None, which results in cpg00016-jump.
+    
     Returns
     -------
     np.ndarray
@@ -156,7 +159,7 @@ def get_jump_image(
     or retrieved using `get_item_location_metadata` from this module.
 
     """
-    s3_location_frame_uri = format_cellpainting_s3().format(
+    s3_location_frame_uri = format_cellpainting_s3(dataset=dataset).format(
         Metadata_Source=source, Metadata_Batch=batch, Metadata_Plate=plate
     )
     location_frame = read_ldcsv_s3(s3_location_frame_uri, lazy=lazy)
