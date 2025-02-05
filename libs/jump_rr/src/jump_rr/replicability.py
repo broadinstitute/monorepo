@@ -35,9 +35,8 @@ def match_jcp(jcp: str) -> str:
         case _:
             raise Exception("Invalid JCP")
 
-
 @cachier()
-def df_from_jcp(jcp: str) -> pl.DataFrame:
+def df_from_jcp(jcp: str) -> pl.LazyFrame:
     """
     Retrieve a DataFrame from a given JCP.
 
@@ -48,7 +47,7 @@ def df_from_jcp(jcp: str) -> pl.DataFrame:
 
     Returns
     -------
-    pl.DataFrame
+    pl.DataFrame or pl.LazyFrame
         A Polars DataFrame containing the data for the given JCP.
 
     """
@@ -56,16 +55,19 @@ def df_from_jcp(jcp: str) -> pl.DataFrame:
     base_url = "https://github.com/jump-cellpainting/2024_Chandrasekaran_Morphmap/raw/c47ad6c953d70eb9e6c9b671c5fe6b2c82600cfc/03.retrieve-annotations/output/{}"
     url = base_url.format(filename)
 
-    return pl.read_csv(url)
+    return pl.scan_csv(url)
 
 
 def add_replicability(
     profiles: pl.DataFrame,
     left_on: str,
     right_on: str = "Metadata_JCP2022",
-    replicability_col: str = "Phenotypic activity",
+    cols_to_add: dict = {
+        "Phenotypic activity": "Phenotypic activity",
+        "corrected_p_value": " Corrected p-value",
+    },
     **kwargs: dict,
-) -> pl.DataFrame:
+) -> pl.DataFrame or pl.LazyFrame:
     """
     Add a column indicating replicability to the input DataFrame.
 
@@ -81,8 +83,10 @@ def add_replicability(
         Column name in the input DataFrame used for joining with the replicability data.
     right_on : str, optional
         Column name in the replicability data used for joining (default is "Metadata_JCP2022").
-    replicability_col : str, optional
-        Name of the column containing the replicability information (default is "Phenotypic activity").
+    cols_to_add : dict[str,str], optional
+         Names and final names of the columns to pull from external replicability datasets
+         (default is  {"Phenotypic activity": "Phenotypic activity",
+          "corrected_p_value":"Corrected p-value"}).
     **kwargs
         Additional keyword arguments passed to the join operation.
 
@@ -92,11 +96,15 @@ def add_replicability(
         The input DataFrame with an additional column indicating replicability.
 
     """
-    jcps = profiles.get_column(left_on)
-    data = df_from_jcp(jcps[0]).rename({"corrected_p_value": replicability_col})
+    jcp_sample = profiles.select(pl.col(left_on)).head(1)
+    if hasattr(jcp_sample, "collect"):
+        jcp_sample = jcp_sample.collect()
+    data = df_from_jcp(jcp_sample[0,0]).rename(cols_to_add)
 
+    if isinstance(profiles, pl.DataFrame):
+        data = data.collect()
     return profiles.join(
-        data.select(pl.col(right_on), pl.col(replicability_col)),
+        data.select(pl.col(right_on), pl.col(cols_to_add.values())),
         how="left",
         left_on=left_on,
         right_on=right_on,

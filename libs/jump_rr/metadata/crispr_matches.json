@@ -17,8 +17,10 @@
                         "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
                         "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
                         "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
-                        "Phenotypic activity": "Adjusted p-value (*) indicating the statistical significance of the difference between the perturbation's morphological profile and its corresponding control profile. Lower values suggest stronger phenotypic effects. An empty value indicates that the value was discarded due to low infection efficiency.",
-                        "Phenotypic activity Match": "P-value indicating that the feature is significantly different from the feature in the controls (for the match). ",
+                        "Corrected p-value": "Statistical significance of how distinctive a perturbation is relative to the negative control. It is negatively correlated to mean average precision, but adjusted based on its composition of positive and negative values.",
+                        "Phenotypic activity": "Mean average precision of the matched perturbation. It determines how different a perturbation is relative to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
+                        "Corrected p-value Match": "Corrected p-value of the matched perturbation.",
+                        "Phenotypic activity Match": "Phenotypic activity of the matched perturbation.",
                         "(*)": "Benjamini-Hochberg FDR correction"
                     }
                 }

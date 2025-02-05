@@ -23,6 +23,7 @@ from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites, format_value
 from jump_rr.mappers import get_external_mappers
 from jump_rr.metadata import write_metadata
+from jump_rr.replicability import add_replicability
 
 # %% Setup Local
 ## Paths
@@ -34,6 +35,7 @@ jcp_col = "Metadata_JCP2022"  # Traditional JUMP metadata colname
 std_outname = "Gene/Compound"  # Standard item name
 entrez_col = "entrez" #transient col to hold entrez id
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
+replicability_cols = {"corrected_p_value":"Corrected p-value", "mean_average_precision": "Phenotypic activity"}
 
 for dset in ("orf", "crispr", "compound"):
     # %% Load Metadata
@@ -69,15 +71,27 @@ for dset in ("orf", "crispr", "compound"):
             "Metadata_Well",
         ]
 
-    # Define the external references to use in genetic or chemical datasets
+
     if dset != "compound": # TODO Add databases for compounds and ensure that 0-case works
+        # Add replicability data for CRISPR and ORF
+        df = add_replicability(
+                df,
+                left_on=jcp_col,
+                right_on=jcp_col,
+                cols_to_add=replicability_cols,
+            )
+
+        # Define the external references to use in genetic or chemical datasets
         key_source_mapper = (("entrez", jcp_col, jcp_to_entrez),
                              ("omim", std_outname, std_to_omim),
                              ("genecards", std_outname, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
                              ("ensembl", std_outname, std_to_ensembl),
                              )
         df = add_external_sites(df, ext_links_col, key_source_mapper)
+
         order.insert(1, ext_links_col)
+        order = (*order, *replicability_cols.values())
+
 
     # Replace Metadata_JCP2022 ID to JCP2022 ID
     df = df.select(pl.col(order)).collect().rename(lambda c: c.removeprefix("Metadata_")).rename({"JCP2022":"JCP2022 ID"})
