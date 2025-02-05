@@ -113,7 +113,7 @@ def get_jump_image(
     apply_correction: bool = True,
     staging: bool = False,
     lazy: bool = True,
-    dataset :str = None,
+    dataset :str = 'cpg0016-jump',
 ) -> np.ndarray:
     """
     Fetch a single image from JUMP from Cellpainting Gallery's AWS bucket.
