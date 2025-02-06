@@ -59,7 +59,7 @@ match_img_col = f"{match_col} example image"  # URL with image examples
 match_rep_col = f"{rep_col} {match_col}"
 dist_col = "Perturbation-Match Similarity"  # Metric name
 ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NCBI)
-
+replicability_cols = {"corrected_p_value":"Corrected p-value", "mean_average_precision": "Phenotypic activity"}
 
 
 with cp.cuda.Device(1):  # Specify the GPU device
@@ -92,33 +92,34 @@ with cp.cuda.Device(1):  # Specify the GPU device
 
         # Add images for both queries and matches
         df_meta = df.select("^Metadata.*$")
-        side_a = add_sample_images(jcp_df, df_meta, get_range(dset), img_col, left_col="JCP2022 ID", right_col="Metadata_JCP2022")
-        side_b = add_sample_images(jcp_df, df_meta, get_range(dset), match_img_col, left_col="Match JCP2022 ID", right_col="Metadata_JCP2022")
+        side_a = add_sample_images(
+            jcp_df,
+            df_meta,
+            get_range(dset),
+            img_col,
+            left_col="JCP2022 ID",
+            right_col="Metadata_JCP2022",
+        )
+        side_b = add_sample_images(
+            jcp_df,
+            df_meta,
+            get_range(dset),
+            match_img_col,
+            left_col="Match JCP2022 ID",
+            right_col="Metadata_JCP2022",
+        )
         jcp_cols = (jcp_short, match_jcp_col)
         jcp_df = jcp_df.join(side_a.select(pl.col((*jcp_cols, img_col))), on=jcp_cols)
-        jcp_df = jcp_df.join(side_b.select(pl.col((*jcp_cols, match_img_col))), on=jcp_cols)
-
-        # %% Add replicability
-        jcp_df = add_replicability(
-            jcp_df,
-            left_on=jcp_short,
-            right_on=jcp_col,
-            replicability_col=rep_col,
-        )
-        jcp_df = add_replicability(
-            jcp_df,
-            left_on=match_jcp_col,
-            right_on=jcp_col,
-            suffix=" Match",
-            replicability_col=match_rep_col,
+        jcp_df = jcp_df.join(
+            side_b.select(pl.col((*jcp_cols, match_img_col))), on=jcp_cols
         )
 
         # %% Translate genes names to standard
-        jcp_to_std, jcp_to_entrez, std_to_omim, std_to_ensembl = (
-        get_external_mappers(df, jcp_col, dset)
-    )
+        jcp_to_std, jcp_to_entrez, std_to_omim, std_to_ensembl = get_external_mappers(
+            df, jcp_col, dset
+        )
 
-        jcp_translated = jcp_df.with_columns(
+        jcp_df = jcp_df.with_columns(
             pl.col(jcp_short).replace(jcp_to_std).alias(std_outname),
             pl.col(match_jcp_col).replace(jcp_to_std).alias(match_col),
             pl.col(jcp_short)  # Add synonyms
@@ -137,28 +138,46 @@ with cp.cuda.Device(1):  # Specify the GPU device
             "Synonyms",
             jcp_short,
             match_jcp_col,
-            rep_col,
-            match_rep_col,
         ]
 
-        if dset!="compound":
+        if dset != "compound":
             # Define the external references to use in genetic or chemical datasets
-            if dset != "compound": # TODO Add databases for compounds and ensure that 0-case works
-                key_source_mapper = (("entrez", match_jcp_col, jcp_to_entrez),
-                                     ("omim", match_col, std_to_omim),
-                                     ("genecards", match_col, dict(zip(jcp_to_std.values(), jcp_to_std.values()))),
-                                     ("ensembl", match_col, std_to_ensembl),
-                                     )
-                jcp_translated = add_external_sites(jcp_translated, ext_links_col, key_source_mapper)
-
-                order.insert(5, ext_links_col)
-
-        if dist_as_sim:  # Convert cosine distance to similarity
-            jcp_translated = jcp_translated.with_columns(
-                1 - pl.col(dist_col)
+            # TODO Add databases for compounds and ensure that 0-case works
+            jcp_df = add_replicability(
+                jcp_df,
+                left_on=jcp_short,
+                right_on=jcp_col,
+                cols_to_add=replicability_cols,
+            )
+            jcp_df = add_replicability(
+                jcp_df,
+                left_on=match_jcp_col,
+                right_on=jcp_col,
+                suffix=" Match",
+                cols_to_add=replicability_cols,
             )
 
-        matches_translated = jcp_translated.select(order)
+            key_source_mapper = (
+                ("entrez", match_jcp_col, jcp_to_entrez),
+                ("omim", match_col, std_to_omim),
+                (
+                    "genecards",
+                    match_col,
+                    dict(zip(jcp_to_std.values(), jcp_to_std.values())),
+                ),
+                ("ensembl", match_col, std_to_ensembl),
+            )
+            jcp_df = add_external_sites(
+                jcp_df, ext_links_col, key_source_mapper
+            )
+
+            order.insert(5, ext_links_col)
+            order = (*order, *[f"{v}{suffix}" for suffix in ("", " Match") for v in replicability_cols.values()])
+
+        if dist_as_sim:  # Convert cosine distance to similarity
+            jcp_df = jcp_df.with_columns(1 - pl.col(dist_col))
+
+        matches_translated = jcp_df.select(order)
 
         # %% Save results
         output_dir.mkdir(parents=True, exist_ok=True)

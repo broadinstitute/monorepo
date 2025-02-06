@@ -100,6 +100,7 @@ def get_sample(n: int = 2, seed: int = 42) -> pl.DataFrame:
     return parquet_meta
 
 
+
 def get_jump_image(
     source: str,
     batch: str,

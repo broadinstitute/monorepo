@@ -34,9 +34,11 @@ _DESCRIPTIONS = {
     "Match example image": "Sample image of the perturbation’s match. It cycles over the available images for every occurrence of the perturbation.",
     "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations’ profiles are anti-correlated. Ranges from -1 to 1.",
     "Suffix": "Suffix associated with a CellProfiler feature.",
-    "Phenotypic activity": "Adjusted p-value (*) indicating the statistical significance of the difference between the perturbation's morphological profile and its corresponding control profile. Lower values suggest stronger phenotypic effects. An empty value indicates that the value was discarded due to low infection efficiency.",
+    "Phenotypic activity": "Mean average precision of the matched perturbation. It determines how different a perturbation is relative to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
     "Feature significance": "Adjusted p-value (*) indicating the statistical significance of the difference between a specific morphological feature in the perturbed condition compared to the control condition. Lower values suggest a stronger effect of the perturbation on that particular feature.",
-    "Phenotypic activity Match": "P-value indicating that the feature is significantly different from the feature in the controls (for the match). ",
+    "Phenotypic activity Match": "Phenotypic activity of the matched perturbation.",
+    "Corrected p-value": "Statistical significance of how distinctive a perturbation is relative to the negative control. It is negatively correlated to mean average precision, but adjusted based on its composition of positive and negative values.",
+    "Corrected p-value Match": "Corrected p-value of the matched perturbation.",
     "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
     "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
     "Gene Rank": "The rank of the feature for a given gene when compared to that feature in all other genes.",
@@ -91,9 +93,9 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
     if table_type == "matches":
         prefix = "Only top 50 matches for each perturbation are shown. "
 
-    if table_type != "gallery": # Add statistical method for non-galleries
+    if table_type != "gallery":  # Add statistical method for non-galleries
         valid_names = (*colnames, ("(*)"))
-    else: # Reduce "Site X' redundancy for galleries
+    else:  # Reduce "Site X' redundancy for galleries
         valid_names = (*[x for x in colnames if not x.startswith("Site")], "Site X")
 
     data = {
@@ -110,7 +112,6 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
             }
         }
     }
-
 
     with open(
         str(files("jump_rr") / ".." / ".." / "metadata" / f"{dset}_{table_type}.json"),

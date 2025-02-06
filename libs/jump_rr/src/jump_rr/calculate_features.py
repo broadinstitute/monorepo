@@ -69,6 +69,7 @@ val_col = "Median"  # Value col
 stat_col = "Feature significance"
 rank_feat_col = "Feature Rank"
 rank_gene_col = "Gene Rank"
+replicability_cols = {"corrected_p_value":"Corrected p-value", "mean_average_precision": "Phenotypic activity"}
 
 with cp.cuda.Device(1):  # Specify the GPU device
     for dset in datasets:
@@ -133,7 +134,7 @@ with cp.cuda.Device(1):  # Specify the GPU device
 
         # Add phenotypic activity from a previously-calculated
         df = add_replicability(
-            df, left_on=jcp_short, right_on=jcp_col, replicability_col=rep_col
+            df, left_on=jcp_short, right_on=jcp_col, cols_to_add=replicability_cols,
         )
 
         # Add aliases and external links
@@ -153,7 +154,7 @@ with cp.cuda.Device(1):  # Specify the GPU device
             std_outname,
             img_col,
             val_col,
-            rep_col,
+            *replicability_cols.values(),
             rank_gene_col,
             rank_feat_col,
             jcp_short,
