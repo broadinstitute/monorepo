@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "jump-portrait"
-version = "0.0.26"
+version = "0.0.27"
 description = "Tools to fetch and visualize JUMP images"
 authors = ["Alan Munoz"]
 readme = "README.md"
