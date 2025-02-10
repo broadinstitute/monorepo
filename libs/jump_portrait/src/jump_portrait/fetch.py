@@ -108,12 +108,12 @@ def get_jump_image(
     plate: str,
     well: str,
     channel: str,
-    site: int = 1,
+    site: str = "1",
     correction: str = "Orig",
     apply_correction: bool = True,
     staging: bool = False,
     lazy: bool = True,
-    dataset :str = 'cpg0016-jump',
+    dataset: str = "cpg0016-jump",
 ) -> np.ndarray:
     """
     Fetch a single image from JUMP from Cellpainting Gallery's AWS bucket.
@@ -130,8 +130,8 @@ def get_jump_image(
         The well number (e.g., A01).
     channel : str
         The channel to fetch, standard channels include DNA, Mito, ER, and AGP.
-    site : int, optional
-        Site identifier (also called foci), by default 1.
+    site : str or int, optional
+        Site identifier (also called foci), by default "1". It is casted if needed.
     correction : str, optional
         Whether or not to use corrected data ("Orig" or "Illum"), by default "Orig".
     apply_correction : bool, optional
@@ -142,7 +142,7 @@ def get_jump_image(
         Whether or not to load data lazily, by default True.
     dataset: string, optional
         Which Cell Painting Gallery to download from, by default None, which results in cpg00016-jump.
-    
+
     Returns
     -------
     np.ndarray
@@ -164,7 +164,7 @@ def get_jump_image(
     )
     location_frame = read_ldcsv_s3(s3_location_frame_uri, lazy=lazy)
     unique_site = location_frame.filter(
-        (pl.col("Metadata_Well") == well) & (pl.col("Metadata_Site") == site)
+        (pl.col("Metadata_Well") == well) & (pl.col("Metadata_Site") == str(site))
     )
     if lazy:
         unique_site = unique_site.collect()
@@ -201,7 +201,7 @@ def get_jump_image_batch(
     channel : list of string
         list of channel desired
         Must be in ['DNA', 'ER', 'AGP', 'Mito', 'RNA', 'Brightfield']
-    site : list of int
+    site : list of int or str
         list of site desired
         - For compound, must be in [1 - 6]
         - For ORF, CRISPR, must be in [1 - 9]
@@ -406,11 +406,13 @@ def get_item_location_info(
     ), f"Item {item_name} was not found in column {input_column}"
 
     # Note that this breaks if we pass item_name="JCP2022_033924" and
-    # input_column="JCP2022" due to the negative control. There is an assertion on the top
+    # input_column="JCP2022", as it is the negative control. There is an assertion on the top
     # level to avoid this situation
     item_selected_meta = load_filter_well_metadata(well_level_metadata)
     joint = item_selected_meta.join(
         well_level_metadata.drop("Metadata_Well"),
         on=("Metadata_Source", "Metadata_Batch", "Metadata_Plate"),
     )
+    # Cast Plate to string
+    # See https://github.com/jump-cellpainting/datasets/issues/147
     return joint.unique()

@@ -59,7 +59,7 @@ def get_sample_location(item: str = "MYT1") -> pl.DataFrame:
 def test_get_jump_image(
     get_sample_location: dict[str, str],
     channel: str,
-    site: int,
+    site: str,
     correction: str,
     lazy: bool,
 ) -> None:
@@ -73,7 +73,7 @@ def test_get_jump_image(
 
 
 @pytest.mark.parametrize(
-    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], (1, 5, 8))]
+    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [str(x) for x in (1, 5, 8)])]
 )
 @pytest.mark.parametrize("correction", ["Orig", "Illum"])
 def test_get_jump_image_batch(

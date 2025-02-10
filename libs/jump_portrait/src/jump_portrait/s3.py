@@ -227,9 +227,10 @@ def read_ldcsv_s3(path: str, lazy: bool = False) -> pl.DataFrame or pl.LazyFrame
         the data is to be loaded. Warning: Lazy-loading does not work
         specifically for the datasets that contain image information.
 
-    Examples
-    --------
-    FIXME: Add docs.
+    Notes
+    -----
+    Returns all columns as strings. See below for details:
+    `https://github.com/jump-cellpainting/datasets/issues/147#issuecomment-2648272358`
 
     """
     if lazy:
@@ -237,4 +238,4 @@ def read_ldcsv_s3(path: str, lazy: bool = False) -> pl.DataFrame or pl.LazyFrame
     else:
         result = pl.read_csv(path)
 
-    return result
+    return result.with_columns(pl.all().cast(pl.String))

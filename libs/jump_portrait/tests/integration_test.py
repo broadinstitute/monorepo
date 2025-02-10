@@ -10,6 +10,7 @@ Pending tests:
 from itertools import product
 
 import pytest
+
 from jump_portrait.fetch import get_item_location_info, get_jump_image
 
 
@@ -36,7 +37,7 @@ from jump_portrait.fetch import get_item_location_info, get_jump_image
     ],
 )
 @pytest.mark.parametrize("channel", ["DNA", "AGP", "Mito", "ER", "RNA", "Brightfield"])
-@pytest.mark.parametrize("site", [1])
+@pytest.mark.parametrize("site", ["1"])
 @pytest.mark.parametrize(
     "correction,apply_correction", product(("Orig", "Illum"), ("True", "False"))
 )
@@ -67,7 +68,7 @@ def test_get_jump_image(
         The well number of the image.
     channel : str
         The channel number of the image.
-    site : int
+    site : str
         The site number of the image.
     correction : str
         The correction to be applied to the image.
