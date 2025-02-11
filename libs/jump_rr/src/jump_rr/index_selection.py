@@ -2,6 +2,7 @@
 """Find indices corresponding to the largest and smallest values."""
 
 import cupy as cp
+import dask.array as da
 import numpy as np
 
 
@@ -28,15 +29,12 @@ def get_bottom_top_indices(
         The column indices of the top and bottom indices.
 
     """
-    mask = cp.ones(mat.shape[1], dtype=bool)
-    mask[n + skip_first - 1 : -n - 1] = False
-    if skip_first:
-        mask[0] = False
-
-    indices = mat.argsort(axis=1)[:, mask]
-
-    xs = cp.indices(indices.shape)[0].flatten().get()
-    ys = indices.flatten().get()
+    top = da.argtopk(mat, n + skip_first)[:, skip_first:]
+    bottom = da.argtopk(mat, -n)
+    xs = da.matmul(
+        da.arange(len(mat))[:, da.newaxis], da.ones((1, n * 2), dtype=int)
+    ).flatten()
+    ys = da.hstack((top, bottom)).flatten()
     return xs, ys
 
 
