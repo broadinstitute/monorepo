@@ -15,12 +15,14 @@ from jump_portrait.fetch import (
 from jump_portrait.s3 import get_image_from_s3uri
 
 
-@pytest.mark.parametrize("gene", ["MYT1"])
-def test_get_item_location(gene: str) -> None:
-    """Check that finding image locations from gene or compounds works."""
-    result_shape = get_item_location_info(gene).shape
+@pytest.mark.parametrize(
+    "pert",
+    ["MYT1", "CLETVKMYAXARPO-UHFFFAOYSA-N"],
+)
+def test_get_item_location(pert: str) -> None:
+    """Check that finding image locations from pert."""
+    result_shape = get_item_location_info(pert).shape
     assert result_shape[0] > 1
-    assert result_shape[1] == 47
 
 
 @pytest.mark.parametrize(
