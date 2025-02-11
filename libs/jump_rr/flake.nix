@@ -62,7 +62,6 @@
                     if [ ! -d ".venv" ]; then
                        poetry install -vv --with dev
                     fi
-                    ln -sf ${pkgs.ruff}/bin/ruff .venv/bin/ruff
                     source .venv/bin/activate
                   '';
                 }
