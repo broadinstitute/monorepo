@@ -22,9 +22,11 @@ This is intended for use on a server with GPUs and high RAM to analyse data mass
 """
 
 from pathlib import Path
+from time import perf_counter
 
 import cupy as cp
-import cupyx.scipy.spatial as spatial
+import dask
+import dask.array as da
 import numpy as np
 import polars as pl
 import polars.selectors as cs
@@ -38,10 +40,41 @@ from jump_rr.replicability import add_replicability
 
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
+
+def pairwise_cosine_distance(x: da.array, y: da.array) -> da.array:
+    """
+    Compute pairwise cosine distance between two sets of vectors.
+
+    Parameters
+    ----------
+    x : da.array
+        The first set of vectors.
+    y : da.array
+        The second set of vectors.
+
+    Returns
+    -------
+    matmul : da.array
+        Upper triangular matrix containing the pairwise cosine distances.
+
+    Notes
+    -----
+    This function computes the dot product of normalized vectors and returns
+    the upper triangular part of the resulting matrix.
+    """
+    x_norm = x / da.linalg.norm(x, axis=1)[:, da.newaxis]
+    y_norm = y / da.linalg.norm(y, axis=1)[:, da.newaxis]
+
+    # Compute the dot product of normalized vectors
+    matmul = da.matmul(x_norm, y_norm.T)
+    return da.triu(matmul)
+
+
 # %% Setup
 ## Paths
 output_dir = Path("./databases")
-datasets = ("crispr", "orf")
+datasets = ("compound", "crispr", "orf")
+# datasets = ("crispr", "orf")
 
 ## Parameters
 n_vals_used = 25  # Number of top and bottom matches used
@@ -59,36 +92,51 @@ match_img_col = f"{match_col} example image"  # URL with image examples
 match_rep_col = f"{rep_col} {match_col}"
 dist_col = "Perturbation-Match Similarity"  # Metric name
 ext_links_col = f"{match_col} resources"  # Link to external resources (e.g., NCBI)
-replicability_cols = {"corrected_p_value":"Corrected p-value", "mean_average_precision": "Phenotypic activity"}
+replicability_cols = {
+    "corrected_p_value": "Corrected p-value",
+    "mean_average_precision": "Phenotypic activity",
+}
 
-
-with cp.cuda.Device(1):  # Specify the GPU device
+with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
     # %% Processing starts
     for dset in datasets:
+        print(f"Processing {dset}")
         # %% Load Metadata
         df = pl.read_parquet(get_dataset(dset))
 
         # %% add build url from individual wells
         med, _ = get_consensus_meta_urls(df, "Metadata_JCP2022")
-
-        vals = cp.array(med.select(cs.by_dtype(pl.Float32)).to_numpy())
+        median_np = med.select(cs.by_dtype(pl.Float32)).to_numpy()
+        # vals = da.array(med.select(cs.by_dtype(pl.Float32), chunksize=(23159, 737)).to_numpy())
+        nrows, ncols = median_np.shape
+        vals = da.array(median_np)
 
         # %% Calculate cosine distance
-        cosine_dist = spatial.distance.cdist(vals, vals, metric="cosine")
-
+        # cosine_dist = spatial.distance.cdist(vals, vals, metric="cosine")
+        t = perf_counter()
+        cosine_dist = pairwise_cosine_distance(vals, vals)
         # Get most correlated and anticorrelated indices
         xs, ys = get_bottom_top_indices(cosine_dist, n_vals_used, skip_first=True)
+        # Dask to cupy
+        t1 = perf_counter()
+        matched_values = cosine_dist.compute()
+        print(f"Cosine distance computed in {perf_counter() - t1} seconds")
+        # cupy to numpy
+        t1 = perf_counter()
+        xs = xs.compute().get()
+        print(f"xs computed in {perf_counter() - t1} seconds")
+        t1 = perf_counter()
+        ys = ys.compute().get()
+        print(f"ys computed in {perf_counter() - t1} seconds")
 
         jcp_ids = med[jcp_col].to_numpy().astype("<U15")
 
         # Build a dataframe containing matches
-        jcp_df = pl.DataFrame(
-            {
-                jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
-                match_jcp_col: jcp_ids[ys].astype("<U15"),
-                dist_col: cosine_dist[xs, ys].get(),
-            }
-        )
+        jcp_df = pl.DataFrame({
+            jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
+            match_jcp_col: jcp_ids[ys].astype("<U15"),
+            dist_col: matched_values[xs, ys],
+        })
 
         # Add images for both queries and matches
         df_meta = df.select("^Metadata.*$")
@@ -167,12 +215,17 @@ with cp.cuda.Device(1):  # Specify the GPU device
                 ),
                 ("ensembl", match_col, std_to_ensembl),
             )
-            jcp_df = add_external_sites(
-                jcp_df, ext_links_col, key_source_mapper
-            )
+            jcp_df = add_external_sites(jcp_df, ext_links_col, key_source_mapper)
 
             order.insert(5, ext_links_col)
-            order = (*order, *[f"{v}{suffix}" for suffix in ("", " Match") for v in replicability_cols.values()])
+            order = (
+                *order,
+                *[
+                    f"{v}{suffix}"
+                    for suffix in ("", " Match")
+                    for v in replicability_cols.values()
+                ],
+            )
 
         if dist_as_sim:  # Convert cosine distance to similarity
             jcp_df = jcp_df.with_columns(1 - pl.col(dist_col))
@@ -188,5 +241,6 @@ with cp.cuda.Device(1):  # Specify the GPU device
 
         # Save cosine distance matrix with JCP IDS
         pl.DataFrame(
-            data=cosine_dist.get(), schema=med.get_column("Metadata_JCP2022").to_list()
+            data=matched_values, schema=med.get_column("Metadata_JCP2022").to_list()
         ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
+        print(f"Matched pairwise {dset} in {perf_counter() - t} seconds")

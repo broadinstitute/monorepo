@@ -33,6 +33,7 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
     )
 
     md5s = {
+        "compound": "1dd9b76ce9635cc98ea2c6a58f4c1d6ed6aafc1a3990ddcb997162d16582c00f",
         "crispr": "019cd1b767db48dad6fbab5cbc483449a229a44c2193d2341a8d331d067204c8",
         "orf": "32f25ee6fdc4dcfa3349397ddf0e1f6ca2594001b8266c5dc0644fa65944f193",
         "crispr_interpretable": "6153c9182faf0a0a9ba22448dfa5572bd7de9b943007356830304834e81a1d05",
