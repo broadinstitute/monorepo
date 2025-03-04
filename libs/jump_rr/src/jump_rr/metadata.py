@@ -16,6 +16,8 @@ import json
 from importlib.resources import files
 from typing import Optional
 
+from jump_rr.datasets import get_profiles_url
+
 # %% Fetch dataset columns
 
 _DESCRIPTIONS = {
@@ -89,14 +91,26 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
         dataframe in the desired order).
 
     """
-    prefix = ""
+    suffix = ""
     if table_type == "matches":
-        prefix = "Only top 50 matches for each perturbation are shown. "
+        suffix = "Only top 50 matches for each perturbation are shown. "
 
     if table_type != "gallery":  # Add statistical method for non-galleries
         valid_names = (*colnames, ("(*)"))
     else:  # Reduce "Site X' redundancy for galleries
         valid_names = (*[x for x in colnames if not x.startswith("Site")], "Site X")
+
+    # Rebuild the source url
+    source_name = dset
+    if table_type == "feature":
+        source_name += "_interpretable"
+
+    source_url = get_profiles_url(source_name)
+
+    # Rebuild the broad id shortlink
+    broad_suffix = dset
+    if table_type != "matches":
+        broad_suffix = "_".join((dset, table_type))
 
     data = {
         "databases": {
@@ -105,7 +119,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
                 "source_url": "http://broad.io/jump",
                 "tables": {
                     "content": {
-                        "description_html": f"{prefix}<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found <a href = http://broad.io/{dset if table_type=='matches' else '_'.join((dset,table_type))}>here</a>.",
+                        "description_html": f"<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Index of data sources</a>. <a href = {source_url}>Download</a> source profiles. See the <a href = https://broad.io/jump>JUMP Hub</a> for more information. The latest version of this page can be found <a href = http://broad.io/{broad_suffix}>here</a>. {suffix} For case-insensitive search replace the '=' operator with 'like'.",
                         "title": f"{dset.upper()} {table_type_to_suffix(table_type)}",
                     }
                 },

@@ -28,10 +28,6 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
     This function uses a predefined manifest and md5s dictionary to filter and retrieve the dataset.
 
     """
-    manifest = pl.read_csv(
-        "https://raw.githubusercontent.com/jump-cellpainting/datasets/50cd2ab93749ccbdb0919d3adf9277c14b6343dd/manifests/profile_index.csv"
-    )
-
     md5s = {
         "compound": "1dd9b76ce9635cc98ea2c6a58f4c1d6ed6aafc1a3990ddcb997162d16582c00f",
         "crispr": "019cd1b767db48dad6fbab5cbc483449a229a44c2193d2341a8d331d067204c8",
@@ -39,8 +35,19 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
         "crispr_interpretable": "6153c9182faf0a0a9ba22448dfa5572bd7de9b943007356830304834e81a1d05",
         "orf_interpretable": "ae3fea5445022ebd0535fcbae3cfbbb14263f63ea6243f4bac7e4c384f8d3bbf",
     }
-    result = manifest.filter(pl.col("subset") == dataset)[0, 1]
+    result = get_profiles_url(dataset)
+
     if return_pooch:
         result = pooch.retrieve(result, md5s[dataset])
+
+    return result
+
+
+def get_profiles_url(dataset: str) -> str:
+    """Select the correct url."""
+    manifest = pl.read_csv(
+        "https://raw.githubusercontent.com/jump-cellpainting/datasets/50cd2ab93749ccbdb0919d3adf9277c14b6343dd/manifests/profile_index.csv"
+    )
+    result = manifest.filter(pl.col("subset") == dataset)[0, 1]
 
     return result

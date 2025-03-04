@@ -5,7 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "Only top 50 matches for each perturbation are shown. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data sources.</a> The latest version can be found <a href = http://broad.io/compound>here</a>.",
+                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Index of data sources</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int_featselect_harmony.parquet>Download</a> source profiles. See the <a href = https://broad.io/jump>JUMP Hub</a> for more information. The latest version of this page can be found <a href = http://broad.io/compound>here</a>. Only top 50 matches for each perturbation are shown.  For case-insensitive search replace the '=' operator with 'like'.",
                     "title": "COMPOUND Matches",
                     "columns": {
                         "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",

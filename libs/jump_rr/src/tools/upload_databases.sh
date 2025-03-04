@@ -32,7 +32,8 @@ DEPOSITION=$(curl -H "Content-Type: application/json" \
 echo "New deposition ID is ${DEPOSITION}"
 
 # Variables
-BUCKET_DATA=$(curl "${DEPOSITION_PREFIX}/$DEPOSITION?access_token=$ZENODO_TOKEN")
+curl "${DEPOSITION_PREFIX}?access_token=${ZENODO_TOKEN}"
+BUCKET_DATA=$(curl "${DEPOSITION_PREFIX}/${DEPOSITION}?access_token=${ZENODO_TOKEN}")
 BUCKET=$(echo "${BUCKET_DATA}" | jq --raw-output .links.bucket)
 
 if [ "${BUCKET}" = "null" ]; then
@@ -61,19 +62,12 @@ echo -e '{"metadata": {
             "name": "Alán F. Muñoz"
         }
     ],
-"description":"
-This dataset provides multiple tables for JUMP exploration:
-
-- Full datasets contain precomputed analysis: - significance - is the phenotypic activity of a given value (see broad.io/crispr_feature for a formal definition), while distance contains the cosine distance of all perturbations vs all other perturbations within a given dataset.
-
-- The 'features' and 'matches' files contain a selection of the raw precomputed analyses and are intended for consumption on a web browser through the Datasette tool (see https://github.com/broadinstitute/monorepo/tree/main/libs/jump_rr#quick-data-access for details).
-
-- Lastly, 'galleries' are for quick visualization of the images with all channels collapsed into one.",
+"description":"<p>This dataset provides multiple tables for JUMP exploration: - Full datasets contain precomputed analysis:</p>\n<ul>\n<li>significance - is the phenotypic activity of a given value (see <a href=\\"broad.io/crispr_feature\\">broad.io/crispr_feature</a> for a formal definition), while distance contains the cosine distance of all perturbations vs all other perturbations within a given dataset.</li>\\n<li>The features and matches files contain a selection of the raw precomputed analyses and are intended for consumption on a web browser through the Datasette tool (see <a href=\\"https://github.com/broadinstitute/monorepo/tree/main/libs/jump_rr#quick-data-access\\">here</a> for details).</li>\\n<li>Lastly, galleries are for quick visualization of the images with all channels collapsed into one.<br><br>We also include raw cosine similarities for anyone who needs access to those.</li>\\n</ul>",
 "upload_type": "dataset",
 "access_right": "open"
 }}' > metadata.json
 
-NEW_DEPOSITION_ENDPOINT="${DEPOSITION_PREFIX}/${DEPOSITION}"
+							 	       NEW_DEPOSITION_ENDPOINT="${DEPOSITION_PREFIX}/${DEPOSITION}"
 echo "Uploading file to ${NEW_DEPOSITION_ENDPOINT}"
 curl -H "Content-Type: application/json" \
      -X PUT\
@@ -81,7 +75,7 @@ curl -H "Content-Type: application/json" \
      "${NEW_DEPOSITION_ENDPOINT}?access_token=${ZENODO_TOKEN}"
 
 # Publish
-echo "Publishing to ${NEW_DEPOSITION_ENDPOINT}"
+# echo "Publishing to ${NEW_DEPOSITION_ENDPOINT}"
 curl -H "Content-Type: application/json" \
      -X POST\
      --data "{}"\
