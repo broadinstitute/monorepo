@@ -61,6 +61,7 @@ def pairwise_cosine_distance(x: da.array, y: da.array) -> da.array:
     -----
     This function computes the dot product of normalized vectors and returns
     the upper triangular part of the resulting matrix.
+
     """
     x_norm = x / da.linalg.norm(x, axis=1)[:, da.newaxis]
     y_norm = y / da.linalg.norm(y, axis=1)[:, da.newaxis]
@@ -72,7 +73,7 @@ def pairwise_cosine_distance(x: da.array, y: da.array) -> da.array:
 
 # %% Setup
 ## Paths
-output_dir = Path("./databases")
+output_dir = Path("./databases_triu")
 datasets = ("compound", "crispr", "orf")
 # datasets = ("crispr", "orf")
 
@@ -241,6 +242,7 @@ with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
 
         # Save cosine distance matrix with JCP IDS
         pl.DataFrame(
-            data=matched_values, schema=med.get_column("Metadata_JCP2022").to_list()
+            data=np.triu(matched_values),
+            schema=med.get_column("Metadata_JCP2022").to_list(),
         ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
         print(f"Matched pairwise {dset} in {perf_counter() - t} seconds")

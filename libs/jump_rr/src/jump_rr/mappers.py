@@ -1,3 +1,4 @@
+#!/usr/bin/env jupyter
 """Functions to get and use mappers."""
 
 from functools import cache
