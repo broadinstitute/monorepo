@@ -3,7 +3,6 @@
 
 import cupy as cp
 import dask.array as da
-import numpy as np
 
 
 def get_bottom_top_indices(
@@ -38,14 +37,14 @@ def get_bottom_top_indices(
     return xs, ys
 
 
-def get_ranks(mat: cp.array, n_vals_used: int = 20) -> tuple[np.array, list[cp.array]]:
-    """Get a binary mask of the edges and ranks in every dimension."""
-    ranks = [mat.argsort(i) for i in range(mat.ndim)]
+def get_ranks(
+    mat: da.array, n_vals_used: int = 20
+) -> tuple[list[da.array], list[da.array]]:
+    """Return the lowest `n_vals_used` indices in rows and columns for mat."""
+    bottom_on_y = da.argtopk(mat, -n_vals_used, axis=0)
+    bottom_on_x = da.argtopk(mat, -n_vals_used, axis=1)
 
-    mask = cp.zeros_like(mat, dtype=bool)
-
-    # Get the location of the largest/smallest values in every dimension
-    for rank in ranks:
-        mask |= rank < n_vals_used
-
-    return ([x.get() for x in cp.where(mask)], [rank[mask].get() for rank in ranks])
+    return (
+        bottom_on_x,
+        bottom_on_y,
+    )
