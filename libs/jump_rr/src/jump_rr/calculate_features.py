@@ -60,9 +60,9 @@ feat_decomposition = ("Compartment", "Feature", "Channel", "Suffix")
 ## Column names
 jcp_short = "JCP2022 ID"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
-std_outname = "Gene/Compound"  # Standard item name
+std_outname = "Perturbation"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
-img_col = "Gene/Compound example image"
+img_col = f"{std_outname} example image"
 rep_col = "Phenotypic activity"  # Column containing reproducibility
 val_col = "Median"  # Value col
 stat_col = "Feature significance"
@@ -113,7 +113,7 @@ for dset in datasets:
     ).compute()
 
     # Unify Gene and Feature ranks
-    with duckdb.connect(":memory:") as conn:
+    with duckdb.connect(":memory:"):
         table = duckdb.sql(
             "SELECT x,y,any_value(rank_feat) AS rank_feat,any_value(rank_gene) AS rank_gene"
             " FROM (SELECT * FROM (SELECT column0 as x,column1 as rank_feat,column2 as y"
@@ -122,10 +122,10 @@ for dset in datasets:
             " FROM index_lowest_rank_y)) GROUP By x,y"
         )
         items = table.fetchnumpy()
-        xs = items["x"]
-        ys = items["y"]
-        rank_feat = items["rank_feat"].filled()
-        rank_gene = items["rank_gene"].filled()
+    xs = items["x"]
+    ys = items["y"]
+    rank_feat = items["rank_feat"].filled()
+    rank_gene = items["rank_gene"].filled()
 
     # Get the Gene Rank and Feature Rank
     decomposed_feats = get_feature_groups(
@@ -145,6 +145,8 @@ for dset in datasets:
         jcp_short: med[jcp_col][xs],
         rank_gene_col: rank_gene,
         rank_feat_col: rank_feat,
+        "x": xs,
+        "y": ys,
     })
 
     # Add images
@@ -154,7 +156,7 @@ for dset in datasets:
         df_meta,
         get_range(dset.removesuffix("_interpretable")),
         img_col,
-        left_col="JCP2022 ID",
+        left_col=jcp_short,
         right_col="Metadata_JCP2022",
     )
 
