@@ -24,11 +24,11 @@ _DESCRIPTIONS = {
     "Channel": "Image channel, which shows the stain for DNA, Mito (mitochondria), RNA, AGP (actin, Golgi, plasma membrane) or ER (Endoplasmic Reticulum).",
     "Resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
     "Feature": "Morphological feature obtained from CellProfiler. This value is the result after data normalization. Its units are the number of median absolute deviations (MAD) from the median.",
-    "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
-    "Gene/Compound example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
+    "Perturbation": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
+    "Perturbation example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
     "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
     "Compartment": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
-    "Match": "Perturbations with the highest correlation or anti-correlation relative to 'Gene/Compound'.",
+    "Match": "Perturbations with the highest correlation or anti-correlation relative to 'Perturbation'.",
     "Match Example": "Sample image of the matched perturbation. It cycles over the available images.",
     "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
     "Match resources": "External links that provide further information on the matched perturbation (e.g., NCBI, ChEMBL).",
@@ -65,7 +65,7 @@ def get_col_desc(key: str) -> str:
     Returns
     -------
     str
-        Description of input key that should make it clearer for the
+        Description of input key that should make it clearer for f
         user of jump_rr web interfaces what the column values mean.
 
     Examples
@@ -91,9 +91,9 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
         dataframe in the desired order).
 
     """
-    suffix = ""
+    prefix = ""
     if table_type == "matches":
-        suffix = "Only top 50 matches for each perturbation are shown. "
+        prefix = 'To find matches (up to 50 will be shown), choose \"Perturbation\" and type in your gene name in the box below; use \"like\" for case-insensitive search and (optionally) add additional constraints.'
 
     if table_type != "gallery":  # Add statistical method for non-galleries
         valid_names = (*colnames, ("(*)"))
@@ -119,7 +119,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
                 "source_url": "http://broad.io/jump",
                 "tables": {
                     "content": {
-                        "description_html": f"<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Index of data sources</a>. <a href = {source_url}>Download</a> source profiles. See the <a href = https://broad.io/jump>JUMP Hub</a> for more information. The latest version of this page can be found <a href = http://broad.io/{broad_suffix}>here</a>. {suffix} For case-insensitive search replace the '=' operator with 'like'.",
+                        "description_html": f"{prefix} <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = {source_url}>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/{broad_suffix}>Latest</a> version of this page.",
                         "title": f"{dset.upper()} {table_type_to_suffix(table_type)}",
                     }
                 },

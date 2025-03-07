@@ -41,9 +41,9 @@ from jump_rr.replicability import add_replicability
 assert cp.cuda.get_current_stream().done, "GPU not available"
 
 
-def pairwise_cosine_distance(x: da.array, y: da.array) -> da.array:
+def pairwise_cosine_sim(x: da.array, y: da.array) -> da.array:
     """
-    Compute pairwise cosine distance between two sets of vectors.
+    Compute pairwise cosine similarity between two sets of vectors.
 
     Parameters
     ----------
@@ -59,8 +59,8 @@ def pairwise_cosine_distance(x: da.array, y: da.array) -> da.array:
 
     Notes
     -----
-    This function computes the dot product of normalized vectors and returns
-    the upper triangular part of the resulting matrix.
+    This function computes the dot product of normalized vectors and returns the
+    resulting matrix.
 
     """
     x_norm = x / da.linalg.norm(x, axis=1)[:, da.newaxis]
@@ -68,7 +68,7 @@ def pairwise_cosine_distance(x: da.array, y: da.array) -> da.array:
 
     # Compute the dot product of normalized vectors
     matmul = da.matmul(x_norm, y_norm.T)
-    return da.triu(matmul)
+    return matmul
 
 
 # %% Setup
@@ -113,15 +113,14 @@ with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
         vals = da.array(median_np)
 
         # %% Calculate cosine distance
-        # cosine_dist = spatial.distance.cdist(vals, vals, metric="cosine")
         t = perf_counter()
-        cosine_dist = pairwise_cosine_distance(vals, vals)
+        cosine_sim = pairwise_cosine_sim(vals, vals)
         # Get most correlated and anticorrelated indices
-        xs, ys = get_bottom_top_indices(cosine_dist, n_vals_used, skip_first=True)
+        xs, ys = get_bottom_top_indices(cosine_sim, n_vals_used, skip_first=True)
         # Dask to cupy
         t1 = perf_counter()
-        matched_values = cosine_dist.compute()
-        print(f"Cosine distance computed in {perf_counter() - t1} seconds")
+        matched_values = (da.around(cosine_sim, 3)).compute()
+        print(f"Cosine similarity computed in {perf_counter() - t1} seconds")
         # cupy to numpy
         t1 = perf_counter()
         xs = xs.compute().get()
@@ -239,10 +238,11 @@ with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
         matches_translated.write_parquet(final_output, compression="zstd")
 
         write_metadata(dset, "matches", (*order, "(*)"))
+        break
 
-        # Save cosine distance matrix with JCP IDS
+        # Save cosine similarity matrix with JCP IDS
         pl.DataFrame(
-            data=np.triu(matched_values),
+            data=matched_values,
             schema=med.get_column("Metadata_JCP2022").to_list(),
         ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
         print(f"Matched pairwise {dset} in {perf_counter() - t} seconds")
