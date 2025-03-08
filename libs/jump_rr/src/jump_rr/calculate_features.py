@@ -218,7 +218,7 @@ for dset in datasets:
     sorted_df.write_parquet(output_dir / f"{dset}_features.parquet", compression="zstd")
 
     # Update metadata
-    write_metadata(dset_type, "feature", (*sorted_df.columns, "(*)"))
+    write_metadata(dset_type, "feature", sorted_df.columns)
 
     # Save phenotypic activity matrix in case it is of use to others
     out_df = pl.DataFrame(

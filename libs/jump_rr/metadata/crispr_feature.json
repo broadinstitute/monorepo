@@ -22,8 +22,7 @@
                         "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
                         "JCP2022": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
                         "Resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
-                        "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
-                        "(*)": null
+                        "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found."
                     }
                 }
             }

@@ -15,8 +15,7 @@
                         "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations\u2019 profiles are anti-correlated. Ranges from -1 to 1.",
                         "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
                         "JCP2022": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
-                        "Match JCP2022": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
-                        "(*)": null
+                        "Match JCP2022": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates."
                     }
                 }
             }

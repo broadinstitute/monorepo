@@ -237,7 +237,7 @@ with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
         final_output = output_dir / f"{dset}.parquet"
         matches_translated.write_parquet(final_output, compression="zstd")
 
-        write_metadata(dset, "matches", (*order, "(*)"))
+        write_metadata(dset, "matches", order)
 
         # Save cosine similarity matrix with JCP IDS
         pl.DataFrame(
