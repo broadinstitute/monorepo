@@ -30,9 +30,9 @@ from jump_rr.replicability import add_replicability
 output_dir = Path("./databases")
 
 ## Column names
-jcp_short = "JCP2022 ID"  # Shortened input data frame
+jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = "Metadata_JCP2022"  # Traditional JUMP metadata colname
-std_outname = "Gene/Compound"  # Standard item name
+std_outname = "Perturbation"  # Standard item name
 entrez_col = "entrez" #transient col to hold entrez id
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
 replicability_cols = {"corrected_p_value":"Corrected p-value", "mean_average_precision": "Phenotypic activity"}
@@ -93,8 +93,8 @@ for dset in ("orf", "crispr", "compound"):
         order = (*order, *replicability_cols.values())
 
 
-    # Replace Metadata_JCP2022 ID to JCP2022 ID
-    df = df.select(pl.col(order)).collect().rename(lambda c: c.removeprefix("Metadata_")).rename({"JCP2022":"JCP2022 ID"})
+    # Replace Metadata_JCP2022 to JCP2022
+    df = df.select(pl.col(order)).collect().rename(lambda c: c.removeprefix("Metadata_")).rename({"JCP2022":"JCP2022"})
 
     # %% Write results
     output_dir.mkdir(parents=True, exist_ok=True)

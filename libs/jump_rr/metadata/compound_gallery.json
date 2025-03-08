@@ -5,11 +5,11 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "<a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Index of data sources</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int_featselect_harmony.parquet>Download</a> source profiles. See the <a href = https://broad.io/jump>JUMP Hub</a> for more information. The latest version of this page can be found <a href = http://broad.io/compound_gallery>here</a>.  For case-insensitive search replace the '=' operator with 'like'.",
+                    "description_html": "Explore the JUMP images. Use \"like\" for case-insensitive search and (optionally) add additional constraints. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int_featselect_harmony.parquet>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/compound_gallery>Latest</a> version of this page.",
                     "title": "COMPOUND Gallery",
                     "columns": {
-                        "Gene/Compound": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
-                        "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Perturbation": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
+                        "JCP2022": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
                         "Source": "Identifier of the partner that produced the data numbered between 1 and 15.",
                         "Plate": "Identifier of the plate.",
                         "Well": "Identifier of the well. Generally 384-well plates, ranging from A01 to P24.",

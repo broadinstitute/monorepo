@@ -26,30 +26,28 @@ _DESCRIPTIONS = {
     "Feature": "Morphological feature obtained from CellProfiler. This value is the result after data normalization. Its units are the number of median absolute deviations (MAD) from the median.",
     "Perturbation": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
     "Perturbation example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
-    "JCP2022 ID": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+    "JCP2022": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
     "Compartment": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
     "Match": "Perturbations with the highest correlation or anti-correlation relative to 'Perturbation'.",
     "Match Example": "Sample image of the matched perturbation. It cycles over the available images.",
-    "Match JCP2022 ID": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+    "Match JCP2022": "JUMP internal id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
     "Match resources": "External links that provide further information on the matched perturbation (e.g., NCBI, ChEMBL).",
     "Median": "Median value of the feature for the perturbation when aggregating all replicates.",
     "Match example image": "Sample image of the perturbation’s match. It cycles over the available images for every occurrence of the perturbation.",
     "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations’ profiles are anti-correlated. Ranges from -1 to 1.",
     "Suffix": "Suffix associated with a CellProfiler feature.",
-    "Phenotypic activity": "Mean average precision of the matched perturbation. It determines how different a perturbation is relative to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
-    "Feature significance": "Adjusted p-value (*) indicating the statistical significance of the difference between a specific morphological feature in the perturbed condition compared to the control condition. Lower values suggest a stronger effect of the perturbation on that particular feature.",
+    "Phenotypic activity": "Mean average precision of the perturbation. It determines its distinctiveness to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
+    "Feature significance": "Statistical significance of the difference between a morphological feature in a perturbation compared to the control condition. Lower values suggest a stronger effect of the perturbation on that particular feature. The p-value goes through the Benjamini-Hochberg FDR correction",
     "Phenotypic activity Match": "Phenotypic activity of the matched perturbation.",
-    "Corrected p-value": "Statistical significance of how distinctive a perturbation is relative to the negative control. It is negatively correlated to mean average precision, but adjusted based on its composition of positive and negative values.",
+    "Corrected p-value": "Statistical significance of how distinctive a perturbation is relative to the negative control. It correlates negatively to mean average precision, but adjusted based on its composition of positive and negative values.",
     "Corrected p-value Match": "Corrected p-value of the matched perturbation.",
     "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
     "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
     "Gene Rank": "The rank of the feature for a given gene when compared to that feature in all other genes.",
-    "Match differential activity": "P-value indicating the statistical significance of the difference between the perturbation's morphological profile and its closest match's profile. Lower values suggest stronger dissimilarity between the perturbation and its best match.",  # <2024-07-17 Wed> This is currently unused
     "Source": "Identifier of the partner that produced the data numbered between 1 and 15.",
     "Plate": "Identifier of the plate.",
     "Well": "Identifier of the well. Generally 384-well plates, ranging from A01 to P24.",
     "Site X": "Identifier of the Field of View (FoV). Ranging from 0 to 9 (depending on the dataset).",
-    "(*)": "Benjamini-Hochberg FDR correction",
 }
 
 
@@ -91,12 +89,16 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
         dataframe in the desired order).
 
     """
-    prefix = ""
+    prefix = ' Use \"like\" for case-insensitive search and (optionally) add additional constraints.'
     if table_type == "matches":
-        prefix = 'To find matches (up to 50 will be shown), choose \"Perturbation\" and type in your gene name in the box below; use \"like\" for case-insensitive search and (optionally) add additional constraints.'
+        prefix = 'To find matches (up to 50 will be shown), choose \"Perturbation\" and type in your gene name or InChiKey in the box below. ' + prefix
+    elif table_type == "gallery":
+        prefix = 'Explore the JUMP images.' + prefix
+    elif table_type == "feature":
+        prefix = 'Explore statistically significant features.' + prefix
 
     if table_type != "gallery":  # Add statistical method for non-galleries
-        valid_names = (*colnames, ("(*)"))
+        valid_names = colnames
     else:  # Reduce "Site X' redundancy for galleries
         valid_names = (*[x for x in colnames if not x.startswith("Site")], "Site X")
 

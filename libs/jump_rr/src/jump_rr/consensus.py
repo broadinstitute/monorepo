@@ -102,7 +102,7 @@ def get_range(dataset: str) -> range:
     max_offset = (dataset == "compound") * (-3)
     rng = range(offset, 9 + offset + max_offset)
     return rng
-def add_sample_images(df: pl.DataFrame, meta_df: pl.DataFrame, rng: range, col_outname: str, left_col: str = "JCP2022 ID", right_col: str = "Metadata_JCP2022", sorter_col: str = "modulo", seed: int = 2) -> pl.DataFrame:
+def add_sample_images(df: pl.DataFrame, meta_df: pl.DataFrame, rng: range, col_outname: str, left_col: str = "JCP2022", right_col: str = "Metadata_JCP2022", sorter_col: str = "modulo", seed: int = 2) -> pl.DataFrame:
     """
     Add sample images to a Polars DataFrame.
 
@@ -121,7 +121,7 @@ def add_sample_images(df: pl.DataFrame, meta_df: pl.DataFrame, rng: range, col_o
     col_outname : str
         The name of the output column.
     left_col : str, optional
-        The column in `df` to use for joining with `meta_df`. Defaults to "JCP2022 ID".
+        The column in `df` to use for joining with `meta_df`. Defaults to "JCP2022".
     right_col : str, optional
         The column in `meta_df` to use for joining with `df`. Defaults to "Metadata_JCP2022".
     sorter_col : str, optional

@@ -73,7 +73,7 @@ def pairwise_cosine_sim(x: da.array, y: da.array) -> da.array:
 
 # %% Setup
 ## Paths
-output_dir = Path("./databases_triu")
+output_dir = Path("./databases")
 datasets = ("compound", "crispr", "orf")
 # datasets = ("crispr", "orf")
 
@@ -82,9 +82,9 @@ n_vals_used = 25  # Number of top and bottom matches used
 dist_as_sim = True  # Display distance as integers instead of floats
 
 ## Column names
-jcp_short = "JCP2022 ID"  # Shortened input data frame
+jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
-std_outname = "Gene/Compound"  # Standard item name
+std_outname = "Perturbation"  # Standard item name
 img_col = f"{std_outname} example image"
 rep_col = "Phenotypic activity"
 match_col = "Match"  # Highest matches
@@ -145,7 +145,7 @@ with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
             df_meta,
             get_range(dset),
             img_col,
-            left_col="JCP2022 ID",
+            left_col="JCP2022",
             right_col="Metadata_JCP2022",
         )
         side_b = add_sample_images(
@@ -153,7 +153,7 @@ with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
             df_meta,
             get_range(dset),
             match_img_col,
-            left_col="Match JCP2022 ID",
+            left_col="Match JCP2022",
             right_col="Metadata_JCP2022",
         )
         jcp_cols = (jcp_short, match_jcp_col)
@@ -238,7 +238,6 @@ with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
         matches_translated.write_parquet(final_output, compression="zstd")
 
         write_metadata(dset, "matches", (*order, "(*)"))
-        break
 
         # Save cosine similarity matrix with JCP IDS
         pl.DataFrame(

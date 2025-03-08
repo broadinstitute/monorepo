@@ -3,16 +3,16 @@ These are the full links that correspond to the README's shortlinks. Keeping the
 
 * shortlink:fulllink
 crispr
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14812549/files/crispr.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14990962/files/crispr.parquet/content#/data/content
 crispr_feature
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_feature.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14812549/files/crispr_interpretable_features.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_feature.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14990962/files/crispr_interpretable_features.parquet/content#/data/content
 orf
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/orf_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14812549/files/orf.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/orf_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14990962/files/orf.parquet/content#/data/content
 orf_feature
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/orf_feature.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14812549/files/orf_interpretable_features.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/orf_feature.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14990962/files/orf_interpretable_features.parquet/content#/data/content
 compound_gallery
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14812549/files/compound_gallery.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14990962/files/compound_gallery.parquet/content#/data/content
 crispr_gallery:
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14812549/files/crispr_gallery.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/crispr_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14990962/files/crispr_gallery.parquet/content#/data/content
 orf_gallery:
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/orf_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14812549/files/orf_gallery.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/orf_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/14990962/files/orf_gallery.parquet/content#/data/content

@@ -223,7 +223,7 @@ def add_pert_type(
     profiles: pl.DataFrame, dataset: str, poscons: bool = False
 ) -> pl.DataFrame:
     """
-    Add metadata with perturbation type from the JCP2022 ID.
+    Add metadata with perturbation type from the JCP2022 identifier.
 
     Parameters
     ----------

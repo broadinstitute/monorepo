@@ -58,7 +58,7 @@ n_vals_used = 30  # Number of top and bottom matches used
 feat_decomposition = ("Compartment", "Feature", "Channel", "Suffix")
 
 ## Column names
-jcp_short = "JCP2022 ID"  # Shortened input data frame
+jcp_short = "JCP2022"  # Shortened input data frame
 jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
 std_outname = "Perturbation"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
