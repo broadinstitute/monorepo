@@ -20,7 +20,7 @@
                         "Phenotypic activity": "Mean average precision of the perturbation. It determines its distinctiveness to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
                         "Gene Rank": "The rank of the feature for a given gene when compared to that feature in all other genes.",
                         "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
-                        "JCP2022": "JUMP internal id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "JCP2022": "JUMP id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
                         "Resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
                         "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found."
                     }
