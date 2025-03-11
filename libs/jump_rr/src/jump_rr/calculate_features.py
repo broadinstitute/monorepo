@@ -89,14 +89,42 @@ for dset in datasets:
     )
 
     # This function also performs a filter to remove controls (as there are too many)
-    corrected_pvals = pvals_from_path(get_dataset(dset), dataset=dset_type)
+    # corrected_pvals = pvals_from_path(get_dataset(dset), dataset=dset_type)
+    grouped_dfs = 
     # Ensure that the perturbation numbers match
     filtered_med = med.filter(
         pl.col(jcp_col).is_in(corrected_pvals.get_column(jcp_col))
     )
     median_vals = da.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
 
-    phenact = da.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
+    import duckdb
+    import dask
+
+    # The rules of the game is to perform all the grouping with duckdb
+    # Then we use cupy + dask for the broadcastable operations
+    # In theory this approach should work for any data size, as long as
+    # the statistics array fits in memory (nprofiles, nfeatures*3)
+    with duckdb.connect(":memory:"):
+        plates_trt = duckdb.sql("SELECT Metadata_JCP2022,list(DISTINCT Metadata_Plate) AS Metadata_plates FROM precor WHERE Metadata_pert_type = 'trt' GROUP BY Metadata_JCP2022,Metadata_pert_type")
+        merged = duckdb.sql("SELECT A.Metadata_JCP2022 AS Metadata_JCP2022,B.Metadata_pert_type as Metadata_pert_type,COLUMNS(c->c NOT LIKE 'Metadata%') FROM plates_trt A JOIN precor B on (list_contains(A.Metadata_plates, B.Metadata_Plate) AND A.Metadata_JCP2022 = B.Metadata_JCP2022) OR (B.Metadata_pert_type = 'negcon' AND list_contains(A.Metadata_plates, B.Metadata_Plate))")
+        stats_str = ','.join([metric + "(COLUMNS(c -> c NOT LIKE 'Metadata%')) AS " + metric.split("_")[0] + '_col' for metric in ("count","avg","var_pop")])
+        stats = duckdb.sql((f"SELECT Metadata_JCP2022,Metadata_pert_type,{stats_str} "
+                         "FROM merged GROUP BY Metadata_JCP2022,Metadata_pert_type ORDER BY Metadata_pert_type,Metadata_JCP2022"))
+        
+    with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
+        M = da.asarray(tuple(x for k,x in stats.fetchnumpy().items() if not k.startswith("Meta")), dtype=da.float32)
+        # order is avg, count, var_pop
+        # Used this as reference  https://www.mathportal.org/calculators/statistics-calculator/t-test-calculator.php
+        mt, trt = M.shape
+        mt = int(mt / 3)
+        trt = int(trt / 2)
+        dof = M[:mt,:trt] + M[:mt,trt:]
+        sp = (M[:mt]-1) * da.power(M[mt*2:mt*3], 2)
+        sp = da.sqrt(sp[:,:trt] + sp[:,trt:])
+        t = (M[mt:mt*2,trt:] - M[mt:mt*2,:trt])/sp*da.sqrt(1/M[:mt,trt:]+1/M[:mt,:trt])
+        result = t.compute()
+        
+    henact = da.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
 
     lowest_x, lowest_y = get_ranks(phenact, n_vals_used)
     index_lowest_rank_x = da.vstack(
@@ -132,7 +160,7 @@ for dset in datasets:
         tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
         feat_decomposition,
     )
-    phenact_computed = phenact.compute()
+    phenact_computed = da.around(phenact, 5).compute()
 
     # %% Build Data Frame
     df = pl.DataFrame({
