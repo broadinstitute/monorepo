@@ -2,12 +2,10 @@
 """Fetch replicability information from existing databases or recalculate it."""
 
 import polars as pl
-from cachier import cachier
 
 
 def match_jcp(jcp: str) -> str:
-    """
-    Use the 8th character in a JCP id to fetch its corresponding dataframe.
+    """Use the 8th character in a JCP id to fetch its corresponding dataframe.
 
     Parameters
     ----------
@@ -36,10 +34,8 @@ def match_jcp(jcp: str) -> str:
             raise Exception("Invalid JCP")
 
 
-@cachier()
 def df_from_jcp(jcp: str) -> pl.LazyFrame:
-    """
-    Retrieve a DataFrame from a given JCP.
+    """Retrieve a DataFrame from a given JCP.
 
     Parameters
     ----------
@@ -69,8 +65,7 @@ def add_replicability(
     },
     **kwargs: dict,
 ) -> pl.DataFrame or pl.LazyFrame:
-    """
-    Add a column indicating replicability to the input DataFrame.
+    """Add a column indicating replicability to the input DataFrame.
 
     This function fetches replicability data from publicly available datasets.
     Note that this function may provide a distinct number of values for ORF with respect to CRISPR,
