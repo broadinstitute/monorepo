@@ -16,8 +16,6 @@ adbc-driver-sqlite = "^0.8.0"
 polars = "*"
 pylibraft-cu12 = {version = "==24.6.*", source = "nvidia"}
 statsmodels = "0.14.1"
-tqdm = "^4.66.2"
-pathos = "^0.3.2"
 cachier = "^3.0.0"
 s3fs = "^2024.3.1"
 # dask-cuda = "^24.6.0"
