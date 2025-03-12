@@ -27,9 +27,11 @@ Steps:
 """
 
 from pathlib import Path
+from time import perf_counter
 
 import dask.array as da
 import duckdb
+import numpy as np
 import polars as pl
 from jump_rr.consensus import (
     add_sample_images,
@@ -43,7 +45,7 @@ from jump_rr.mappers import get_external_mappers, get_synonym_mapper
 from jump_rr.metadata import write_metadata
 from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
-from jump_rr.significance import add_pert_type, pvals_from_path
+from jump_rr.significance import add_pert_type, pvals_from_profile
 
 # %% Setup
 ## Paths
@@ -51,6 +53,7 @@ output_dir = Path("./databases")
 datasets = (
     "crispr_interpretable",
     "orf_interpretable",
+    "compound_interpretable",
 )
 
 ## Parameters
@@ -63,7 +66,7 @@ jcp_col = f"Metadata_{jcp_short[:7]}"  # Traditional JUMP metadata colname
 std_outname = "Perturbation"  # Standard item name
 ext_links_col = "Resources"  # Link to external resources (e.g., NCBI)
 img_col = f"{std_outname} example image"
-rep_col = "Phenotypic activity"  # Column containing reproducibility
+rep_col = "Phenotypic activity"  # Column containing val
 val_col = "Median"  # Value col
 stat_col = "Feature significance"
 rank_feat_col = "Feature Rank"
@@ -75,6 +78,7 @@ replicability_cols = {
 
 for dset in datasets:
     print(f"Processing features for {dset} dataset")
+    t0 = perf_counter()
 
     # %% Loading
     precor = pl.read_parquet(get_dataset(dset))
@@ -90,42 +94,16 @@ for dset in datasets:
 
     # This function also performs a filter to remove controls (as there are too many)
     # corrected_pvals = pvals_from_path(get_dataset(dset), dataset=dset_type)
-    grouped_dfs = 
     # Ensure that the perturbation numbers match
-    filtered_med = med.filter(
-        pl.col(jcp_col).is_in(corrected_pvals.get_column(jcp_col))
-    )
+    # filtered_med = med.filter(
+    #     pl.col(jcp_col).is_in(corrected_pvals.get_column(jcp_col))
+    # )
+
+    corrected_pvals = np.array(pvals_from_profile(precor)).T
+    filtered_med = med.sort(by="Metadata_JCP2022")
     median_vals = da.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
 
-    import duckdb
-    import dask
-
-    # The rules of the game is to perform all the grouping with duckdb
-    # Then we use cupy + dask for the broadcastable operations
-    # In theory this approach should work for any data size, as long as
-    # the statistics array fits in memory (nprofiles, nfeatures*3)
-    with duckdb.connect(":memory:"):
-        plates_trt = duckdb.sql("SELECT Metadata_JCP2022,list(DISTINCT Metadata_Plate) AS Metadata_plates FROM precor WHERE Metadata_pert_type = 'trt' GROUP BY Metadata_JCP2022,Metadata_pert_type")
-        merged = duckdb.sql("SELECT A.Metadata_JCP2022 AS Metadata_JCP2022,B.Metadata_pert_type as Metadata_pert_type,COLUMNS(c->c NOT LIKE 'Metadata%') FROM plates_trt A JOIN precor B on (list_contains(A.Metadata_plates, B.Metadata_Plate) AND A.Metadata_JCP2022 = B.Metadata_JCP2022) OR (B.Metadata_pert_type = 'negcon' AND list_contains(A.Metadata_plates, B.Metadata_Plate))")
-        stats_str = ','.join([metric + "(COLUMNS(c -> c NOT LIKE 'Metadata%')) AS " + metric.split("_")[0] + '_col' for metric in ("count","avg","var_pop")])
-        stats = duckdb.sql((f"SELECT Metadata_JCP2022,Metadata_pert_type,{stats_str} "
-                         "FROM merged GROUP BY Metadata_JCP2022,Metadata_pert_type ORDER BY Metadata_pert_type,Metadata_JCP2022"))
-        
-    with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
-        M = da.asarray(tuple(x for k,x in stats.fetchnumpy().items() if not k.startswith("Meta")), dtype=da.float32)
-        # order is avg, count, var_pop
-        # Used this as reference  https://www.mathportal.org/calculators/statistics-calculator/t-test-calculator.php
-        mt, trt = M.shape
-        mt = int(mt / 3)
-        trt = int(trt / 2)
-        dof = M[:mt,:trt] + M[:mt,trt:]
-        sp = (M[:mt]-1) * da.power(M[mt*2:mt*3], 2)
-        sp = da.sqrt(sp[:,:trt] + sp[:,trt:])
-        t = (M[mt:mt*2,trt:] - M[mt:mt*2,:trt])/sp*da.sqrt(1/M[:mt,trt:]+1/M[:mt,:trt])
-        result = t.compute()
-        
-    henact = da.array(corrected_pvals.select(pl.exclude(jcp_col)).to_numpy())
-
+    phenact = da.array(corrected_pvals)
     lowest_x, lowest_y = get_ranks(phenact, n_vals_used)
     index_lowest_rank_x = da.vstack(
         (
@@ -141,20 +119,29 @@ for dset in datasets:
     ).compute()
 
     # Unify Gene and Feature ranks
-    with duckdb.connect(":memory:"):
-        table = duckdb.sql(
-            "SELECT x,y,any_value(rank_feat) AS rank_feat,any_value(rank_gene) AS rank_gene"
-            " FROM (SELECT * FROM (SELECT column0 as x,column1 as rank_feat,column2 as y"
-            " FROM index_lowest_rank_x) UNION ALL BY NAME"
-            " (SELECT column0 AS y,column1 AS rank_gene, column2 AS x"
-            " FROM index_lowest_rank_y)) GROUP By x,y"
+    # If an (x,y) cell is selected as a top feature and column get both,
+    # otherwise get one and null for the other one
+    table = duckdb.sql(
+        (
+            "SELECT x,y,"
+            "any_value(rankf) AS rankf,"
+            "any_value(rankg) AS rankg"
+            " FROM (SELECT * FROM"
+            " (SELECT column0 as x,column1 as rankf,column2 as y"
+            " FROM index_lowest_rank_x)"
+            " UNION ALL BY NAME"
+            " (SELECT column0 AS y,column1 AS rankg, column2 AS x"
+            " FROM index_lowest_rank_y))"
+            " GROUP By x,y"
         )
-        items = table.fetchnumpy()
+    )
+    items = table.fetchnumpy()
     xs = items["x"]
     ys = items["y"]
-    rank_feat = items["rank_feat"].filled()
-    rank_gene = items["rank_gene"].filled()
+    rankf = items["rankf"].filled()
+    rankg = items["rankg"].filled()
 
+    print(f"{dset} Features processed in {perf_counter() - t0}")
     # Get the Gene Rank and Feature Rank
     decomposed_feats = get_feature_groups(
         tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
@@ -171,8 +158,8 @@ for dset in datasets:
         stat_col: phenact_computed[xs, ys],
         val_col: median_vals.compute()[xs, ys],
         jcp_short: med[jcp_col][xs],
-        rank_gene_col: rank_gene,
-        rank_feat_col: rank_feat,
+        rank_gene_col: rankg,
+        rank_feat_col: rankf,
         "x": xs,
         "y": ys,
     })
@@ -192,13 +179,30 @@ for dset in datasets:
         precor, jcp_col, dset.removesuffix("_interpretable")
     )
 
+    # Reorder columns
+    order = [
+        *decomposed_feats.columns,
+        stat_col,
+        std_outname,
+        img_col,
+        val_col,
+        # *replicability_cols.values(),
+        rank_gene_col,
+        rank_feat_col,
+        jcp_short,
+        # ext_links_col,
+        "Synonyms",
+    ]
+
     # Add phenotypic activity from a previously-calculated
-    df = add_replicability(
-        df,
-        left_on=jcp_short,
-        right_on=jcp_col,
-        cols_to_add=replicability_cols,
-    )
+    if not dset.startswith("compound"):
+        df = add_replicability(
+            df,
+            left_on=jcp_short,
+            right_on=jcp_col,
+            cols_to_add=replicability_cols,
+        )
+        order = (*order, *replicability_cols.values())
 
     # Add aliases and external links
     jcp_translated = df.with_columns(
@@ -208,21 +212,6 @@ for dset in datasets:
         .replace(get_synonym_mapper())  # Map synonyms
         .alias("Synonyms"),
     )
-
-    # Reorder columns
-    order = [
-        *decomposed_feats.columns,
-        stat_col,
-        std_outname,
-        img_col,
-        val_col,
-        *replicability_cols.values(),
-        rank_gene_col,
-        rank_feat_col,
-        jcp_short,
-        # ext_links_col,
-        "Synonyms",
-    ]
 
     key_source_mapper = (
         ("entrez", jcp_short, jcp_to_entrez),

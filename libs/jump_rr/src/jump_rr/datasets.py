@@ -34,6 +34,7 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
         "orf": "32f25ee6fdc4dcfa3349397ddf0e1f6ca2594001b8266c5dc0644fa65944f193",
         "crispr_interpretable": "6153c9182faf0a0a9ba22448dfa5572bd7de9b943007356830304834e81a1d05",
         "orf_interpretable": "ae3fea5445022ebd0535fcbae3cfbbb14263f63ea6243f4bac7e4c384f8d3bbf",
+        "compound_interpretable": "42028e8c60692df545e0b1dd087fc9b911f5117c318a8819d768cff251e4edda",
     }
     result = get_profiles_url(dataset)
 
