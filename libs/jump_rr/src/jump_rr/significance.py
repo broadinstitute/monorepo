@@ -93,19 +93,46 @@ def pvals_from_profile(
 
     """
     metrics = get_metrics_for_ttest(profile)
-    df, t_values = t_from_metrics(metrics)
+    t_, df = t_from_metrics(metrics)
     # Here it is numpy again. If we can remain in dask there's speed to be gained
     # scipy.stats allows for broadcasting but not dask arrays
-    p_values = t.cdf(t_values, df)
 
+    # On the p value calculation:
+    # If you only looked at the probability of the observed direction after seeing
+    # the data (a practice called "post-hoc directionality"), you'd effectively be
+    # performing a one-tailed test without the proper adjustment to your significance
+    # threshold, which introduces bias.
+    # The p value is thus 2*min(cdf,sf) for every t statistic
+    cdf = t.cdf(t_, df)
+    sf = t.sf(t_, df)
+    p_value = np.minimum(sf, cdf) * 2
+
+    corrected_p_values = correct_multitest_threaded(p_value)
+
+    # Back to dask to find the significant values
+    return da.asarray(corrected_p_values).T
+
+
+def correct_multitest_threaded(p_values: np.ndarray) -> list[np.ndarray]:
+    """Correct p-values for multiple testing using Benjamini-Hochberg FDR.
+
+    Parameters
+    ----------
+    p_values : np.ndarray
+        Array of p-values to be corrected.
+
+    Returns
+    -------
+    corrected_p_values : list[np.ndarray]
+        List of arrays containing the corrected p-values.
+    """
     # Correct p values
     with ThreadPoolExecutor() as ex:
         corrected_p_values = list(
             ex.map(lambda x: multipletests(x, method="fdr_bh")[1], p_values)
         )
 
-    # Back to dask to find the significant values
-    return da.asarray(corrected_p_values).T
+    return corrected_p_values
 
 
 def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
@@ -202,11 +229,10 @@ def t_from_metrics(
         [stats[x, y] for x in (n, m, v)] for y in (slice(0, trt), slice(trt, trt * 2))
     ]
 
-    df, t = t_from_stats(n1, m1, v1, n2, m2, v2)
-    df_ = df.astype(int)
+    t, df = t_from_stats(n1, m1, v1, n2, m2, v2)
 
     # Return also the df for p value calculations
-    return df_, t
+    return t, df
 
 
 def t_from_stats(
@@ -242,4 +268,4 @@ def t_from_stats(
     sv = ((n1 - 1) * v1 + (n2 - 1) * v2) / df
     denom = da.sqrt(sv * (1 / n1 + 1 / n2))
     t = (m1 - m2) / denom
-    return df, t
+    return t, df
