@@ -13,8 +13,7 @@
 #     name: python3
 # ---
 
-"""
-Generate a table with the most correlated and anticorrelated pairs.
+"""Generate a table with the most correlated and anticorrelated pairs.
 
 Calculate cosine distance of CRISPR and ORF profiles using a GPU,
 then wrangle information and produce an explorable data frame.
@@ -42,8 +41,7 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 
 
 def pairwise_cosine_sim(x: da.array, y: da.array) -> da.array:
-    """
-    Compute pairwise cosine similarity between two sets of vectors.
+    """Compute pairwise cosine similarity between two sets of vectors.
 
     Parameters
     ----------

@@ -1,5 +1,4 @@
-"""
-Tools to produce labels and explanations for jump_rr web interfaces.
+"""Tools to produce labels and explanations for jump_rr web interfaces.
 
 To get columns:
 import polars as pl.
@@ -52,8 +51,7 @@ _DESCRIPTIONS = {
 
 
 def get_col_desc(key: str) -> str:
-    """
-    Fetch the description for a given key.
+    """Fetch the description for a given key.
 
     Parameters
     ----------
@@ -75,8 +73,7 @@ def get_col_desc(key: str) -> str:
 
 
 def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
-    """
-    Write metadata file to customize Datasette.
+    """Write metadata file to customize Datasette.
 
     Parameters
     ----------
@@ -144,8 +141,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
 
 
 def table_type_to_suffix(table_type: str) -> Optional[str]:
-    """
-    Convert a table type to a title suffix.
+    """Convert a table type to a title suffix.
 
     This function takes a string representing the type of table and returns the corresponding title suffix.
 
