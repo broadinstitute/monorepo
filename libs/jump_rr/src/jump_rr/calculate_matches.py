@@ -74,7 +74,7 @@ def pairwise_cosine_sim(x: da.array, y: da.array) -> da.array:
 # %% Setup
 ## Paths
 output_dir = Path("./databases")
-datasets = ("compound", "crispr", "orf")
+datasets = ("crispr", "compound", "orf")
 # datasets = ("crispr", "orf")
 
 ## Parameters
@@ -132,11 +132,13 @@ with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
         jcp_ids = med[jcp_col].to_numpy().astype("<U15")
 
         # Build a dataframe containing matches
-        jcp_df = pl.DataFrame({
-            jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
-            match_jcp_col: jcp_ids[ys].astype("<U15"),
-            dist_col: matched_values[xs, ys],
-        })
+        jcp_df = pl.DataFrame(
+            {
+                jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
+                match_jcp_col: jcp_ids[ys].astype("<U15"),
+                dist_col: matched_values[xs, ys],
+            }
+        )
 
         # Add images for both queries and matches
         df_meta = df.select("^Metadata.*$")

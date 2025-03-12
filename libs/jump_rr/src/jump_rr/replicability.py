@@ -35,6 +35,7 @@ def match_jcp(jcp: str) -> str:
         case _:
             raise Exception("Invalid JCP")
 
+
 @cachier()
 def df_from_jcp(jcp: str) -> pl.LazyFrame:
     """
@@ -99,14 +100,16 @@ def add_replicability(
     jcp_sample = profiles.select(pl.col(left_on)).head(1)
     if hasattr(jcp_sample, "collect"):
         jcp_sample = jcp_sample.collect()
-    data = df_from_jcp(jcp_sample[0,0]).rename(cols_to_add)
+    data = df_from_jcp(jcp_sample[0, 0]).rename(cols_to_add)
 
     if isinstance(profiles, pl.DataFrame):
         data = data.collect()
-    return profiles.join(
+    data = data.with_columns(pl.col(cols_to_add.values()).round(5))
+    joint = profiles.join(
         data.select(pl.col(right_on), pl.col(cols_to_add.values())),
         how="left",
         left_on=left_on,
         right_on=right_on,
         **kwargs,
     )
+    return joint

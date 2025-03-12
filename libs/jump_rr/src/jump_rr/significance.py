@@ -1,222 +1,33 @@
-#!/usr/bin/env jupyter
-# jupyter:
-#   jupytext:
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.15.2
-#   kernelspec:
-#     display_name: Python 3
-#     language: python
-#     name: python3
-# ---
-
 """
 Generate aggregated statistics for the values of features.
 
 Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/issues/4#issuecomment-1918019212.
 
-1. Calculate the p value of all features
-2. then adjust the p value to account for multiple testing https://www.statsmodels.org/dev/generated/statsmodels.stats.multitest.multipletests.html (fdr_bh)
-3. Group features based on their hierarchy and compute combined p-value per group using https://docs.scipy.org/doc/scipy/reference/generated/scipy.stats.combine_pvalues.html (fisher); this will give you a p-value per group
-4. then correct the p values from step 5 (fdr_bh)
+1. Calculate essential metrics for t-value using duckdb
+2. Calculate the p value of all features
+3. Correct the p values (fdr_bh)
+
+Implementation details:
+The rules of the game is to perform all the grouping and stats calculation with duckdb
+Then we use cupy + dask for the broadcastable operations (though it may not be needed)
+In theory this approach should work for any data size, as long as
+the statistics array fits in memory (nprofiles, nfeatures*3)
+If it does not then dask comes in and chunks it, though it will run more slowly
+
 """
 
-from collections.abc import Iterable
-from time import perf_counter
-
+import dask
+import dask.array as da
+import duckdb
 import numpy as np
 import polars as pl
 import polars.selectors as cs
 from broad_babel.query import get_mapper
-from cachier import cachier
 from pathos.multiprocessing import Pool
-from scipy.stats import mannwhitneyu
+from scipy.stats import t
 from statsmodels.stats.multitest import multipletests
-from tqdm import tqdm
-
-try:
-    pass
-except Exception:
-    pass
-
 
 np.seterr(divide="ignore")
-
-
-@cachier()
-def partition_parquet_by_trt(
-    path: str,
-    dataset: str,
-    column: str = "Metadata_JCP2022",
-    negcons_per_plate: int = 2,
-    seed: int = 42,
-) -> dict[str, tuple[pl.DataFrame, pl.DataFrame]]:
-    """
-    Partitions a Parquet file by treatment.
-
-    Parameters
-    ----------
-    path : str
-        Path to the Parquet file.
-    dataset : str
-        Name of the dataset.
-    column : str, optional
-        Column name for treatment information (default is "Metadata_JCP2022").
-    negcons_per_plate : int, optional
-        Number of negative controls per plate (default is 2).
-    seed : int, optional
-        Random seed for reproducibility (default is 42).
-
-    Returns
-    -------
-    dict[str, tuple[pl.DataFrame, pl.DataFrame]]
-        Dictionary with treatment as key and a tuple of DataFrames as value.
-
-    """
-    profiles = pl.read_parquet(path)
-    profiles = add_pert_type(profiles, dataset=dataset)
-    return partition_by_trt(profiles, dataset, column, negcons_per_plate, seed)
-
-
-def partition_by_trt(
-    df: pl.DataFrame,
-    dataset: str,
-    column: str = "Metadata_JCP2022",
-    negcons_per_plate: int = 2,
-    seed: int = 42,
-) -> dict[str, tuple[np.ndarray, np.ndarray]]:
-    """
-    Partition a dataframe by using the identifier column.
-
-    Parameters
-    ----------
-    df : pl.DataFrame
-        Input dataframe to be partitioned.
-    dataset : str
-        Name of the dataset.
-    column : str, optional
-        Column name used for partitioning (default is "Metadata_JCP2022").
-    negcons_per_plate : int, optional
-        Number of negative controls to sample per plate (default is 2).
-    seed : int, optional
-        Random seed for shuffling (default is 42).
-
-    Returns
-    -------
-    dict[str, tuple[np.ndarray, np.ndarray]]
-        A dictionary where each key is an identifier and the value is a tuple
-        containing the treatment profile as a numpy array and the negative control
-        profiles as a numpy array.
-
-    """
-    meta_cols = (column, "Metadata_pert_type", "Metadata_Plate")
-    partitions = {
-        k[0]: v
-        for k, v in df.select(
-            pl.col(meta_cols),
-            pl.all().exclude("^Metadata.*$").cast(pl.Float32),
-        )
-        .partition_by("Metadata_pert_type", include_key=False, as_dict=True)
-        .items()
-    }
-
-    partitions["negcon"] = partitions["negcon"].drop(column)
-    if negcons_per_plate:  # Sample $negcons_per_plate elements from each plate
-        partitions["negcon"] = partitions["negcon"].filter(
-            pl.int_range(0, pl.count()).shuffle(seed=seed).over("Metadata_Plate")
-            < negcons_per_plate
-        )
-
-    ids_plates = dict(
-        partitions["trt"].group_by(column).agg("Metadata_Plate").iter_rows()
-    )
-
-    ids_prof = {
-        k[0]: v
-        for k, v in partitions["trt"]
-        .drop("Metadata_Plate")
-        .partition_by(column, include_key=False, as_dict=True)
-        .items()
-    }
-
-    # TODO is there a better way to return only float values?
-    id_trt_negcon = {
-        id_: (
-            ids_prof[id_].to_numpy(),
-            partitions["negcon"]
-            .filter(pl.col("Metadata_Plate").is_in(plates))
-            .select(cs.by_dtype(pl.Float32))
-            .to_numpy(),
-        )
-        for id_, plates in ids_plates.items()
-    }
-    return id_trt_negcon
-
-
-def get_pvalue_mwu(a: np.ndarray, b: np.ndarray, axis: int = 0) -> float:
-    """
-    Calculate the p-value using the Mann-Whitney U test.
-
-    This function is a wrapper around scipy.stats.mannwhitneyu and returns
-    the p-value of the two-sample Mann-Whitney rank test on the provided input arrays.
-
-    Parameters
-    ----------
-    a : np.ndarray
-        Input array 1.
-    b : np.ndarray
-        Input array 2.
-    axis : int, optional
-        Axis over which to compute the statistic. By default, the statistic is
-        computed over all the values given (axis=0).
-
-    Returns
-    -------
-    pvalue : float
-        The p-value of the two-sample Mann-Whitney rank test.
-
-    Notes
-    -----
-    This function assumes that the input arrays are not empty and contain at least one element.
-
-    """
-    return mannwhitneyu(a, b, axis=axis).pvalue
-
-
-def calculate_pvals(
-    partitioned: dict[str, tuple[np.ndarray, np.ndarray]],
-) -> tuple[tuple[str], pl.DataFrame]:
-    """
-    Calculate the pvalues of each feature against a sample of their negative controls.
-
-    1. Calculate the p value of all features
-    2. then adjust the p value to account for multiple testing.
-    """
-    # Remove perturbations that have an excessive number of entries (usually controls/errors)
-    partitioned = {
-        k: v for k, v in partitioned.items() if len(v[0]) < 50 and len(v[1]) < 50
-    }
-    print("Calculating and adjusting p values")
-    timer = perf_counter()
-    if False:  # Unthreaded by default
-        timer = perf_counter()
-        with Pool() as p:
-            corrected = p.map(
-                lambda x: multipletests(get_pvalue_mwu(*x), method="fdr_bh")[1],
-                partitioned.values(),
-            )
-        print(f"Threaded: {perf_counter() - timer}")
-    else:
-        timer = perf_counter()
-        corrected = [
-            multipletests(get_pvalue_mwu(a, b), method="fdr_bh")[1]
-            for a, b in tqdm(partitioned.values())
-        ]
-        print(f"Linear: {perf_counter() - timer}")
-
-    return (tuple(partitioned.keys()), corrected)
 
 
 def add_pert_type(
@@ -268,46 +79,135 @@ def add_pert_type(
     return profiles
 
 
-@cachier()
-def pvals_from_path(
-    path: str, dataset: str, *args: Iterable, **kwargs: dict
-) -> pl.DataFrame:
+def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
     """
-    Calculate p-values from the path of a set of profiles.
-
-    Calculate p values from a profiles file to cache p-values.
-    To clean cache run `clean_cache()` function.
+    Calculate metrics for t-test from a given dataframe.
 
     Parameters
     ----------
-    path : str
-        Path to the profiles parquet file.
-    dataset : str
-        Name of the dataset (orf, crispr or compound).
-    *args
-        Additional positional arguments passed to `calculate_pvals` function.
-    **kwargs
-        Additional keyword arguments passed to `calculate_pvals` function.
+    df : duckdb.DuckDBPyRelation
+        Input dataframe containing metadata and profiles.
 
     Returns
     -------
-    pl.DataFrame
-        DataFrame containing p-values with added metadata column 'Metadata_JCP2022'.
-
-    Notes
-    -----
-    This function uses local caching for efficient computation of p-values.
-
+    stats : duckdb.DuckDBPyRelation
+        Dataframe with calculated metrics, including count, average, and variance.
     """
-    timer = perf_counter()
-    partitioned = partition_parquet_by_trt(path, dataset)
-    print(f"Partitioning took {perf_counter() - timer}")
+    con = duckdb.connect(":memory:")
+    # Group the plates for any given perturbation (trt)
+    plates_trt = duckdb.sql(
+        (
+            "SELECT Metadata_JCP2022,list(DISTINCT Metadata_Plate) AS Metadata_plates"
+            " FROM df WHERE Metadata_pert_type = 'trt'"
+            " GROUP BY Metadata_JCP2022,Metadata_pert_type"
+        )
+    )
+    # Attach the profiles based on two conditions:
+    # 1. The profile belongs to that perturbation (trt)
+    # 2. The profile belongs to a negative control present in the same plate as trt
+    merged = duckdb.sql(
+        (
+            "SELECT A.Metadata_JCP2022 AS"
+            " Metadata_JCP2022,B.Metadata_pert_type as Metadata_pert_type,"
+            "COLUMNS(c->c NOT LIKE 'Metadata%') FROM plates_trt A"
+            " JOIN df B on (list_contains(A.Metadata_plates, B.Metadata_Plate)"
+            " AND A.Metadata_JCP2022 = B.Metadata_JCP2022)"
+            " OR (B.Metadata_pert_type = 'negcon'"
+            " AND list_contains(A.Metadata_plates, B.Metadata_Plate))"
+        )
+    )
 
-    ids, pvals = calculate_pvals(partitioned, *args, **kwargs)
-    return pl.DataFrame(
-        pvals,
-        schema={
-            k: pl.Float32
-            for k in pl.scan_parquet(path).select(pl.exclude("^Metadata.*$")).columns
-        },
-    ).with_columns(Metadata_JCP2022=pl.Series(ids))
+    # Generate COLUMNS expressions to ignore metadata columns
+    stats_str = ",".join([
+        metric
+        + "(COLUMNS(c -> c NOT LIKE 'Metadata%')) AS "
+        + metric.split("_")[0]
+        + "_col"
+        for metric in ("count", "avg", "var_samp")
+    ])
+    # Calculate the metrics
+    # This table is split in six sections: three on columns and two on rows:
+    # The left-right halves are controls or perturbations (because 'negcon' < 'trt')
+    # The top-bottom splits are counts, average and variance (as sorted above)
+    stats = duckdb.sql(
+        (
+            f"SELECT Metadata_JCP2022,Metadata_pert_type,{stats_str}"
+            " FROM merged GROUP BY Metadata_JCP2022,Metadata_pert_type"
+            " ORDER BY Metadata_pert_type,Metadata_JCP2022"
+        )
+    )
+
+    return stats
+
+
+def t_from_metrics(
+    metrics: duckdb.duckdb.DuckDBPyRelation,
+) -> duckdb.duckdb.DuckDBPyRelation:
+    """
+    Compute the t statistic from the average, count and variance of two distributions.
+
+        Reference: https://stats.libretexts.org/Workbench/PSYC_2200%3A_Elementary_Statistics_for_Behavioral_and_Social_Science_(Oja)_WITHOUT_UNITS/09%3A_Independent_Samples_t-test/9.02%3A_Independent_Samples_t-test_Equation
+    """
+    # Convert the resulting table (minus the first two columns)
+    # into a numpy and then dask matrix withdimensions (3*nfeatures, 2*ntrts)
+    # Here we use broadcasting to implement the t student calculation
+    with dask.config.set({"array.backend": "cupy"}):  # Dask should use cupy
+        # M = da.asarray(tuple(x for k,x in stats.fetchnumpy().items() if not k.startswith("Meta")), dtype=da.float32)
+        M = da.asarray(
+            tuple(
+                x for k, x in metrics.fetchnumpy().items() if not k.startswith("Meta")
+            ),
+            dtype=da.float32,
+        )
+
+        # Slices makes isolating metrics and treatment blocks simpler
+        mt, trt = M.shape
+        mt = int(mt / 3)
+        trt = int(trt / 2)
+        n = slice(0, mt)
+        avg = slice(mt, mt * 2)
+        var = slice(mt * 2, mt * 3)
+
+        # Assign the blocks into variables so the equations are clear later on
+        (n2, avg2, var2), (n1, avg1, var1) = [
+            [M[x, y] for x in (n, avg, var)]
+            for y in (slice(0, trt), slice(trt, trt * 2))
+        ]
+
+        df = n1 + n2 - 2
+        # pooled variance
+        svar = ((n1 - 1) * var1 + (n2 - 1) * var2) / df
+        denom = da.sqrt(svar * (1 / n1 + 1 / n2))
+        t_ = (avg1 - avg2) / denom
+
+    t = t_.compute()
+    df_ = df.astype(int).compute()
+    # Return also the df for p value calculations
+    return df_, t
+
+
+def pvals_from_profile(profile):
+    """
+    Compute p-values from a given profile.
+
+    Parameters
+    ----------
+    profile : object
+        Input profile to compute p-values from.
+
+    Returns
+    -------
+    corrected_p_values : array_like
+        Array of p-values corrected for multiple testing using FDR.
+    """
+    metrics = get_metrics_for_ttest(profile)
+    df, t_values = t_from_metrics(metrics)
+    p_values = t.cdf(t_values, df)
+
+    # Correct p values
+    with Pool() as p:
+        corrected_p_values = p.map(
+            lambda x: multipletests(x, method="fdr_bh")[1], p_values
+        )
+
+    return corrected_p_values

@@ -92,10 +92,12 @@ def get_external_mappers(
     entrez_to_omim = {}
     entrez_to_ensembl = {}
 
-    other_ids = pl.DataFrame({
-        "entrez": jcp_to_entrez.values(),
-        "std": jcp_to_std.values(),
-    })
+    other_ids = pl.DataFrame(
+        {
+            "entrez": jcp_to_entrez.values(),
+            "std": jcp_to_std.values(),
+        }
+    )
 
     if any(jcp_to_entrez.values()):
         other_ids = other_ids.filter(~pl.col("entrez").str.contains("[A-Z]")).unique()

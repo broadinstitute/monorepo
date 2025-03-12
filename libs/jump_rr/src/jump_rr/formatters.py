@@ -53,6 +53,7 @@ def get_url_label(key: str) -> tuple[str, str]:
     )
     return vendors[key]
 
+
 def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str, str]:
     """
     Construct a dictionary containing URL and label information.
@@ -87,6 +88,7 @@ def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str
         case "img":
             return {"img_src": url, "href": url, "width": 200}
 
+
 @cache
 def format_value(fmt: str, vendor: str, value: str or int or Iterable) -> str:
     """
@@ -110,6 +112,7 @@ def format_value(fmt: str, vendor: str, value: str or int or Iterable) -> str:
     d = build_dict(fmt, vendor, value)
     html = str(json.dumps(d))
     return html
+
 
 def add_phenaid_url_col(
     profiles: pl.DataFrame, url_colname: str = "Metadata_image"
@@ -143,7 +146,12 @@ def add_phenaid_url_col(
     )
     return profiles
 
-def add_external_sites(df: pl.DataFrame or pl.LazyFrame, ext_links_col:str, key_source_mapper: tuple[str,str,dict[str,str]]) -> pl.DataFrame or pl.LazyFrame:
+
+def add_external_sites(
+    df: pl.DataFrame or pl.LazyFrame,
+    ext_links_col: str,
+    key_source_mapper: tuple[str, str, dict[str, str]],
+) -> pl.DataFrame or pl.LazyFrame:
     """
     Add external site information to a given DataFrame.
 
@@ -177,12 +185,16 @@ def add_external_sites(df: pl.DataFrame or pl.LazyFrame, ext_links_col:str, key_
     )
 
     df = df.with_columns(
-        ("[" + pl.concat_str(
-            [
-                pl.format(format_value("href", key, "{}"), pl.col(key))
-                for key, _, _ in key_source_mapper
-            ],
-        separator=", "
-        ) + "]").alias(ext_links_col),
+        (
+            "["
+            + pl.concat_str(
+                [
+                    pl.format(format_value("href", key, "{}"), pl.col(key))
+                    for key, _, _ in key_source_mapper
+                ],
+                separator=", ",
+            )
+            + "]"
+        ).alias(ext_links_col),
     )
     return df

@@ -1,13 +1,12 @@
 #!/usr/bin/env jupyter
 """Functions to group multiple wells."""
 
-
 import polars as pl
 from jump_rr.formatters import format_value
 from jump_rr.parse_features import get_feature_groups
 
 
-def get_consensus_meta_urls(profiles: pl.DataFrame, col:str) -> tuple:
+def get_consensus_meta_urls(profiles: pl.DataFrame, col: str) -> tuple:
     """
     Compute aggregated median values and metadata with urls for a given dataframe.
 
@@ -76,6 +75,7 @@ def get_group_median(
 
     return grouped.median()
 
+
 def get_range(dataset: str) -> range:
     """
     Generate a range of indices based on the dataset.
@@ -102,7 +102,18 @@ def get_range(dataset: str) -> range:
     max_offset = (dataset == "compound") * (-3)
     rng = range(offset, 9 + offset + max_offset)
     return rng
-def add_sample_images(df: pl.DataFrame, meta_df: pl.DataFrame, rng: range, col_outname: str, left_col: str = "JCP2022", right_col: str = "Metadata_JCP2022", sorter_col: str = "modulo", seed: int = 2) -> pl.DataFrame:
+
+
+def add_sample_images(
+    df: pl.DataFrame,
+    meta_df: pl.DataFrame,
+    rng: range,
+    col_outname: str,
+    left_col: str = "JCP2022",
+    right_col: str = "Metadata_JCP2022",
+    sorter_col: str = "modulo",
+    seed: int = 2,
+) -> pl.DataFrame:
     """
     Add sample images to a Polars DataFrame.
 
@@ -137,10 +148,25 @@ def add_sample_images(df: pl.DataFrame, meta_df: pl.DataFrame, rng: range, col_o
     """
     df = df.with_columns(modulo=pl.int_range(pl.len()).over(left_col))
     df = df.join_where(meta_df, pl.col(left_col) == pl.col(right_col))
-    df = df.sample(fraction=1.0, shuffle=True, seed=seed).group_by((left_col, sorter_col), maintain_order=True).first()
+    df = (
+        df.sample(fraction=1.0, shuffle=True, seed=seed)
+        .group_by((left_col, sorter_col), maintain_order=True)
+        .first()
+    )
     df = df.with_columns(sample_site=pl.col(sorter_col) % max(rng) + min(rng))
-    df = df.with_columns(pl.format(
-        format_value("img", "phenaid", tuple("{}" for _ in range(8))),
-        *[pl.col(x) for _ in range(2) for x in ("Metadata_Source", "Metadata_Plate", "Metadata_Well", "sample_site")],
-    ).alias(col_outname))
+    df = df.with_columns(
+        pl.format(
+            format_value("img", "phenaid", tuple("{}" for _ in range(8))),
+            *[
+                pl.col(x)
+                for _ in range(2)
+                for x in (
+                    "Metadata_Source",
+                    "Metadata_Plate",
+                    "Metadata_Well",
+                    "sample_site",
+                )
+            ],
+        ).alias(col_outname)
+    )
     return df

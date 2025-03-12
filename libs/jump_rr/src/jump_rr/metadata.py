@@ -89,13 +89,16 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
         dataframe in the desired order).
 
     """
-    prefix = ' Use \"like\" for case-insensitive search and (optionally) add additional constraints.'
+    prefix = ' Use "like" for case-insensitive search and (optionally) add additional constraints.'
     if table_type == "matches":
-        prefix = 'To find matches (up to 50 will be shown), choose \"Perturbation\" and type in your gene name or InChiKey in the box below. ' + prefix
+        prefix = (
+            'To find matches (up to 50 will be shown), choose "Perturbation" and type in your gene name or InChiKey in the box below. '
+            + prefix
+        )
     elif table_type == "gallery":
-        prefix = 'Explore the JUMP images.' + prefix
+        prefix = "Explore the JUMP images." + prefix
     elif table_type == "feature":
-        prefix = 'Explore statistically significant features.' + prefix
+        prefix = "Explore statistically significant features." + prefix
 
     if table_type != "gallery":  # Add statistical method for non-galleries
         valid_names = colnames
