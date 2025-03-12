@@ -11,8 +11,7 @@
 #     language: python
 #     name: python3
 # ---
-"""
-Generate a table with the most important feature values.
+"""Generate a table with the most important feature values.
 
 Select the CRISPR and ORF highest and lowest feature values,
 then wrangle information and produce an explorable data frame.
@@ -31,7 +30,6 @@ from time import perf_counter
 
 import dask.array as da
 import duckdb
-import numpy as np
 import polars as pl
 from jump_rr.consensus import (
     add_sample_images,
@@ -50,14 +48,13 @@ from jump_rr.significance import add_pert_type, pvals_from_profile
 # %% Setup
 ## Paths
 output_dir = Path("./databases")
-datasets = (
-    "crispr_interpretable",
-    "orf_interpretable",
-    "compound_interpretable",
+datasets_nvals = (
+    ("crispr_interpretable", 30),
+    ("orf_interpretable", 30),
+    ("compound_interpretable", 25),
 )
 
 ## Parameters
-n_vals_used = 30  # Number of top and bottom matches used
 feat_decomposition = ("Compartment", "Feature", "Channel", "Suffix")
 
 ## Column names
@@ -76,7 +73,7 @@ replicability_cols = {
     "mean_average_precision": "Phenotypic activity",
 }
 
-for dset in datasets:
+for dset, n_vals_used in datasets_nvals:
     print(f"Processing features for {dset} dataset")
     t0 = perf_counter()
 
@@ -84,6 +81,7 @@ for dset in datasets:
     precor = pl.read_parquet(get_dataset(dset))
     dset_type = dset.removesuffix("_interpretable")
     precor = add_pert_type(precor, dataset=dset_type)
+    phenact = pvals_from_profile(precor)
 
     # %% Split data into med (consensus), meta and urls
     # Note that we remove the negcons from these analysis, as they are used to produce p-values on significance.py
@@ -92,18 +90,11 @@ for dset in datasets:
         "Metadata_JCP2022",
     )
 
-    # This function also performs a filter to remove controls (as there are too many)
-    # corrected_pvals = pvals_from_path(get_dataset(dset), dataset=dset_type)
-    # Ensure that the perturbation numbers match
-    # filtered_med = med.filter(
-    #     pl.col(jcp_col).is_in(corrected_pvals.get_column(jcp_col))
-    # )
-
-    corrected_pvals = np.array(pvals_from_profile(precor)).T
-    filtered_med = med.sort(by="Metadata_JCP2022")
+    filtered_med = med.sort(
+        by="Metadata_JCP2022"
+    )  # To match the ouptut of pvals_from_profile
     median_vals = da.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
 
-    phenact = da.array(corrected_pvals)
     lowest_x, lowest_y = get_ranks(phenact, n_vals_used)
     index_lowest_rank_x = da.vstack(
         (
@@ -122,18 +113,16 @@ for dset in datasets:
     # If an (x,y) cell is selected as a top feature and column get both,
     # otherwise get one and null for the other one
     table = duckdb.sql(
-        (
-            "SELECT x,y,"
-            "any_value(rankf) AS rankf,"
-            "any_value(rankg) AS rankg"
-            " FROM (SELECT * FROM"
-            " (SELECT column0 as x,column1 as rankf,column2 as y"
-            " FROM index_lowest_rank_x)"
-            " UNION ALL BY NAME"
-            " (SELECT column0 AS y,column1 AS rankg, column2 AS x"
-            " FROM index_lowest_rank_y))"
-            " GROUP By x,y"
-        )
+        "SELECT x,y,"
+        "any_value(rankf) AS rankf,"
+        "any_value(rankg) AS rankg"
+        " FROM (SELECT * FROM"
+        " (SELECT column0 as x,column1 as rankf,column2 as y"
+        " FROM index_lowest_rank_x)"
+        " UNION ALL BY NAME"
+        " (SELECT column0 AS y,column1 AS rankg, column2 AS x"
+        " FROM index_lowest_rank_y))"
+        " GROUP By x,y"
     )
     items = table.fetchnumpy()
     xs = items["x"]
@@ -202,7 +191,8 @@ for dset in datasets:
             right_on=jcp_col,
             cols_to_add=replicability_cols,
         )
-        order = (*order, *replicability_cols.values())
+        for col in replicability_cols.values():
+            order.insert(-6, col)
 
     # Add aliases and external links
     jcp_translated = df.with_columns(
