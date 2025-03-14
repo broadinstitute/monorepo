@@ -213,7 +213,8 @@ def t_from_metrics(
     # Here we use broadcasting to implement the t student calculation
     stats = da.asarray(
         tuple(x for k, x in metrics.fetchnumpy().items() if not k.startswith("Meta")),
-        dtype=da.float32,
+        # dtype=da.float32, # It doesn't work
+        dtype=da.float64,
     )
 
     # Slices makes isolating metrics and treatment blocks simpler
