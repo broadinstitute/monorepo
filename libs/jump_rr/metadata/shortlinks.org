@@ -17,6 +17,6 @@ https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinsti
 orf_gallery
 https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/orf_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/15029005/files/orf_gallery.parquet/content#/data/content
 compound
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/15029005/files/compound.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/15029005/files/compound.parquet/content#/data/content
 compound_feature
-https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_gallery.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/15029005/files/compound_interpretable_features.parquet/content#/data/content
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_feature.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/15029005/files/compound_interpretable_features.parquet/content#/data/content
