@@ -51,7 +51,7 @@ output_dir = Path("./databases")
 datasets_nvals = (
     ("crispr_interpretable", 30),
     ("orf_interpretable", 30),
-    ("compound_interpretable", 30),
+    ("compound_interpretable", 10),
 )
 
 ## Parameters
@@ -93,7 +93,9 @@ for dset, n_vals_used in datasets_nvals:
     filtered_med = med.sort(
         by="Metadata_JCP2022"
     )  # To match the ouptut of pvals_from_profile
-    median_vals = da.array(filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy())
+    median_vals = da.around(
+        filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy(), 5
+    )
 
     lowest_x, lowest_y = get_ranks(phenact, n_vals_used)
     index_lowest_rank_x = da.vstack(
@@ -105,14 +107,14 @@ for dset, n_vals_used in datasets_nvals:
     index_lowest_rank_y = da.vstack(
         (
             da.indices((lowest_y.shape[1], n_vals_used)).reshape((2, -1)),
-            lowest_y.flatten(),
+            lowest_y.T.flatten(),  # We need to transpose
         ),
     ).compute()
 
     # Unify Gene and Feature ranks
     # If an (x,y) cell is selected as a top feature and column get both,
     # otherwise get one and null for the other one
-    table = duckdb.sql(
+    tbl = duckdb.sql(
         "SELECT x,y,"
         "any_value(rankf) AS rankf,"
         "any_value(rankg) AS rankg"
@@ -123,8 +125,9 @@ for dset, n_vals_used in datasets_nvals:
         " (SELECT column0 AS y,column1 AS rankg, column2 AS x"
         " FROM index_lowest_rank_y))"
         " GROUP By x,y"
+        " ORDER BY y,x,rankf"
     )
-    items = table.fetchnumpy()
+    items = tbl.fetchnumpy()
     xs = items["x"]
     ys = items["y"]
     rankf = items["rankf"].filled()
@@ -136,7 +139,7 @@ for dset, n_vals_used in datasets_nvals:
         tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
         feat_decomposition,
     )
-    phenact_computed = da.around(phenact, 5).compute()
+    phenact_computed = da.around(phenact, 6).compute()
 
     # %% Build Data Frame
     df = pl.DataFrame({
@@ -149,8 +152,6 @@ for dset, n_vals_used in datasets_nvals:
         jcp_short: med[jcp_col][xs],
         rank_gene_col: rankg,
         rank_feat_col: rankf,
-        "x": xs,
-        "y": ys,
     })
 
     # Add images
