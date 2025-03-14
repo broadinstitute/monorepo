@@ -51,7 +51,7 @@ output_dir = Path("./databases")
 datasets_nvals = (
     ("crispr_interpretable", 30),
     ("orf_interpretable", 30),
-    ("compound_interpretable", 25),
+    ("compound_interpretable", 30),
 )
 
 ## Parameters
