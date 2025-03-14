@@ -125,6 +125,7 @@ def correct_multitest_threaded(p_values: np.ndarray) -> list[np.ndarray]:
     -------
     corrected_p_values : list[np.ndarray]
         List of arrays containing the corrected p-values.
+
     """
     # Correct p values
     with ThreadPoolExecutor() as ex:
