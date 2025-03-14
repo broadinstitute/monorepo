@@ -3,11 +3,12 @@
 
 import cupy as cp
 import dask.array as da
+import numpy as np
 
 
 def get_bottom_top_indices(
     mat: cp.array, n: int, skip_first: bool = False
-) -> tuple[cp.array]:
+) -> tuple[np.array]:
     """Get the top n and bottom n indices from a matrix for each row.
 
     Parameters
@@ -29,10 +30,12 @@ def get_bottom_top_indices(
     """
     top = da.argtopk(mat, n + skip_first)[:, skip_first:]
     bottom = da.argtopk(mat, -n)
-    xs = da.matmul(
-        da.arange(len(mat))[:, da.newaxis], da.ones((1, n * 2), dtype=int)
-    ).flatten()
-    ys = da.hstack((top, bottom)).flatten()
+    xs = (
+        da.matmul(da.arange(len(mat))[:, da.newaxis], da.ones((1, n * 2), dtype=int))
+        .flatten()
+        .compute()
+    )
+    ys = da.hstack((top, bottom)).flatten().compute()
     return xs, ys
 
 

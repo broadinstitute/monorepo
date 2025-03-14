@@ -72,6 +72,7 @@ replicability_cols = {
     "corrected_p_value": "Corrected p-value",
     "mean_average_precision": "Phenotypic activity",
 }
+ndecimals = 5
 
 for dset, n_vals_used in datasets_nvals:
     print(f"Processing features for {dset} dataset")
@@ -93,9 +94,7 @@ for dset, n_vals_used in datasets_nvals:
     filtered_med = med.sort(
         by="Metadata_JCP2022"
     )  # To match the ouptut of pvals_from_profile
-    median_vals = da.around(
-        filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy(), 5
-    )
+    median_vals = filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy()
 
     lowest_x, lowest_y = get_ranks(phenact, n_vals_used)
     index_lowest_rank_x = da.vstack(
@@ -133,13 +132,13 @@ for dset, n_vals_used in datasets_nvals:
     rankf = items["rankf"].filled()
     rankg = items["rankg"].filled()
 
-    print(f"{dset} Features processed in {perf_counter() - t0}")
+    print(f"{dset} features processed in {perf_counter() - t0}")
     # Get the Gene Rank and Feature Rank
     decomposed_feats = get_feature_groups(
         tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
         feat_decomposition,
     )
-    phenact_computed = da.around(phenact, 6).compute()
+    phenact_computed = da.around(phenact, ndecimals).compute()
 
     # %% Build Data Frame
     df = pl.DataFrame({
@@ -148,7 +147,7 @@ for dset, n_vals_used in datasets_nvals:
             for k, v in zip(decomposed_feats.columns, decomposed_feats.to_numpy()[ys].T)
         },
         stat_col: phenact_computed[xs, ys],
-        val_col: median_vals.compute()[xs, ys],
+        val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
         jcp_short: med[jcp_col][xs],
         rank_gene_col: rankg,
         rank_feat_col: rankf,

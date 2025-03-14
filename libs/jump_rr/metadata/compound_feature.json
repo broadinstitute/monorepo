@@ -1,0 +1,29 @@
+{
+    "databases": {
+        "data": {
+            "source": "JUMP Consortium",
+            "source_url": "http://broad.io/jump",
+            "tables": {
+                "content": {
+                    "description_html": "Explore statistically significant features. Use \"like\" for case-insensitive search and (optionally) add additional constraints. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int.parquet>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/compound_feature>Latest</a> version of this page.",
+                    "title": "COMPOUND Feature Ranking",
+                    "columns": {
+                        "Compartment": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
+                        "Feature": "Morphological feature obtained from CellProfiler. This value is the result after data normalization. Its units are the number of median absolute deviations (MAD) from the median.",
+                        "Channel": "Image channel, which shows the stain for DNA, Mito (mitochondria), RNA, AGP (actin, Golgi, plasma membrane) or ER (Endoplasmic Reticulum).",
+                        "Suffix": "Suffix associated with a CellProfiler feature.",
+                        "Feature significance": "Statistical significance of the difference between a morphological feature in a perturbation compared to the control condition. Lower values suggest a stronger effect of the perturbation on that particular feature. The p-value goes through the Benjamini-Hochberg FDR correction",
+                        "Perturbation": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
+                        "Perturbation example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
+                        "Median": "Median value of the feature for the perturbation when aggregating all replicates.",
+                        "Gene Rank": "The rank of the feature for a given gene when compared to that feature in all other genes.",
+                        "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
+                        "JCP2022": "JUMP id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Resources": "External links that provide further information on the gene or chemical perturbation (e.g., NCBI, ChEMBL).",
+                        "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found."
+                    }
+                }
+            }
+        }
+    }
+}
