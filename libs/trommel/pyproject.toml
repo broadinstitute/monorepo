@@ -1,6 +1,6 @@
 [project]
 name = "trommel"
-version = "0.1.4"
+version = "0.1.5"
 description = "Data cleaning functions and pipelines for morphological profiles."
 authors = [
   {name = "Alan Munoz"},
@@ -21,7 +21,6 @@ dev = [
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.0.1",
     "ruff>=0.8.1",
 ]
 
