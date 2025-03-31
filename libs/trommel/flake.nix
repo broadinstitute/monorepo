@@ -68,7 +68,6 @@
                     uv sync
 
                     export PYTHONPATH=${pwp}/${pwp.sitePackages}:$PYTHONPATH
-                    export PATH=${pre-commit}/bin:${ruff}/bin:$PATH # Place Nix ruff before Python ruff
                 '';
              };
           };

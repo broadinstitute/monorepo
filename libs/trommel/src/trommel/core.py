@@ -43,7 +43,7 @@ def find_outliers(arr: numpy.ndarray, outlier_cutoff: float = 500) -> numpy.ndar
 
 def greedy_independent_set(adj_graph):
     """
-    Finds an independent set from the adjacency matrix of a graph using a greedy algorithm.
+    Finds an independent set from the adjacency matrix of a graph using a greedy algorithm. This can be used to disconnect a similarity graph (and thus reducing redundancy)
 
     Parameters:
         adj_graph (numpy.ndarray): A binary 2D array representing the graph's adjacency matrix.
