@@ -21,10 +21,6 @@
             };
 
             libList = [
-                # Add needed packages here
-                # pkgs.stdenv.cc.cc
-                # pkgs.libGL
-                # pkgs.glib
               ];
           in
           with pkgs;
@@ -37,9 +33,6 @@
                      python-lsp-ruff
                    ]));
             in mkShell {
-               NIX_LD = runCommand "ld.so" {} ''
-                        ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
-                      '';
                 NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
                 packages = [
                   pwp
