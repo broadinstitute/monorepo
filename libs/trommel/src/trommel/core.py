@@ -9,8 +9,8 @@ import numpy
 import polars as pl
 
 
-def get_nan_indices(arr: numpy.ndarray, axis: int = 0):
-    return numpy.where(numpy.isnan(arr).sum(axis=axis))
+def get_nan_inf_indices(arr: numpy.ndarray, axis: int = 0):
+    return numpy.where((numpy.isnan(arr) | numpy.isinf(arr)).sum(axis=axis))
 
 
 def median_abs_deviation(arr: numpy.ndarray, axis=None, keepdims=True):
@@ -112,7 +112,7 @@ def basic_cleanup(df: pl.DataFrame, meta_selector: pl.selectors) -> pl.DataFrame
     values = values_df.to_numpy()
 
     # Remove NaNs
-    nan_indices = get_nan_indices(values)
+    nan_indices = get_nan_inf_indices(values)
     no_nans = drop_indices(values, nan_indices)
 
     # MAD-robustize
