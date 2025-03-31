@@ -1,34 +1,44 @@
-[project.urls]
-Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_babel"
-
-[tool.poetry]
+[project]
 name = "broad-babel"
 version = "0.1.27"
 description = "A translator of Broad and JUMP ids to more conventional names."
-authors = ["Alan Munoz"]
+authors = [{ name = "Alan Munoz" }]
+requires-python = ">=3.10,<3.12"
 readme = "README.md"
-packages = [{include = "broad_babel", from= "src"}]
+dependencies = [
+    "pooch>=1.7.0,<2",
+    "polars>=1.5.0,<2",
+    "adbc-driver-sqlite>=0.8.0,<0.9",
+    "pyarrow>=16.1.0,<17",
+]
 
-[tool.poetry.dependencies]
-python = ">=3.10,<3.12"
-pooch = "^1.7.0"
-polars = "^1.5.0"
-adbc-driver-sqlite = "^0.8.0"
-pyarrow = "^16.1.0"
+[project.urls]
+Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_babel"
 
-[tool.poetry.group.dev.dependencies]
-jupytext = "^1.15.0"
-ipdb = "^0.13.13"
-biopython = "^1.81"
-jupyter = "^1.0.0"
-more-itertools = "^10.1.0"
-tqdm = "^4.66.1"
-pandas = ">=2.0.3"
-pytest = "^7.4.1"
-csvkit = "^1.1.1"
-ruff = "<0.2.0"
+[dependency-groups]
+dev = [
+    "jupytext>=1.15.0,<2",
+    "ipdb>=0.13.13,<0.14",
+    "biopython~=1.81",
+    "jupyter>=1.0.0,<2",
+    "more-itertools>=10.1.0,<11",
+    "tqdm>=4.66.1,<5",
+    "pandas>=2.0.3",
+    "pytest>=7.4.1,<8",
+    "csvkit>=1.1.1,<2",
+    "ruff<0.2.0",
+]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/broad_babel"]
+
+[tool.hatch.build.targets.wheel]
+include = ["src/broad_babel"]
+
+[tool.hatch.build.targets.wheel.sources]
+"src/broad_babel" = "broad_babel"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
