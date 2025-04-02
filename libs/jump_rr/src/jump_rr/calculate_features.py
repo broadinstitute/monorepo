@@ -82,7 +82,7 @@ for dset, n_vals_used in datasets_nvals:
     precor = pl.read_parquet(get_dataset(dset))
     dset_type = dset.removesuffix("_interpretable")
     precor = add_pert_type(precor, dataset=dset_type)
-    phenact = pvals_from_profile(precor)
+    featstat = pvals_from_profile(precor)
 
     # %% Split data into med (consensus), meta and urls
     # Note that we remove the negcons from these analysis, as they are used to produce p-values on significance.py
@@ -96,7 +96,7 @@ for dset, n_vals_used in datasets_nvals:
     )  # To match the ouptut of pvals_from_profile
     median_vals = filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy()
 
-    lowest_x, lowest_y = get_ranks(phenact, n_vals_used)
+    lowest_x, lowest_y = get_ranks(featstat, n_vals_used)
     index_lowest_rank_x = da.vstack(
         (
             da.indices((len(lowest_x), n_vals_used)).reshape((2, -1)),
@@ -138,7 +138,7 @@ for dset, n_vals_used in datasets_nvals:
         tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
         feat_decomposition,
     )
-    phenact_computed = da.around(phenact, ndecimals).compute()
+    featstat_computed = da.around(featstat, ndecimals).compute()
 
     # %% Build Data Frame
     df = pl.DataFrame({
@@ -146,7 +146,7 @@ for dset, n_vals_used in datasets_nvals:
             k: v
             for k, v in zip(decomposed_feats.columns, decomposed_feats.to_numpy()[ys].T)
         },
-        stat_col: phenact_computed[xs, ys],
+        stat_col: featstat_computed[xs, ys],
         val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
         jcp_short: med[jcp_col][xs],
         rank_gene_col: rankg,
@@ -229,7 +229,7 @@ for dset, n_vals_used in datasets_nvals:
 
     # Save phenotypic activity matrix in case it is of use to others
     out_df = pl.DataFrame(
-        data=phenact_computed,
+        data=featstat_computed,
         schema=filtered_med.select(pl.exclude("^Metadata.*$")).columns,
     ).with_columns(filtered_med.get_column("Metadata_JCP2022"))
     out_df.write_parquet(output_dir / f"{dset_type}_significance_full.parquet")
