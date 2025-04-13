@@ -22,7 +22,7 @@
 
             libList = [
                 # Add needed packages here
-                mpkgs.stdenv.cc.cc
+                pkgs.stdenv.cc.cc
               ];
           in
           with pkgs;
