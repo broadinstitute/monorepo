@@ -79,7 +79,7 @@ def add_pert_type(
 def pvals_from_profile(
     profile: pl.DataFrame or duckdb.duckdb.DuckDBPyRelation,
 ) -> da.Array:
-    """Compute p-values from a given profile.
+    """Compute p-values for every feature in a given profile.
 
     Parameters
     ----------
