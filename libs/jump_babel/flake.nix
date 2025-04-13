@@ -21,6 +21,8 @@
             };
 
             libList = [
+                # Add needed packages here
+                mpkgs.stdenv.cc.cc
               ];
           in
           with pkgs;

@@ -86,7 +86,7 @@ df_all = pl.concat(df_all, how="diagonal")
 df_all_pert = df_all.join(
     get_table("orf").select(jcp_col, "Metadata_broad_sample", pert_col),
     on=jcp_col,
-    how="outer",
+    how="full",
 )
 
 # Combine target plates table to the normal one
@@ -142,6 +142,6 @@ db_name = "babel.db"
 final_version.write_database(
     table_name="babel",
     connection=f"sqlite:{db_name}",
-    if_exists="replace",
+    if_table_exists="replace",
     engine="adbc",
 )
