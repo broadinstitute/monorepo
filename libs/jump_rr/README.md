@@ -49,7 +49,9 @@ In the rare case where you experience a problem before data is loaded, it may be
 
 # Overview
 
-This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that we make accessible through the browser using [datasette-lite](https://github.com/simonw/datasette-lite). You can read more about JUMP at the [JUMP-Cell Painting Hub](https://broad.io/jump).
+This module provides tools to efficiently compare vectors of [JUMP](https://jump-cellpainting.broadinstitute.org/) data. It also assembles the dataframes that we make accessible through the browser using [datasette-lite](https://github.com/simonw/datasette-lite). 
+
+You can read more about JUMP data and find other useful tools at the [JUMP-Cell Painting Hub](https://broad.io/jump).
 
 
 <a id="Data%20accessibility"></a>
