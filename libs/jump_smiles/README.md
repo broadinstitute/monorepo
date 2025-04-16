@@ -4,28 +4,20 @@ A Python library for standardizing chemical structures using RDKit. Designed to 
 
 ## Installation
 
-Requires Python 3.11+ and Poetry package manager.
+Requires Python 3.11+ and `uv` package manager.
 
 ```bash
 git clone <repository-url>
 cd jump-smiles
-poetry install
-poetry shell
+uv sync --python 3.11
 ```
-
-Core dependencies (managed by Poetry):
-- rdkit 2023.9.5
-- pandas 2.2.2
-- numpy 2.1.1
-- fire 0.4.0+
-- tqdm 4.64.1
-- requests 2.28.2
 
 ## Usage
 
 ### Command Line
 ```bash
-poetry run python standardize_smiles.py \
+uv run python standardize_smiles.py \
+  run \
   --input molecules.csv \
   --output standardized_molecules.csv \
   --num_cpu 4 \
