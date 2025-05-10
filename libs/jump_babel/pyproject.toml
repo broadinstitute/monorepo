@@ -1,6 +1,6 @@
 [project]
 name = "broad-babel"
-version = "0.1.27"
+version = "0.1.28"
 description = "A translator of Broad and JUMP ids to more conventional names."
 authors = [{ name = "Alan Munoz" }]
 requires-python = ">=3.10,<3.12"
@@ -9,7 +9,7 @@ dependencies = [
     "pooch>=1.7.0,<2",
     "polars>=1.5.0,<2",
     "adbc-driver-sqlite>=0.8.0,<0.9",
-    "pyarrow>=16.1.0,<17",
+    "pyarrow>=16.1.0",
 ]
 
 [project.urls]
