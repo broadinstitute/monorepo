@@ -32,12 +32,12 @@
                 pwp = (python311.withPackages (p: with p; [
                      python-lsp-server
                      python-lsp-ruff
+                     venvShellHook
                    ]));
             in mkShell {
                 NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
                 packages = [
                   pwp
-                  python311Packages.venvShellHook
                   uv
                 ]
                 ++ libList;

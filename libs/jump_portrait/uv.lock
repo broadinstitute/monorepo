@@ -318,7 +318,7 @@ wheels = [
 
 [[package]]
 name = "broad-babel"
-version = "0.1.27"
+version = "0.1.28"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "adbc-driver-sqlite" },
@@ -326,9 +326,9 @@ dependencies = [
     { name = "pooch" },
     { name = "pyarrow" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/42/37/228b22cfbce8add192015473ca9ad404a4d3b5017f68171edb69f93d2b0b/broad_babel-0.1.27.tar.gz", hash = "sha256:c14803ec1ad99fe8791b71501516f22b064ad51aad6135ed528d57abe25ad267", size = 5103 }
+sdist = { url = "https://files.pythonhosted.org/packages/59/c1/0330bf63915028aa74e294875de09acb56d0ea1f08204239d3034a69ecaf/broad_babel-0.1.28.tar.gz", hash = "sha256:65f6c5929116bbfc6402d69da4bb6eefcd15892960bcf8a72e7f0713927c8c20", size = 6078 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/aa/e6/3235993165b272d3f2f18a3e5ae34e49414f6b9b0af538b0c7d816846066/broad_babel-0.1.27-py3-none-any.whl", hash = "sha256:67f756c80894883d3d0559fc0a39ed7de0d2b7e1e855d2fd7a3d528bd526b479", size = 5698 },
+    { url = "https://files.pythonhosted.org/packages/39/b5/c624c4cbcfed566e9f70d799e939d2437b0257cd17e5534b619d17730314/broad_babel-0.1.28-py3-none-any.whl", hash = "sha256:385195ebe689e8665e188c8889fada54450c6c53fef19823969bf81aeb053a29", size = 7151 },
 ]
 
 [[package]]
@@ -919,7 +919,7 @@ wheels = [
 
 [[package]]
 name = "jump-portrait"
-version = "0.0.27"
+version = "0.0.28"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },
@@ -947,7 +947,7 @@ dev = [
 [package.metadata]
 requires-dist = [
     { name = "boto3", specifier = ">=1.33.1" },
-    { name = "broad-babel", specifier = ">=0.1.27,<0.2" },
+    { name = "broad-babel", specifier = ">=0.1.28" },
     { name = "joblib", specifier = ">=1.3.2,<2" },
     { name = "matplotlib", specifier = ">=3.8.2,<4" },
     { name = "numpy", specifier = "<2.0" },
