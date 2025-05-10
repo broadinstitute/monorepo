@@ -7,60 +7,86 @@
     flake-utils.inputs.systems.follows = "systems";
   };
 
-  outputs = { self, nixpkgs, flake-utils, systems, ... } @ inputs:
-      flake-utils.lib.eachDefaultSystem (system:
-        let
-            pkgs = import nixpkgs {
-              system = system;
-              config.allowUnfree = true;
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      ...
+    }@inputs:
+    flake-utils.lib.eachDefaultSystem (
+      system:
+      let
+        pkgs = import nixpkgs {
+          inherit system;
+          config.allowUnfree = true;
+          config.cudaSupport = true;
+        };
+
+        mpkgs = import inputs.nixpkgs_master {
+          inherit system;
+          config.allowUnfree = true;
+          config.cudaSupport = true;
+        };
+
+        libList =
+          [
+            # Add needed packages here
+            pkgs.stdenv.cc.cc
+            pkgs.libGL
+            pkgs.glib
+            pkgs.libz
+          ]
+          ++ pkgs.lib.optionals pkgs.stdenv.isLinux (
+            with pkgs;
+            [
+              cudatoolkit
+
+              # This is required for most app that uses graphics api
+              # linuxPackages.nvidia_x11
+            ]
+          );
+      in
+      with pkgs;
+      {
+        devShells = {
+          default =
+            let
+              python_with_pkgs = pkgs.python310.withPackages (pp: [
+                # Add python pkgs here that you need from nix repos
+              ]);
+            in
+            mkShell {
+              NIX_LD = runCommand "ld.so" { } ''
+                ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
+              '';
+              NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
+              packages = [
+                python_with_pkgs
+                python310Packages.venvShellHook
+                # We # We now recommend to use uv for package management inside nix env
+                pkgs.uv
+              ] ++ libList;
+              venvDir = "./.venv";
+              postVenvCreation = ''
+                unset SOURCE_DATE_EPOCH
+              '';
+              postShellHook = ''
+                unset SOURCE_DATE_EPOCH
+              '';
+              shellHook = ''
+                export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:"/run/opengl-driver/lib":$LD_LIBRARY_PATH
+                export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
+                runHook venvShellHook
+                export PYTHONPATH=${python_with_pkgs}/${python_with_pkgs.sitePackages}:$PYTHONPATH
+              '';
             };
-
-            mpkgs = import inputs.nixpkgs_master {
-              system = system;
-              config.allowUnfree = true;
-            };
-
-            libList = [
-                # Add needed packages here
-                pkgs.stdenv.cc.cc
-              ];
-          in
-          with pkgs;
-        {
-          devShells = {
-            default  = let
-              # These packages get built by Nix, and will be ahead on the PATH
-                pwp = (python311.withPackages (p: with p; [
-                     python-lsp-server
-                     python-lsp-ruff
-                   ]));
-            in mkShell {
-                NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
-                packages = [
-                  pwp
-                  python311Packages.venvShellHook
-                  uv
-                ]
-                ++ libList;
-                venvDir = "./.venv";
-                postVenvCreation = ''
-                    unset SOURCE_DATE_EPOCH
-                  '';
-                postShellHook = ''
-                    unset SOURCE_DATE_EPOCH
-                  '';
-                shellHook = ''
-                    export UV_PYTHON=${pkgs.python311}
-                    export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
-                    export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
-
-                    runHook venvShellHook
-                    uv sync
-
-                    export PYTHONPATH=${pwp}/${pwp.sitePackages}:$PYTHONPATH
-                '';
-             };
-          };
-        }
-      );
+        };
+      }
+    );
 }
+# Things one might need for debugging or adding compatibility
+# export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
+# export LD_LIBRARY_PATH=${pkgs.cudaPackages.cuda_nvrtc}/lib
+# export EXTRA_LDFLAGS="-L/lib -L${pkgs.linuxPackages.nvidia_x11}/lib"
+# export EXTRA_CCFLAGS="-I/usr/include"
