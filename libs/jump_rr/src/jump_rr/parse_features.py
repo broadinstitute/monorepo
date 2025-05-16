@@ -33,7 +33,7 @@ def get_feature_groups(
     merging channels where necessary.
 
     """
-    masks = "|".join(("Cells", "Nuclei", "Cytoplasm", "Image"))
+    masks = "|".join(("Cells", "Nuclei", "Cytoplasm", "Image", "Object"))
     channels = "|".join(
         (
             "DNA",
@@ -60,7 +60,7 @@ def get_feature_groups(
     )
 
     std = re.compile(rf"({masks})_(\S+)_(Orig)?({channels})(_.*)?")
-    chless = re.compile(f"({masks})_({chless_feats})_?([a-zA-Z]+)?(.*)?")
+    chless = re.compile(f"({masks})_?({chless_feats})_?([a-zA-Z]+)?(.*)?")
 
     results = [(std.findall(x) or chless.findall(x))[0] for x in feature_fullnames]
     results = [
