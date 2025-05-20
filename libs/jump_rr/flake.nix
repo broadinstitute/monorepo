@@ -65,7 +65,7 @@
                 python_with_pkgs
                 python311Packages.venvShellHook
                 # We # We now recommend to use uv for package management inside nix env
-                mpkgs.uv
+                pkgs.uv
               ] ++ libList;
               venvDir = "./.venv";
               postVenvCreation = ''
