@@ -32,6 +32,7 @@ from time import perf_counter
 import dask.array as da
 import duckdb
 import polars as pl
+
 from jump_rr.consensus import (
     add_sample_images,
     get_consensus_meta_urls,

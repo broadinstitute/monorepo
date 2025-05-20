@@ -2,6 +2,7 @@
 """Functions to group multiple wells."""
 
 import polars as pl
+
 from jump_rr.formatters import format_value
 from jump_rr.parse_features import get_feature_groups
 

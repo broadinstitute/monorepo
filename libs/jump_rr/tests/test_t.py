@@ -3,13 +3,14 @@
 import dask.array as da
 import numpy as np
 import polars as pl
+from scipy.stats import ttest_ind
+
 from jump_rr.significance import (
     correct_multitest_threaded,
     get_metrics_for_ttest,
     pvals_from_profile,
     t_from_metrics,
 )
-from scipy.stats import ttest_ind
 
 
 def test_pvalue() -> None:
