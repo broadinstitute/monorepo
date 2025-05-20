@@ -92,12 +92,10 @@ def get_external_mappers(
     entrez_to_omim = {}
     entrez_to_ensembl = {}
 
-    other_ids = pl.DataFrame(
-        {
-            "entrez": jcp_to_entrez.values(),
-            "std": jcp_to_std.values(),
-        }
-    )
+    other_ids = pl.DataFrame({
+        "entrez": jcp_to_entrez.values(),
+        "std": jcp_to_std.values(),
+    })
 
     if any(jcp_to_entrez.values()):
         other_ids = other_ids.filter(~pl.col("entrez").str.contains("[A-Z]")).unique()
@@ -130,7 +128,9 @@ def get_synonym_mapper() -> dict[str, str]:
         separator="\t",
     )
     nonempty = mapper.filter(pl.col("Synonyms") != "-")
-    res = nonempty.select(pl.col(["GeneID", "Synonyms"]).cast(str))
+    res = nonempty.with_columns(
+        pl.concat_str(("Symbol", "Synonyms"), separator="|").alias("Synonyms")
+    ).select(pl.col(["GeneID", "Synonyms"]).cast(str))
     return dict(res.iter_rows())
 
 
