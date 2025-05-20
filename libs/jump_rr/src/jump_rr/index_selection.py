@@ -9,7 +9,8 @@ import numpy as np
 def get_bottom_top_indices(
     mat: cp.array, n: int, skip_first: bool = False
 ) -> tuple[np.array]:
-    """Get the top n and bottom n indices from a matrix for each row.
+    """
+    Get the top n and bottom n indices from a matrix for each row.
 
     Parameters
     ----------

@@ -10,7 +10,8 @@ import polars as pl
 
 @cache
 def get_url_label(key: str) -> tuple[str, str]:
-    """Retrieve a URL template and label for a given url source (vendor).
+    """
+    Retrieve a URL template and label for a given url source (vendor).
 
     Parameters
     ----------
@@ -54,7 +55,8 @@ def get_url_label(key: str) -> tuple[str, str]:
 
 
 def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str, str]:
-    """Construct a dictionary containing URL and label information.
+    """
+    Construct a dictionary containing URL and label information.
 
     Parameters
     ----------
@@ -89,7 +91,8 @@ def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str
 
 @cache
 def format_value(fmt: str, vendor: str, value: str or int or Iterable) -> str:
-    """Format a given url according to a format and vendor of info (specific url).
+    """
+    Format a given url according to a format and vendor of info (specific url).
 
     Parameters
     ----------
@@ -114,7 +117,8 @@ def format_value(fmt: str, vendor: str, value: str or int or Iterable) -> str:
 def add_phenaid_url_col(
     profiles: pl.DataFrame, url_colname: str = "Metadata_image"
 ) -> pl.DataFrame:
-    """Add an url column to profiles DataFrame.
+    """
+    Add an url column to profiles DataFrame.
 
     Parameters
     ----------
@@ -148,7 +152,8 @@ def add_external_sites(
     ext_links_col: str,
     key_source_mapper: tuple[str, str, dict[str, str]],
 ) -> pl.DataFrame or pl.LazyFrame:
-    """Add external site information to a given DataFrame.
+    """
+    Add external site information to a given DataFrame.
 
     Parameters
     ----------

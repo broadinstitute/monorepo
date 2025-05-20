@@ -7,7 +7,8 @@ from jump_rr.parse_features import get_feature_groups
 
 
 def get_consensus_meta_urls(profiles: pl.DataFrame, col: str) -> tuple:
-    """Compute aggregated median values and metadata with urls for a given dataframe.
+    """
+    Compute aggregated median values and metadata with urls for a given dataframe.
 
     Parameters
     ----------
@@ -39,7 +40,8 @@ def get_consensus_meta_urls(profiles: pl.DataFrame, col: str) -> tuple:
 def get_group_median(
     med: pl.DataFrame, group_by: list[str] or None = None
 ) -> pl.DataFrame:
-    """Calculate the median of a set of features grouped by their metadata.
+    """
+    Calculate the median of a set of features grouped by their metadata.
 
     Parameters
     ----------
@@ -75,7 +77,8 @@ def get_group_median(
 
 
 def get_range(dataset: str) -> range:
-    """Generate a range of indices based on the dataset.
+    """
+    Generate a range of indices based on the dataset.
 
     Parameters
     ----------
@@ -111,7 +114,8 @@ def add_sample_images(
     sorter_col: str = "modulo",
     seed: int = 2,
 ) -> pl.DataFrame:
-    """Add sample images to a Polars DataFrame.
+    """
+    Add sample images to a Polars DataFrame.
 
     This function takes in two DataFrames, `df` and `meta_df`, as well as a range object `rng`. It joins the two DataFrames based on
     the columns specified by `left_col` and `right_col`, then samples the resulting DataFrame. The sampled DataFrame is then

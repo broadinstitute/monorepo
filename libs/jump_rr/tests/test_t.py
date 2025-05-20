@@ -1,6 +1,4 @@
-"""
-Test the t value calculation.
-"""
+"""Test the t value calculation."""
 
 import dask.array as da
 import numpy as np
@@ -14,7 +12,7 @@ from jump_rr.significance import (
 from scipy.stats import ttest_ind
 
 
-def test_pvalue():
+def test_pvalue() -> None:
     """Test t-statistic and corrected p-value calculation."""
     vals = [
         [[1, 2, 3, 4], [5, 6, 7, 9, 0]],
@@ -22,24 +20,33 @@ def test_pvalue():
     ]
 
     ids_trt = list(
-        zip(*[
-            (("trt", "negcon")[j], "control" if j else ("a", "b")[i], f"plate{i}", v)
-            for i, pairs in enumerate(vals)
-            for j, vals in enumerate(pairs)
-            for v in vals
-        ])
+        zip(
+            *[
+                (
+                    ("trt", "negcon")[j],
+                    "control" if j else ("a", "b")[i],
+                    f"plate{i}",
+                    v,
+                )
+                for i, pairs in enumerate(vals)
+                for j, vals in enumerate(pairs)
+                for v in vals
+            ]
+        )
     )
 
-    test_df = pl.from_dict({
-        (
-            "Metadata_pert_type",
-            "Metadata_JCP2022",
-            "Metadata_Plate",
-            "feature1",
-            "feature2",
-        )[i]: v
-        for i, v in enumerate(ids_trt)
-    })
+    test_df = pl.from_dict(
+        {
+            (
+                "Metadata_pert_type",
+                "Metadata_JCP2022",
+                "Metadata_Plate",
+                "feature1",
+                "feature2",
+            )[i]: v
+            for i, v in enumerate(ids_trt)
+        }
+    )
     tpvals_scipy = [ttest_ind(x, y, alternative="two-sided") for x, y in vals]
     metrics = get_metrics_for_ttest(test_df)
 
@@ -51,9 +58,9 @@ def test_pvalue():
     # Test corrected p-value calculation.
     corrected_pvalue = pvals_from_profile(test_df).compute()
     # Correct scipy p values
-    corrected_pvals_scipy = correct_multitest_threaded([
-        [gt.pvalue for gt in tpvals_scipy]
-    ])
+    corrected_pvals_scipy = correct_multitest_threaded(
+        [[gt.pvalue for gt in tpvals_scipy]]
+    )
     assert all(
         np.isclose(p, p_gt[0])
         for p, p_gt in zip(corrected_pvalue, corrected_pvals_scipy)

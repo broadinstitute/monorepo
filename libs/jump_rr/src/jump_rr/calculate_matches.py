@@ -13,7 +13,8 @@
 #     name: python3
 # ---
 
-"""Generate a table with the most correlated and anticorrelated pairs.
+"""
+Generate a table with the most correlated and anticorrelated pairs.
 
 Calculate cosine distance of CRISPR and ORF profiles using a GPU,
 then wrangle information and produce an explorable data frame.
@@ -40,7 +41,8 @@ assert cp.cuda.get_current_stream().done, "GPU not available"
 
 
 def pairwise_cosine_sim(x: da.array, y: da.array) -> da.array:
-    """Compute pairwise cosine similarity between two sets of vectors.
+    """
+    Compute pairwise cosine similarity between two sets of vectors.
 
     Parameters
     ----------
@@ -128,11 +130,13 @@ for dset, n_vals_used in datasets_nvals:
     jcp_ids = med[jcp_col].to_numpy().astype("<U15")
 
     # Build a dataframe containing matches
-    jcp_df = pl.DataFrame({
-        jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
-        match_jcp_col: jcp_ids[ys].astype("<U15"),
-        dist_col: cosine_sim_computed[xs, ys],
-    })
+    jcp_df = pl.DataFrame(
+        {
+            jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
+            match_jcp_col: jcp_ids[ys].astype("<U15"),
+            dist_col: cosine_sim_computed[xs, ys],
+        }
+    )
 
     # Add images for both queries and matches
     df_meta = df.select("^Metadata.*$")

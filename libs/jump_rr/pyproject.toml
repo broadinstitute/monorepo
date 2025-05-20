@@ -47,3 +47,15 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/jump_rr"]
+
+[tool.ruff]
+lint.select = ["ANN", "C90", "D", "E", "F", "I", "N", "NPY", "PTH", "TID", "UP", "W"]
+lint.ignore = ["D212"]
+exclude = ["vendor"]
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore all directories named `tests`.
+"tests/**" = ["D"]
+# Ignore all files that end in `_test.py`.
+"*_test.py" = ["D"]
+

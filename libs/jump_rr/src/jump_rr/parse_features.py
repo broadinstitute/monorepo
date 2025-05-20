@@ -12,7 +12,8 @@ def get_feature_groups(
     feature_fullnames: tuple[str],
     feature_names: tuple[str] = ("Compartment", "Feature", "Channel", "Suffix"),
 ) -> pl.DataFrame:
-    """Group features in a consistent manner using a regex.
+    """
+    Group features in a consistent manner using a regex.
 
     Parameters
     ----------
