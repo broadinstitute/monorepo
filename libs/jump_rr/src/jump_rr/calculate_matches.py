@@ -29,7 +29,6 @@ import dask.array as da
 import numpy as np
 import polars as pl
 import polars.selectors as cs
-
 from jump_rr.consensus import add_sample_images, get_consensus_meta_urls, get_range
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites
@@ -131,13 +130,11 @@ for dset, n_vals_used in datasets_nvals:
     jcp_ids = med[jcp_col].to_numpy().astype("<U15")
 
     # Build a dataframe containing matches
-    jcp_df = pl.DataFrame(
-        {
-            jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
-            match_jcp_col: jcp_ids[ys].astype("<U15"),
-            dist_col: cosine_sim_computed[xs, ys],
-        }
-    )
+    jcp_df = pl.DataFrame({
+        jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
+        match_jcp_col: jcp_ids[ys].astype("<U15"),
+        dist_col: cosine_sim_computed[xs, ys],
+    })
 
     # Add images for both queries and matches
     df_meta = df.select("^Metadata.*$")
@@ -246,3 +243,4 @@ for dset, n_vals_used in datasets_nvals:
         schema=med.get_column("Metadata_JCP2022").to_list(),
     ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
     print(f"Matched pairwise {dset} in {perf_counter() - t} seconds")
+    break
