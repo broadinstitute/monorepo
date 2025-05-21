@@ -1,4 +1,5 @@
-"""Generate aggregated statistics for the values of features.
+"""
+Generate aggregated statistics for the values of features.
 
 Based on discussion https://github.com/broadinstitute/2023_12_JUMP_data_only_vignettes/issues/4#issuecomment-1918019212.
 
@@ -31,7 +32,8 @@ np.seterr(divide="ignore")
 def add_pert_type(
     profiles: pl.DataFrame, dataset: str, poscons: bool = False
 ) -> pl.DataFrame:
-    """Add metadata with perturbation type from the JCP2022 identifier.
+    """
+    Add metadata with perturbation type from the JCP2022 identifier.
 
     Parameters
     ----------
@@ -79,7 +81,8 @@ def add_pert_type(
 def pvals_from_profile(
     profile: pl.DataFrame or duckdb.duckdb.DuckDBPyRelation,
 ) -> da.Array:
-    """Compute p-values for every feature in a given profile.
+    """
+    Compute p-values for every feature in a given profile.
 
     Parameters
     ----------
@@ -114,7 +117,8 @@ def pvals_from_profile(
 
 
 def correct_multitest_threaded(p_values: np.ndarray) -> list[np.ndarray]:
-    """Correct p-values for multiple testing using Benjamini-Hochberg FDR.
+    """
+    Correct p-values for multiple testing using Benjamini-Hochberg FDR.
 
     Parameters
     ----------
@@ -137,7 +141,8 @@ def correct_multitest_threaded(p_values: np.ndarray) -> list[np.ndarray]:
 
 
 def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelation:
-    """Calculate metrics for t-test from a given dataframe.
+    """
+    Calculate metrics for t-test from a given dataframe.
 
     Parameters
     ----------
@@ -194,7 +199,8 @@ def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelatio
 def t_from_metrics(
     metrics: duckdb.duckdb.DuckDBPyRelation,
 ) -> duckdb.duckdb.DuckDBPyRelation:
-    """Compute the t statistic from the mean, count and variance of two distributions.
+    """
+    Compute the t statistic from the mean, count and variance of two distributions.
 
     Parameters
     ----------
@@ -240,7 +246,8 @@ def t_from_metrics(
 def t_from_stats(
     n1: da.Array, m1: da.Array, v1: da.Array, n2: da.Array, m2: da.Array, v2: da.Array
 ) -> tuple[da.Array, da.Array]:
-    """Calculate degrees of freedom and t-statistic for two sample comparison.
+    """
+    Calculate degrees of freedom and t-statistic for two sample comparison.
 
     Parameters
     ----------

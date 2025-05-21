@@ -5,7 +5,8 @@ import pooch
 
 
 def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
-    """Retrieve the latest morphological profiles using standard names.
+    """
+    Retrieve the latest morphological profiles using standard names.
 
     Available datasets can be found on the "subset" column on
     https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv

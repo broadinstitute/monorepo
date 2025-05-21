@@ -17,7 +17,8 @@ def get_mapper(
     output_cols: tuple[str] = ("standard_key", "NCBI_Gene_ID"),
     format_output: bool = True,
 ) -> dict:
-    """Generate translators based on an identifier using broad-babel.
+    """
+    Generate translators based on an identifier using broad-babel.
 
     Parameters
     ----------
@@ -55,7 +56,8 @@ def get_mapper(
 def get_external_mappers(
     profiles: pl.DataFrame, col: str, dset: str
 ) -> tuple[dict[str, str]]:
-    """Generate external mappers for a given column of the provided DataFrame.
+    """
+    Generate external mappers for a given column of the provided DataFrame.
 
     The mappers link JCP ids to gene names/InChiKeys, urls of external ids and
     the raw external id.
@@ -90,12 +92,10 @@ def get_external_mappers(
     entrez_to_omim = {}
     entrez_to_ensembl = {}
 
-    other_ids = pl.DataFrame(
-        {
-            "entrez": jcp_to_entrez.values(),
-            "std": jcp_to_std.values(),
-        }
-    )
+    other_ids = pl.DataFrame({
+        "entrez": jcp_to_entrez.values(),
+        "std": jcp_to_std.values(),
+    })
 
     if any(jcp_to_entrez.values()):
         other_ids = other_ids.filter(~pl.col("entrez").str.contains("[A-Z]")).unique()
@@ -106,7 +106,8 @@ def get_external_mappers(
 
 @cache
 def get_synonym_mapper() -> dict[str, str]:
-    """Retrieve a dictionary mapping GeneIDs to their corresponding synonyms.
+    """
+    Retrieve a dictionary mapping GeneIDs to their corresponding synonyms.
 
     This function reads a csv file from a specified URL, filters out rows with empty Synonyms,
     selects only the GeneID and Synonyms columns, casts them to strings, and returns the result as a dictionary.
@@ -127,12 +128,15 @@ def get_synonym_mapper() -> dict[str, str]:
         separator="\t",
     )
     nonempty = mapper.filter(pl.col("Synonyms") != "-")
-    res = nonempty.select(pl.col(["GeneID", "Synonyms"]).cast(str))
+    res = nonempty.with_columns(
+        pl.concat_str(("Symbol", "Synonyms"), separator="|").alias("Synonyms")
+    ).select(pl.col(["GeneID", "Synonyms"]).cast(str))
     return dict(res.iter_rows())
 
 
 def get_omim_mappers(other_ids: pl.DataFrame) -> tuple[dict, dict]:
-    """Retrieve omim and ensembl mappers from a dataframe.
+    """
+    Retrieve omim and ensembl mappers from a dataframe.
 
     Parameters
     ----------
