@@ -16,7 +16,7 @@
 ```mermaid
 flowchart LR
     A[Start] --> B{What kind of data do I have?}
-    B -- Chemicals --> C[(WIP)]
+    B -- Compounds --> compounds{Are you looking for specific features?}
     B -- Genes --> D{What kind of genetic perturbation?}
     B -- Genes and Chemicals --> asd[(WIP)]
     B -- None, I just want to explore images --> images[(broad.io/orf,crispr,compound_gallery)]
@@ -26,6 +26,8 @@ flowchart LR
     orf -- Yes -->  G[(broad.io/orf_feature)]
     crispr -- No -->  H[(broad.io/crispr)]
     crispr -- Yes --> I[(broad.io/crispr_feature)]
+    compounds -- No --> J[(broad.io/compound)]
+    compounds -- Yes --> K[(broad.io/compound_feature)]
 ```
 
 
@@ -82,14 +84,14 @@ pip install jump_rr
 
 <a id="poetry%20%28dev%29"></a>
 
-## poetry (dev)
+## Development (uv)
 
-Use this if you want to tweak the functions
+Use this if you want to develop and modify the functions (requires [uv](https://docs.astral.sh/uv/))
 
 ```python
 git clone https://github.com/broadinstitute/monorepo/
 cd monorepo/libs/jump_rr
-poetry install --with dev
+uv sync --all-extras
 ```
 
 
