@@ -2,7 +2,7 @@
 ** Download data
 Download the ~500GB datasets used with all compounds on NCBI's PubChem.
 #+begin_src shell
-  wget -c -r ftp://ftp.ncbi.nlm.nih.gov/pubchem/Compound/CURRENT-Full/XML -P /datastore/alan/pubchem
+  wget -c -r -nd ftp://ftp.ncbi.nlm.nih.gov/pubchem/Compound/CURRENT-Full/XML -P /datastore/alan/pubchem
 #+end_src
 
 ** Extract and preprocess
@@ -10,7 +10,7 @@ Unzip them and use mawk + the =fetch.awk= script to extract pubchem id, inchikey
 #+begin_src shell
   cd pubchem/Compound
   pigz -d /*.gz
-  find . -name "*xml" | parallel --results out 'mawk -F \"[<>]\" -v OFS=\",\" -f fetch.awk'
+  find . -name "/datastore/alan/pubchem/*xml" | parallel --results out 'mawk -F \"[<>]\" -v OFS=\",\" -f fetch.awk'
   mkdir tables
 #+end_src
 
@@ -24,7 +24,7 @@ Generate the jcp->pubchem mapper, which also contains Pubchem fingerprints
   from (
   select metadata_jcp2022,metadata_inchikey
   from read_csv('https://github.com/jump-cellpainting/datasets/raw/799fe5acc673f5be2fbf8862b6dbdbacfa6eb740/metadata/compound.csv.gz')) a
-  left join read_csv('/datastore/alan/ftp.ncbi.nlm.nih.gov/pubchem/Compound/CURRENT-Full/XML/out/1/*/stdout') B
+  left join read_csv('out/1/*/stdout') B
   on A.Metadata_InChIKey = B.InChIKey);
   COPY jcp_to_pubchem to 'tables/jcp_to_pubchem.parquet' (format parquet, compression zstd);
   select * from jcp_to_pubchem limit 3;
