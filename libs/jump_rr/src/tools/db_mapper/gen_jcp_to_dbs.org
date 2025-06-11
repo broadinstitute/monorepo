@@ -1,0 +1,119 @@
+#+TITLE: Map JUMP compounds to external databases
+** Download data
+Download the ~500GB datasets used with all compounds on NCBI's PubChem.
+#+begin_src shell
+  wget -c -r ftp://ftp.ncbi.nlm.nih.gov/pubchem/Compound/CURRENT-Full/XML -P /datastore/alan/pubchem
+#+end_src
+
+** Extract and preprocess
+Unzip them and use mawk + the =fetch.awk= script to extract pubchem id, inchikey and fingerprint. This takes ~2 hours in a ~200 cores server.
+#+begin_src shell
+  cd pubchem/Compound
+  pigz -d /*.gz
+  find . -name "*xml" | parallel --results out 'mawk -F \"[<>]\" -v OFS=\",\" -f fetch.awk'
+  mkdir tables
+#+end_src
+
+#+RESULTS:
+
+** Match JCP to pubchem
+Generate the jcp->pubchem mapper, which also contains Pubchem fingerprints
+#+begin_src duckdb
+  create table jcp_to_pubchem as
+  (select * exclude (metadata_inchikey)
+  from (
+  select metadata_jcp2022,metadata_inchikey
+  from read_csv('https://github.com/jump-cellpainting/datasets/raw/799fe5acc673f5be2fbf8862b6dbdbacfa6eb740/metadata/compound.csv.gz')) a
+  left join read_csv('/datastore/alan/ftp.ncbi.nlm.nih.gov/pubchem/Compound/CURRENT-Full/XML/out/1/*/stdout') B
+  on A.Metadata_InChIKey = B.InChIKey);
+  COPY jcp_to_pubchem to 'tables/jcp_to_pubchem.parquet' (format parquet, compression zstd);
+  select * from jcp_to_pubchem limit 3;
+#+end_src
+
+#+RESULTS:
+#+begin_results
+┌──────────────────┬────────────┬────────────────────────────────────────────────────────┬─────────────────────────────┐
+│ Metadata_JCP2022 │ pubchem_id │                      fingerprint                       │          inchikey           │
+│     varchar      │   int64    │                        varchar                         │           varchar           │
+├──────────────────┼────────────┼────────────────────────────────────────────────────────┼─────────────────────────────┤
+│ JCP2022_108222   │     972027 │ 00000371E07B3000400000000000000000000000000000000000…  │ YGCWQFGQCNHDKP-UHFFFAOYSA-N │
+│ JCP2022_010680   │     972049 │ 00000371E07BB000000000000000000000000000000160000000…  │ CEYZPCRTWDRGKX-UHFFFAOYSA-N │
+│ JCP2022_087456   │     972069 │ 00000371E07B3000400000000000000000000000000100000000…  │ TXXBNLCXGPAJLO-UHFFFAOYSA-N │
+└──────────────────┴────────────┴────────────────────────────────────────────────────────┴─────────────────────────────┘
+#+end_results
+
+** Add additional databases databases
+Map from Pubchem ids to elsewhere using the CHEMBL mappers.
+Relevant ones so far:
+- chembl
+- drugbank
+
+Note that this does not work with database sources > 22. A refactor is required for that.
+At the end we perform a full join (keeping pubchem values not found in JUMP) in case this table is useful outside the context of morphological profiling.
+#+begin_src duckdb
+  -- Select tables of relevance
+ create table sources as from read_csv('https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/table_dumps/source.tsv.gz') where name in
+  ['pubchem','chembl', 'drugbank']; -- Add more databases here
+  -- Generate URLs
+  create table csv_files as
+  (select concat('https://ftp.ebi.ac.uk/pub/databases/chembl/UniChem/data/wholeSourceMapping/src_id',cast(a.src_id as varchar),'/','src',cast(a.src_id as varchar),'src',cast(b.src_id as varchar),'.txt.gz') as url
+  from sources a
+  join sources b on b.src_id=22 and not a.src_id=22);
+  -- Pull from list
+  set variable list_of_files = (select list(url) from csv_files);
+  create table renamed as (select columns(".*\'([0-9]+)\'") as "\1" from read_csv(getvariable('list_of_files'), union_by_name=true) order by "22");
+  -- Remove duplicates
+  create table pubchem_to_dbs as (
+  pivot
+  (
+  select id_pubchem,b.name, value from (
+  unpivot (select "22" as id_pubchem, cast(columns(* exclude ("22")) as varchar) from
+  renamed) on columns(* exclude (id_pubchem))
+  ) a
+  join
+  (select src_id, concat('id_',name) AS name from sources) as b
+  on a.name=b.src_id
+  order by id_pubchem
+  )
+  on name
+  using any_value(value)
+  group by id_pubchem
+  );
+  -- Merge database mapper with jump->pubchem
+  create table jcp_to_dbs as
+  (select COLUMNS(* exclude (pubchem_id)) FROM read_parquet('tables/jcp_to_pubchem.parquet') A
+  full join pubchem_to_dbs
+  on A.pubchem_id = pubchem_to_dbs.id_pubchem
+  order by Metadata_JCP2022);
+  -- Save it to the tables directory
+  COPY jcp_to_dbs TO 'tables/jcp_to_dbs.parquet' (FORMAT parquet, compression zstd);
+  -- print the output table
+  select * from jcp_to_dbs limit 5;
+#+end_src
+
+#+RESULTS:
+#+begin_results
+┌──────────────────┬───────────────────────────┬─────────────────────────────┬────────────┬──────────────┬─────────────┐
+│ Metadata_JCP2022 │        fingerprint        │          inchikey           │ id_pubchem │  id_chembl   │ id_drugbank │
+│     varchar      │          varchar          │           varchar           │   int64    │   varchar    │   varchar   │
+├──────────────────┼───────────────────────────┼─────────────────────────────┼────────────┼──────────────┼─────────────┤
+│ JCP2022_000001   │ 00000371E07BB0000000000…  │ AAAHWCWPZPSPIW-UHFFFAOYSA-N │            │              │             │
+│ JCP2022_000002   │ 00000371C07320000400000…  │ AAAJHRMBUHXWLD-UHFFFAOYSA-N │    5076487 │ CHEMBL592894 │             │
+│ JCP2022_000004   │                           │                             │            │              │             │
+│ JCP2022_000005   │ 00000371E07BB0000400000…  │ AAAQFGUYHFJNHI-UHFFFAOYSA-N │            │              │             │
+│ JCP2022_000006   │ 00000371E07BA0000000000…  │ AAAROXVLYNJINN-UHFFFAOYSA-N │            │              │             │
+└──────────────────┴───────────────────────────┴─────────────────────────────┴────────────┴──────────────┴─────────────┘
+#+end_results
+
+** COMMENT Clean up
+The jcp->pubchem mapper is redundant so let us remove it. 
+#+begin_src shell
+  rm -f tables/jcp_to_pubchem.parquet
+  ls tables
+  # add ZENODO_TOKEN env variable
+  # bash ../upload_parquets "tables"
+#+end_src
+
+#+RESULTS:
+: jcp_to_dbs.parquet
+
