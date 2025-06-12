@@ -64,9 +64,9 @@
                     export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
                     export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
 
-                    runHook venvShellHook
-                    uv sync
+                    uv sync --group dev
 
+                    runHook venvShellHook
                     export PYTHONPATH=${pwp}/${pwp.sitePackages}:$PYTHONPATH
                 '';
              };
