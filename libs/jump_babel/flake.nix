@@ -20,13 +20,6 @@
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
-          config.cudaSupport = true;
-        };
-
-        mpkgs = import inputs.nixpkgs_master {
-          inherit system;
-          config.allowUnfree = true;
-          config.cudaSupport = true;
         };
 
         libList =
@@ -36,16 +29,7 @@
             pkgs.libGL
             pkgs.glib
             pkgs.libz
-          ]
-          ++ pkgs.lib.optionals pkgs.stdenv.isLinux (
-            with pkgs;
-            [
-              cudatoolkit
-
-              # This is required for most app that uses graphics api
-              # linuxPackages.nvidia_x11
-            ]
-          );
+          ];
       in
       with pkgs;
       {
