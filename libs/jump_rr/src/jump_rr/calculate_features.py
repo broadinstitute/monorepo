@@ -40,7 +40,11 @@ from jump_rr.consensus import (
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites
 from jump_rr.index_selection import get_ranks
-from jump_rr.mappers import get_external_mappers, get_synonym_mapper
+from jump_rr.mappers import (
+    get_compound_mappers,
+    get_external_mappers,
+    get_synonym_mapper,
+)
 from jump_rr.metadata import write_metadata
 from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
@@ -203,16 +207,20 @@ for dset, n_vals_used in datasets_nvals:
         .alias("Synonyms"),
     )
 
-    key_source_mapper = (
-        ("entrez", jcp_short, jcp_to_entrez),
-        ("omim", std_outname, std_to_omim),
-        (
-            "genecards",
-            std_outname,
-            dict(zip(jcp_to_std.values(), jcp_to_std.values())),
-        ),
-        ("ensembl", std_outname, std_to_ensembl),
-    )
+    if not dset.startswith("compound"):
+        key_source_mapper = (
+            ("entrez", jcp_short, jcp_to_entrez),
+            ("omim", std_outname, std_to_omim),
+            (
+                "genecards",
+                std_outname,
+                dict(zip(jcp_to_std.values(), jcp_to_std.values())),
+            ),
+            ("ensembl", std_outname, std_to_ensembl),
+        )
+    else:
+        key_source_mapper = [(k, jcp_short, v) for k, v in get_compound_mappers()]
+
     w_external_sites = add_external_sites(
         jcp_translated, ext_links_col, key_source_mapper
     )

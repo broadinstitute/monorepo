@@ -33,7 +33,11 @@ from jump_rr.consensus import add_sample_images, get_consensus_meta_urls, get_ra
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites
 from jump_rr.index_selection import get_bottom_top_indices
-from jump_rr.mappers import get_external_mappers, get_synonym_mapper
+from jump_rr.mappers import (
+    get_compound_mappers,
+    get_external_mappers,
+    get_synonym_mapper,
+)
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
 
@@ -211,9 +215,12 @@ for dset, n_vals_used in datasets_nvals:
             ),
             ("ensembl", match_col, std_to_ensembl),
         )
-        jcp_df = add_external_sites(jcp_df, ext_links_col, key_source_mapper)
+    else:
+        key_source_mapper = [(k, jcp_col, v) for k, v in get_compound_mappers()]
 
-        order.insert(5, ext_links_col)
+    jcp_df = add_external_sites(jcp_df, ext_links_col, key_source_mapper)
+
+    order.insert(5, ext_links_col)
 
     order = (
         *order,

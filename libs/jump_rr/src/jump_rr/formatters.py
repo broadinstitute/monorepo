@@ -50,6 +50,9 @@ def get_url_label(key: str) -> tuple[str, str]:
             "https://phenaid.ardigen.com/static-jumpcpexplorer/images/{}/{}/{}_{}.jpg",
             None,
         ),
+        chembl=("https://www.ebi.ac.uk/chembl/explore/compound/{}", "CHEMBL"),
+        drugbank=("https://go.drugbank.com/drugs/{}", "DrugBank"),
+        pubchem=("https://pubchem.ncbi.nlm.nih.gov/compound/{}", "PubChem"),
     )
     return vendors[key]
 
@@ -109,6 +112,9 @@ def format_value(fmt: str, vendor: str, value: str or int or Iterable) -> str:
         The formatted value as an HTML string.
 
     """
+    if value == "":
+        return ""
+
     d = build_dict(fmt, vendor, value)
     html = str(json.dumps(d))
     return html
@@ -177,24 +183,30 @@ def add_external_sites(
     in the input DataFrame and aggregating them into a single column.
 
     """
-    df = df.with_columns(
-        [
-            pl.col(source).replace_strict(mapper, default="").alias(key)
-            for key, source, mapper in key_source_mapper
-        ]
-    )
+    df = df.with_columns([
+        pl.col(source).replace_strict(mapper, default="").alias(key)
+        for key, source, mapper in key_source_mapper
+    ])
 
     df = df.with_columns(
         (
             "["
             + pl.concat_str(
                 [
-                    pl.format(format_value("href", key, "{}"), pl.col(key))
+                    pl.when(pl.col(key) != "")
+                    .then(
+                        pl.format(format_value("href", key, "{}"), pl.col(key)),
+                    )
+                    .otherwise(pl.lit(""))
                     for key, _, _ in key_source_mapper
                 ],
                 separator=", ",
             )
             + "]"
-        ).alias(ext_links_col),
+        )
+        .str.replace_all(", ,", ",", literal=True)
+        .str.replace("[, ", "[", literal=True)
+        .str.replace(", ]", "]", literal=True)
+        .alias(ext_links_col)
     )
     return df

@@ -1,13 +1,27 @@
 #!/usr/bin/env jupyter
 """Functions to get and use mappers."""
 
-from functools import cache
-
 import duckdb
 import polars as pl
 from broad_babel.query import run_query
+from pooch import retrieve
 
 """Generate a dictionary of synonyms mapping an Entrez Gene ID to its other names."""
+
+MAPPERS = {
+    "omim": (
+        "https://www.omim.org/static/omim/data/mim2gene.txt",
+        "835396a88350b0487d9c45f1eb1321c158777275a0faedf863a07d7d02b88f5e",
+    ),
+    "synonym": (
+        "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz",
+        "19acf7198587fde68e7922e3501303078514a4e5c995afcf0fd11d8e6446ffa1",
+    ),
+    "compound": (
+        "https://zenodo.org/api/records/15644946/files/jcp_to_dbs.parquet/content",
+        "04cda85280b512ffde836ec2aa1d9fd7114e9b5cf6f9c395c648b0eaba4497ca",
+    ),
+}
 
 
 def get_mapper(
@@ -104,7 +118,6 @@ def get_external_mappers(
     return jcp_to_std, jcp_to_entrez, entrez_to_omim, entrez_to_ensembl
 
 
-@cache
 def get_synonym_mapper() -> dict[str, str]:
     """
     Retrieve a dictionary mapping GeneIDs to their corresponding synonyms.
@@ -120,11 +133,11 @@ def get_synonym_mapper() -> dict[str, str]:
     Notes
     -----
     The synonyms data is sourced from the National Center for Biotechnology Information (NCBI).
-    The results are cached in-memory.
 
     """
+    url, known_hash = MAPPERS["synonym"]
     mapper = pl.read_csv(
-        "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz",
+        retrieve(url, known_hash),
         separator="\t",
     )
     nonempty = mapper.filter(pl.col("Synonyms") != "-")
@@ -149,13 +162,13 @@ def get_omim_mappers(other_ids: pl.DataFrame) -> tuple[dict, dict]:
         Two dictionaries containing the mapped OMIM data.
 
     """
-    filepath = "https://www.omim.org/static/omim/data/mim2gene.txt"
 
+    url, known_hash = MAPPERS["omim"]
     with duckdb.connect(":memory:"):
         duckdb.execute(
             f"""
             CREATE OR REPLACE TABLE gene_names AS
-            SELECT #1, #3, #4, #5 FROM read_csv_auto('{filepath}', normalize_names=True)
+            SELECT #1, #3, #4, #5 FROM read_csv_auto('{retrieve(url, known_hash)}', normalize_names=True)
         """
         )
         # Remove letter entries in ncbi id
@@ -173,9 +186,29 @@ def get_omim_mappers(other_ids: pl.DataFrame) -> tuple[dict, dict]:
             on A.approved_gene_symbol_hgnc = B.std;
         """
         ).pl()
-        # on A.entrez_gene_id_ncbi = B.entrez
 
     return [
         dict(valid_entries.select(pl.col("approved_gene_symbol_hgnc", x)).rows())
         for x in ("mim_number", "ensembl_gene_id_ensembl")
     ]
+
+
+# %%
+def get_compound_mappers() -> tuple[tuple[str, dict[str, str or int]]]:
+    """Get mapping between jcp ids and compound ids from different databases."""
+    url, known_hash = MAPPERS["compound"]
+    with duckdb.connect(":memory:") as con:
+        tb = con.sql(
+            f"""select Metadata_JCP2022,COLUMNS("id.*") from read_parquet(
+            '{retrieve(url, known_hash)}')
+            where Metadata_JCP2022 IS NOT NULL;"""
+        )
+        unpiv = con.sql(
+            "unpivot tb on CAST(columns(* exclude(Metadata_JCP2022)) as VARCHAR)"
+        ).pl()
+        return {
+            k[0][3:]: dict(v.rows())
+            for k, v in unpiv.partition_by(
+                "name", as_dict=True, include_key=False
+            ).items()
+        }.items()

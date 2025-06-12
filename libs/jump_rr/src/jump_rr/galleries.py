@@ -21,7 +21,7 @@ import polars as pl
 from jump_rr.consensus import get_range
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites, format_value
-from jump_rr.mappers import get_external_mappers
+from jump_rr.mappers import get_compound_mappers, get_external_mappers
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
 
@@ -93,9 +93,11 @@ for dset in ("orf", "crispr", "compound"):
             ),
             ("ensembl", std_outname, std_to_ensembl),
         )
-        df = add_external_sites(df, ext_links_col, key_source_mapper)
+    else:
+        key_source_mapper = [(k, jcp_col, v) for k, v in get_compound_mappers()]
 
-        order.insert(1, ext_links_col)
+    df = add_external_sites(df, ext_links_col, key_source_mapper)
+    order.insert(1, ext_links_col)
     order = (*order, *replicability_cols.values())
 
     # Replace Metadata_JCP2022 to JCP2022
