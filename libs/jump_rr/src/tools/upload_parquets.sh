@@ -58,7 +58,6 @@ echo -e '{"metadata": {
             "name": "Alán F. Muñoz"
         }
     ],
-"description": "Step by step tutorial on the <a href=\\"https://broadinstitute.github.io/jump_hub/howto/1_jumprr_steps.html\\">jump hub\\"</a>, and details on the code that produces this tables on our <a href=\\"https://github.com/broadinstitute/monorepo/tree/main/libs/jump_rr#quick-data-access\\">monorepo</a>.",
 "upload_type": "dataset",
 "access_right": "open"
 }}' >metadata.json

@@ -1,0 +1,11 @@
+{"metadata": {
+    "title": "JUMP Compound mapper",
+    "creators": [
+        {
+            "name": "Alán F. Muñoz"
+        }
+    ],
+"description": "Mappers from JUMP to Pubchem and from pubchem to external databases.",
+"upload_type": "dataset",
+"access_right": "open"
+}}
