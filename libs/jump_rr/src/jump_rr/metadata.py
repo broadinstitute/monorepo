@@ -90,18 +90,21 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
 
     """
     if dset == "compound":  # Use '=' sign for compounds
-        prefix = "if you have an InChIKey for your compound, choose Perturbation. If you have a JCP ID, choose JCPID_2022. If you have neither, go here (URL) to look up the JCP ID for your compound or a close analog."
+        prefix = "If you have an InChIKey for your compound, choose Perturbation. If you have a JCP ID, choose JCPID_2022. If you have neither, go here (URL) to look up the JCP ID for your compound or a close analog."
     elif dset in ("crispr", "orf"):  # Use synonyms for genes
-        prefix = "choose “Synonyms”, and “contains”, and type in your gene name in all capital letters in the box below."
+        prefix = "Choose “Synonyms”, and “contains”, and type in your gene name in all capital letters in the box below."
     elif table_type == "gallery":
         prefix = ""
 
     if table_type == "matches":
-        prefix = "To find matches (up to 50 will be shown), " + prefix
+        prefix = (
+            "Explore the most similar perturbations to find matches (up to 50 will be shown). "
+            + prefix
+        )
     elif table_type == "gallery":
-        prefix = "Explore the JUMP images, " + prefix
+        prefix = "Explore the JUMP images. " + prefix
     elif table_type == "feature":
-        prefix = "Explore statistically significant features, " + prefix
+        prefix = "Explore statistically significant features. " + prefix
 
     if table_type != "gallery":  # Add statistical method for non-galleries
         valid_names = colnames

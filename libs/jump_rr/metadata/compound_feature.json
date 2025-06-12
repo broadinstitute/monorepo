@@ -5,8 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "Explore statistically significant features, if you have an InChIKey for your compound, choose Perturbation. If you have a JCP ID, choose JCPID_2022. If you have neither, go <a href =
-https://broadinstitute.github.io/jump_hub/howto/0_howto_interactive_tools.html#usage>here</a> to look up the JCP ID for your compound or a close analog. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int.parquet>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/compound_feature>Latest</a> version of this page.",
+                    "description_html": "Explore statistically significant features. If you have an InChIKey for your compound, choose Perturbation. If you have a JCP ID, choose JCPID_2022. If you have neither, go here (URL) to look up the JCP ID for your compound or a close analog. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int.parquet>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/compound_feature>Latest</a> version of this page.",
                     "title": "COMPOUND Feature Ranking",
                     "columns": {
                         "Compartment": "Mask used to calculate the feature. It can be Nuclei, Cytoplasm or Cells (the union of both Nuclei and Cytoplasm).",
@@ -15,6 +14,8 @@ https://broadinstitute.github.io/jump_hub/howto/0_howto_interactive_tools.html#u
                         "Suffix": "Suffix associated with a CellProfiler feature.",
                         "Feature significance": "Statistical significance of the difference between a morphological feature in a perturbation compared to the control condition. Lower values suggest a stronger effect of the perturbation on that particular feature. The p-value goes through the Benjamini-Hochberg FDR correction",
                         "Perturbation": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
+                        "Corrected p-value": "Statistical significance of how distinctive a perturbation is relative to the negative control. It correlates negatively to mean average precision, but adjusted based on its composition of positive and negative values.",
+                        "Phenotypic activity": "Mean average precision of the perturbation. It determines its distinctiveness to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
                         "Perturbation example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
                         "Median": "Median value of the feature for the perturbation when aggregating all replicates.",
                         "Gene Rank": "The rank of the feature for a given gene when compared to that feature in all other genes.",

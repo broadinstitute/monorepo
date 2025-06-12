@@ -5,8 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "Explore the JUMP images, if you have an InChIKey for your compound, choose Perturbation. If you have neither, go <a href =
-https://broadinstitute.github.io/jump_hub/howto/0_howto_interactive_tools.html#usage>here</a> to look up the JCP ID for your compound or a close analog. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int_featselect_harmony.parquet>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/compound_gallery>Latest</a> version of this page.",
+                    "description_html": "Explore the JUMP images. If you have an InChIKey for your compound, choose Perturbation. If you have a JCP ID, choose JCPID_2022. If you have neither, go here (URL) to look up the JCP ID for your compound or a close analog. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int_featselect_harmony.parquet>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/compound_gallery>Latest</a> version of this page.",
                     "title": "COMPOUND Gallery",
                     "columns": {
                         "Perturbation": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
@@ -14,6 +13,8 @@ https://broadinstitute.github.io/jump_hub/howto/0_howto_interactive_tools.html#u
                         "Source": "Identifier of the partner that produced the data numbered between 1 and 15.",
                         "Plate": "Identifier of the plate.",
                         "Well": "Identifier of the well. Generally 384-well plates, ranging from A01 to P24.",
+                        "Corrected p-value": "Statistical significance of how distinctive a perturbation is relative to the negative control. It correlates negatively to mean average precision, but adjusted based on its composition of positive and negative values.",
+                        "Phenotypic activity": "Mean average precision of the perturbation. It determines its distinctiveness to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
                         "Site X": "Identifier of the Field of View (FoV). Ranging from 0 to 9 (depending on the dataset)."
                     }
                 }

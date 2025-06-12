@@ -18,7 +18,6 @@
 from pathlib import Path
 
 import polars as pl
-
 from jump_rr.consensus import get_range
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites, format_value
@@ -75,17 +74,14 @@ for dset in ("orf", "crispr", "compound"):
         "Metadata_Well",
     ]
 
-    if (
-        dset != "compound"
-    ):  # TODO Add databases for compounds and ensure that 0-case works
-        # Add replicability data for CRISPR and ORF
-        df = add_replicability(
-            df,
-            left_on=jcp_col,
-            right_on=jcp_col,
-            cols_to_add=replicability_cols,
-        )
-
+    # Add replicability data for CRISPR and ORF
+    df = add_replicability(
+        df,
+        left_on=jcp_col,
+        right_on=jcp_col,
+        cols_to_add=replicability_cols,
+    )
+    if dset != "compound":
         # Define the external references to use in genetic or chemical datasets
         key_source_mapper = (
             ("entrez", jcp_col, jcp_to_entrez),
@@ -100,7 +96,7 @@ for dset in ("orf", "crispr", "compound"):
         df = add_external_sites(df, ext_links_col, key_source_mapper)
 
         order.insert(1, ext_links_col)
-        order = (*order, *replicability_cols.values())
+    order = (*order, *replicability_cols.values())
 
     # Replace Metadata_JCP2022 to JCP2022
     df = (

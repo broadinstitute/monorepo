@@ -32,7 +32,6 @@ from time import perf_counter
 import dask.array as da
 import duckdb
 import polars as pl
-
 from jump_rr.consensus import (
     add_sample_images,
     get_consensus_meta_urls,
@@ -143,21 +142,17 @@ for dset, n_vals_used in datasets_nvals:
     featstat_computed = da.around(featstat, ndecimals).compute()
 
     # %% Build Data Frame
-    df = pl.DataFrame(
-        {
-            **{
-                k: v
-                for k, v in zip(
-                    decomposed_feats.columns, decomposed_feats.to_numpy()[ys].T
-                )
-            },
-            stat_col: featstat_computed[xs, ys],
-            val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
-            jcp_short: med[jcp_col][xs],
-            rank_gene_col: rankg,
-            rank_feat_col: rankf,
-        }
-    )
+    df = pl.DataFrame({
+        **{
+            k: v
+            for k, v in zip(decomposed_feats.columns, decomposed_feats.to_numpy()[ys].T)
+        },
+        stat_col: featstat_computed[xs, ys],
+        val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
+        jcp_short: med[jcp_col][xs],
+        rank_gene_col: rankg,
+        rank_feat_col: rankf,
+    })
 
     # Add images
     df_meta = precor.select("^Metadata.*$")
@@ -190,15 +185,14 @@ for dset, n_vals_used in datasets_nvals:
     ]
 
     # Add phenotypic activity from a previously-calculated
-    if not dset.startswith("compound"):
-        df = add_replicability(
-            df,
-            left_on=jcp_short,
-            right_on=jcp_col,
-            cols_to_add=replicability_cols,
-        )
-        for col in replicability_cols.values():
-            order.insert(-6, col)
+    df = add_replicability(
+        df,
+        left_on=jcp_short,
+        right_on=jcp_col,
+        cols_to_add=replicability_cols,
+    )
+    for col in replicability_cols.values():
+        order.insert(-6, col)
 
     # Add aliases and external links
     jcp_translated = df.with_columns(

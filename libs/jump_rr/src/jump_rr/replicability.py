@@ -24,13 +24,21 @@ def match_jcp(jcp: str) -> str:
         If the JCP id is invalid or compound replicability has not been precomputed.
 
     """
+
+    # Niranj produced these p values
+    base_url = "https://github.com/jump-cellpainting/2024_Chandrasekaran_Morphmap/raw/c47ad6c953d70eb9e6c9b671c5fe6b2c82600cfc/03.retrieve-annotations/output/{}"
     match jcp[8]:
-        case "8" | "crispr":
-            return "phenotypic-activity-wellpos_cc_var_mad_outlier_featselect_sphering_harmony_PCA_corrected.csv.gz"
-        case "9" | "orf":
-            return "phenotypic-activity-wellpos_cc_var_mad_outlier_featselect_sphering_harmony.csv.gz"
-        case "0" | "compound":
-            raise Exception("Compound replicability not precomputed")
+        case "8":
+            return base_url.format(
+                "phenotypic-activity-wellpos_cc_var_mad_outlier_featselect_sphering_harmony_PCA_corrected.csv.gz"
+            )
+        case "9":
+            return base_url.format(
+                "phenotypic-activity-wellpos_cc_var_mad_outlier_featselect_sphering_harmony.csv.gz"
+            )
+        case "0":  # Johan produced these p values
+            return "https://zenodo.org/api/records/15122159/files/profiles_var_mad_int_featselect_harmony_map_negcon.parquet/content"
+
         case _:
             raise Exception("Invalid JCP")
 
@@ -50,11 +58,16 @@ def df_from_jcp(jcp: str) -> pl.LazyFrame:
         A Polars DataFrame containing the data for the given JCP.
 
     """
-    filename = match_jcp(jcp)
-    base_url = "https://github.com/jump-cellpainting/2024_Chandrasekaran_Morphmap/raw/c47ad6c953d70eb9e6c9b671c5fe6b2c82600cfc/03.retrieve-annotations/output/{}"
-    url = base_url.format(filename)
+    filepath = match_jcp(jcp)
 
-    return pl.scan_csv(url)
+    fn = (
+        pl.scan_csv
+        if filepath.endswith("csv.gz")
+        else lambda x: pl.read_parquet(x, use_pyarrow=True)
+        .with_columns(pl.col("Metadata_JCP2022").cast(pl.String))
+        .lazy()
+    )
+    return fn(filepath)
 
 
 def add_replicability(

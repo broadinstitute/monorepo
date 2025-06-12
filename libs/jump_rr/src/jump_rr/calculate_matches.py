@@ -184,23 +184,23 @@ for dset, n_vals_used in datasets_nvals:
         match_jcp_col,
     ]
 
+    jcp_df = add_replicability(
+        jcp_df,
+        left_on=jcp_short,
+        right_on=jcp_col,
+        cols_to_add=replicability_cols,
+    )
+    jcp_df = add_replicability(
+        jcp_df,
+        left_on=match_jcp_col,
+        right_on=jcp_col,
+        suffix=" Match",
+        cols_to_add=replicability_cols,
+    )
+
     if dset != "compound":
         # Define the external references to use in genetic or chemical datasets
         # TODO Add databases for compounds
-        jcp_df = add_replicability(
-            jcp_df,
-            left_on=jcp_short,
-            right_on=jcp_col,
-            cols_to_add=replicability_cols,
-        )
-        jcp_df = add_replicability(
-            jcp_df,
-            left_on=match_jcp_col,
-            right_on=jcp_col,
-            suffix=" Match",
-            cols_to_add=replicability_cols,
-        )
-
         key_source_mapper = (
             ("entrez", match_jcp_col, jcp_to_entrez),
             ("omim", match_col, std_to_omim),
@@ -214,14 +214,15 @@ for dset, n_vals_used in datasets_nvals:
         jcp_df = add_external_sites(jcp_df, ext_links_col, key_source_mapper)
 
         order.insert(5, ext_links_col)
-        order = (
-            *order,
-            *[
-                f"{v}{suffix}"
-                for suffix in ("", " Match")
-                for v in replicability_cols.values()
-            ],
-        )
+
+    order = (
+        *order,
+        *[
+            f"{v}{suffix}"
+            for suffix in ("", " Match")
+            for v in replicability_cols.values()
+        ],
+    )
 
     # res = np.around((jcp_df[dist_col].to_numpy().astype(np.float64)), 3)
     jcp_df = jcp_df.with_columns(
@@ -243,4 +244,3 @@ for dset, n_vals_used in datasets_nvals:
         schema=med.get_column("Metadata_JCP2022").to_list(),
     ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
     print(f"Matched pairwise {dset} in {perf_counter() - t} seconds")
-    break

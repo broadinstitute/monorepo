@@ -5,8 +5,7 @@
             "source_url": "http://broad.io/jump",
             "tables": {
                 "content": {
-                    "description_html": "To find matches (up to 50 will be shown), if you have an InChIKey for your compound, choose Perturbation. If you have neither, go <a href =
-https://broadinstitute.github.io/jump_hub/howto/0_howto_interactive_tools.html#usage>here</a> to look up the JCP ID for your compound or a close analog. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int_featselect_harmony.parquet>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/compound>Latest</a> version of this page.",
+                    "description_html": "Explore the most similar perturbations to find matches (up to 50 will be shown). If you have an InChIKey for your compound, choose Perturbation. If you have a JCP ID, choose JCPID_2022. If you have neither, go here (URL) to look up the JCP ID for your compound or a close analog. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv> Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/COMPOUND/profiles_var_mad_int_featselect_harmony/profiles_var_mad_int_featselect_harmony.parquet>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/compound>Latest</a> version of this page.",
                     "title": "COMPOUND Matches",
                     "columns": {
                         "Perturbation": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
@@ -16,7 +15,11 @@ https://broadinstitute.github.io/jump_hub/howto/0_howto_interactive_tools.html#u
                         "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations\u2019 profiles are anti-correlated. Ranges from -1 to 1.",
                         "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
                         "JCP2022": "JUMP id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
-                        "Match JCP2022": "JUMP id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates."
+                        "Match JCP2022": "JUMP id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Corrected p-value": "Statistical significance of how distinctive a perturbation is relative to the negative control. It correlates negatively to mean average precision, but adjusted based on its composition of positive and negative values.",
+                        "Phenotypic activity": "Mean average precision of the perturbation. It determines its distinctiveness to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
+                        "Corrected p-value Match": "Corrected p-value of the matched perturbation.",
+                        "Phenotypic activity Match": "Phenotypic activity of the matched perturbation."
                     }
                 }
             }
