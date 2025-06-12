@@ -27,7 +27,7 @@ Generate the jcp->pubchem mapper, which also contains Pubchem fingerprints
   left join read_csv('out/1/*/stdout') B
   on A.Metadata_InChIKey = B.InChIKey);
   COPY jcp_to_pubchem to 'tables/jcp_to_pubchem.parquet' (format parquet, compression zstd);
-  select * from jcp_to_pubchem limit 3;
+  select * from jcp_to_pubchem order by Metadata_JCP2022 limit 3;
 #+end_src
 
 #+RESULTS:
@@ -36,9 +36,9 @@ Generate the jcp->pubchem mapper, which also contains Pubchem fingerprints
 │ Metadata_JCP2022 │ pubchem_id │                      fingerprint                       │          inchikey           │
 │     varchar      │   int64    │                        varchar                         │           varchar           │
 ├──────────────────┼────────────┼────────────────────────────────────────────────────────┼─────────────────────────────┤
-│ JCP2022_108222   │     972027 │ 00000371E07B3000400000000000000000000000000000000000…  │ YGCWQFGQCNHDKP-UHFFFAOYSA-N │
-│ JCP2022_010680   │     972049 │ 00000371E07BB000000000000000000000000000000160000000…  │ CEYZPCRTWDRGKX-UHFFFAOYSA-N │
-│ JCP2022_087456   │     972069 │ 00000371E07B3000400000000000000000000000000100000000…  │ TXXBNLCXGPAJLO-UHFFFAOYSA-N │
+│ JCP2022_000001   │  110094592 │ 00000371E07BB000000000000000000000000000000162C00000…  │ AAAHWCWPZPSPIW-UHFFFAOYSA-N │
+│ JCP2022_000002   │    5076487 │ 00000371C0732000040000000000000000000000000000000000…  │ AAAJHRMBUHXWLD-UHFFFAOYSA-N │
+│ JCP2022_000004   │            │                                                        │                             │
 └──────────────────┴────────────┴────────────────────────────────────────────────────────┴─────────────────────────────┘
 #+end_results
 
@@ -81,10 +81,10 @@ At the end we perform a full join (keeping pubchem values not found in JUMP) in 
   );
   -- Merge database mapper with jump->pubchem
   create table jcp_to_dbs as
-  (select COLUMNS(* exclude (pubchem_id)) FROM read_parquet('tables/jcp_to_pubchem.parquet') A
+  (select COLUMNS(* exclude (id_pubchem,pubchem_id)), coalesce(pubchem_id, id_pubchem) as id_pubchem FROM read_parquet('tables/jcp_to_pubchem.parquet') A
   full join pubchem_to_dbs
   on A.pubchem_id = pubchem_to_dbs.id_pubchem
-  order by Metadata_JCP2022);
+  order by Metadata_JCP2022,id_pubchem);
   -- Save it to the tables directory
   COPY jcp_to_dbs TO 'tables/jcp_to_dbs.parquet' (FORMAT parquet, compression zstd);
   -- print the output table
@@ -93,16 +93,16 @@ At the end we perform a full join (keeping pubchem values not found in JUMP) in 
 
 #+RESULTS:
 #+begin_results
-┌──────────────────┬───────────────────────────┬─────────────────────────────┬────────────┬──────────────┬─────────────┐
-│ Metadata_JCP2022 │        fingerprint        │          inchikey           │ id_pubchem │  id_chembl   │ id_drugbank │
-│     varchar      │          varchar          │           varchar           │   int64    │   varchar    │   varchar   │
-├──────────────────┼───────────────────────────┼─────────────────────────────┼────────────┼──────────────┼─────────────┤
-│ JCP2022_000001   │ 00000371E07BB0000000000…  │ AAAHWCWPZPSPIW-UHFFFAOYSA-N │            │              │             │
-│ JCP2022_000002   │ 00000371C07320000400000…  │ AAAJHRMBUHXWLD-UHFFFAOYSA-N │    5076487 │ CHEMBL592894 │             │
-│ JCP2022_000004   │                           │                             │            │              │             │
-│ JCP2022_000005   │ 00000371E07BB0000400000…  │ AAAQFGUYHFJNHI-UHFFFAOYSA-N │            │              │             │
-│ JCP2022_000006   │ 00000371E07BA0000000000…  │ AAAROXVLYNJINN-UHFFFAOYSA-N │            │              │             │
-└──────────────────┴───────────────────────────┴─────────────────────────────┴────────────┴──────────────┴─────────────┘
+┌──────────────────┬───────────────────────────┬─────────────────────────────┬──────────────┬─────────────┬────────────┐
+│ Metadata_JCP2022 │        fingerprint        │          inchikey           │  id_chembl   │ id_drugbank │ id_pubchem │
+│     varchar      │          varchar          │           varchar           │   varchar    │   varchar   │   int64    │
+├──────────────────┼───────────────────────────┼─────────────────────────────┼──────────────┼─────────────┼────────────┤
+│ JCP2022_000001   │ 00000371E07BB0000000000…  │ AAAHWCWPZPSPIW-UHFFFAOYSA-N │              │             │  110094592 │
+│ JCP2022_000002   │ 00000371C07320000400000…  │ AAAJHRMBUHXWLD-UHFFFAOYSA-N │ CHEMBL592894 │             │    5076487 │
+│ JCP2022_000004   │                           │                             │              │             │            │
+│ JCP2022_000005   │ 00000371E07BB0000400000…  │ AAAQFGUYHFJNHI-UHFFFAOYSA-N │              │             │   52934829 │
+│ JCP2022_000006   │ 00000371E07BA0000000000…  │ AAAROXVLYNJINN-UHFFFAOYSA-N │              │             │   72019641 │
+└──────────────────┴───────────────────────────┴─────────────────────────────┴──────────────┴─────────────┴────────────┘
 #+end_results
 
 ** COMMENT Clean up
