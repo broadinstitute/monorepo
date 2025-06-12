@@ -1,7 +1,10 @@
 # Find the latest version of the dataset
 ZENODO_ENDPOINT="https://zenodo.org"
 DEPOSITION_PREFIX="${ZENODO_ENDPOINT}/api/deposit/depositions"
-ORIGINAL_ID="12775236"
+ORIGINAL_ID="12775236" # jump_rr tables
+META_FILE="metadata/jump_rr.json"
+# ORIGINAL_ID="15644588" # database mapper table
+# META_FILE="metadata/jcp_to_dbs.json"
 DIR_TO_VERSION="$1"
 
 if [ -z "${ORIGINAL_ID}" ]; then # Only get latest id when provided an original one
