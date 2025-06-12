@@ -50,22 +50,10 @@ for FILE_TO_VERSION in $(find "${DIR_TO_VERSION}" -name '*.parquet'); do
 		"${BUCKET}/${FILE_TO_VERSION##*/}?access_token=${ZENODO_TOKEN}"
 done
 
-# Upload Metadata
-echo -e '{"metadata": {
-    "title": "Processed JUMP Datasets: For Web and programmatic exploration.",
-    "creators": [
-        {
-            "name": "Alán F. Muñoz"
-        }
-    ],
-"upload_type": "dataset",
-"access_right": "open"
-}}' >metadata.json
-
 NEW_DEPOSITION_ENDPOINT="${DEPOSITION_PREFIX}/${DEPOSITION}"
 echo "Uploading file to ${NEW_DEPOSITION_ENDPOINT}"
 curl -H "Content-Type: application/json" \
-	-X PUT --data @metadata.json \
+	-X PUT --data @${META_FILE} \
 	"${NEW_DEPOSITION_ENDPOINT}?access_token=${ZENODO_TOKEN}"
 
 # Publish
