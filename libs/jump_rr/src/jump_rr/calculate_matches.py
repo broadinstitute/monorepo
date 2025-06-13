@@ -216,7 +216,7 @@ for dset, n_vals_used in datasets_nvals:
             ("ensembl", match_col, std_to_ensembl),
         )
     else:
-        key_source_mapper = [(k, jcp_col, v) for k, v in get_compound_mappers()]
+        key_source_mapper = [(k, jcp_short, v) for k, v in get_compound_mappers()]
 
     jcp_df = add_external_sites(jcp_df, ext_links_col, key_source_mapper)
 

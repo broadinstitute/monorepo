@@ -90,7 +90,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
 
     """
     if dset == "compound":  # Use '=' sign for compounds
-        prefix = "If you have an InChIKey for your compound, choose Perturbation. If you have a JCP ID, choose JCPID_2022. If you have neither, go here (URL) to look up the JCP ID for your compound or a close analog."
+        prefix = "If you have an InChIKey for your compound, choose Perturbation. If you have a JCP ID, choose JCPID_2022. If you have neither, go <a href = https://broadinstitute.github.io/jump_hub/reference/01_chemical_query.html>here</a> to look up the JCP ID for your compound or a close analog."
     elif dset in ("crispr", "orf"):  # Use synonyms for genes
         prefix = "Choose “Synonyms”, and “contains”, and type in your gene name in all capital letters in the box below."
     elif table_type == "gallery":
