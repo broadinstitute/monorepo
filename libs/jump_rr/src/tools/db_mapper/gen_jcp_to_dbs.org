@@ -1,4 +1,5 @@
 #+TITLE: Map JUMP compounds to external databases
+Download all PubChem compounds, 
 ** Download data
 Download the ~500GB datasets used with all compounds on NCBI's PubChem.
 #+begin_src shell
@@ -42,7 +43,7 @@ Generate the jcp->pubchem mapper, which also contains Pubchem fingerprints
 └──────────────────┴────────────┴────────────────────────────────────────────────────────┴─────────────────────────────┘
 #+end_results
 
-** Add additional databases databases
+** Add additional databases
 Map from Pubchem ids to elsewhere using the CHEMBL mappers.
 Relevant ones so far:
 - chembl
