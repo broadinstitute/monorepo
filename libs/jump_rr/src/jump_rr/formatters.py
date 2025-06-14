@@ -207,6 +207,7 @@ def add_external_sites(
         .str.replace_all(", ,", ",", literal=True)
         .str.replace("[, ", "[", literal=True)
         .str.replace(", ]", "]", literal=True)
+        .str.replace("[]", "", literal=True)
         .alias(ext_links_col)
     )
     return df
