@@ -1,6 +1,6 @@
 [project]
 name = "trommel"
-version = "0.1.5"
+version = "0.1.6"
 description = "Data cleaning functions and pipelines for morphological profiles."
 authors = [
   {name = "Alan Munoz"},
