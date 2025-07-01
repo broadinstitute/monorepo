@@ -116,7 +116,7 @@ wheels = [
 [[package]]
 name = "trommel"
 version = "0.1.5"
-source = { virtual = "." }
+source = { editable = "." }
 dependencies = [
     { name = "duckdb" },
     { name = "numpy" },
