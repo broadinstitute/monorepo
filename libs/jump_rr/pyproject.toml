@@ -25,6 +25,9 @@ dev = [
     "ruff-lsp>=0.0.50,<0.0.51",
     "pytest>=8.3.5,<9",
 ]
+test = [
+    "requests>=2.32.3",
+]
 
 [tool.uv]
 

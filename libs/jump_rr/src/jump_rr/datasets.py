@@ -1,5 +1,8 @@
 """Import morphological profiles using the manifest on github."""
 
+import json
+from urllib.request import urlopen
+
 import polars as pl
 import pooch
 
@@ -9,7 +12,7 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
     Retrieve the latest morphological profiles using standard names.
 
     Available datasets can be found on the "subset" column on
-    https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.csv
+    https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.json
 
     Parameters
     ----------
@@ -46,9 +49,10 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
 
 def get_profiles_url(dataset: str) -> str:
     """Select the correct url."""
-    manifest = pl.read_csv(
-        "https://raw.githubusercontent.com/jump-cellpainting/datasets/50cd2ab93749ccbdb0919d3adf9277c14b6343dd/manifests/profile_index.csv"
-    )
-    result = manifest.filter(pl.col("subset") == dataset)[0, 1]
-
-    return result
+    with urlopen(
+        "https://raw.githubusercontent.com/jump-cellpainting/datasets/99b8501e2da16bb01792124df22d23ce7aa93668/manifests/profile_index.json"
+    ) as url:
+        data = json.load(url)
+    for entry in data:
+        if entry["subset"] == dataset:
+            return entry["url"]
