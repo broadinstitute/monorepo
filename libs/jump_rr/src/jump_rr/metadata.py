@@ -146,7 +146,8 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
             x: get_col_desc(x) for x in valid_names
         }
 
-        json.dump(data, f, indent=4)
+        # Write to json file. Adds a new line at the end to make it a standard text file.
+        print(json.dumps(data, indent=4), file=f)
 
 
 def table_type_to_suffix(table_type: str) -> str | None:
