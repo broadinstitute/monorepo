@@ -11,7 +11,7 @@ import polars.selectors as cs
 from trommel.core import basic_cleanup
 
 meta_selector = cs.by_dtype(pl.String)
-profiles = pl.scan_parquet("https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles/jump-profiling-recipe_2024_a917fa7/CRISPR/profiles_wellpos_cc_var_mad_outlier_featselect_sphering_harmony_PCA_corrected/profiles.parquet", n_rows=100).collect()
+profiles = pl.scan_parquet("https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/CRISPR/v1.0a/profiles.parquet", n_rows=100).collect()
 
 """
 shape: (100, 3_677)
