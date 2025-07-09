@@ -86,11 +86,21 @@ class CopairsRunner:
             Configuration dictionary or path to YAML config file
         """
         # Load config if it's a file path
+        self.config_dir = None
         if isinstance(config, (str, Path)):
-            with open(config, "r") as f:
+            config_path = Path(config)
+            self.config_dir = config_path.parent
+            with open(config_path, "r") as f:
                 config = yaml.safe_load(f)
 
         self.config = config
+
+    def resolve_path(self, path: Union[str, Path]) -> Path:
+        """Resolve path relative to config file."""
+        path = Path(path)
+        if self.config_dir and not path.is_absolute():
+            return self.config_dir / path
+        return path
 
     def run(self) -> pd.DataFrame:
         """Run the complete analysis pipeline.
@@ -103,7 +113,7 @@ class CopairsRunner:
         logger.info("Starting copairs analysis")
 
         # 1. Load data
-        path = Path(self.config["data"]["path"])
+        path = self.resolve_path(self.config["data"]["path"])
         logger.info(f"Loading data from {path}")
         df = pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path)
         logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
@@ -213,7 +223,7 @@ class CopairsRunner:
             Suffix to add to filename, by default ""
         """
         output_config = self.config["output"]
-        output_path = Path(output_config["path"])
+        output_path = self.resolve_path(output_config["path"])
 
         # Add suffix if provided
         if suffix:
@@ -340,7 +350,7 @@ class CopairsRunner:
             save_path = plot_config.get("path")
 
         if save_path:
-            save_path = Path(save_path)
+            save_path = self.resolve_path(save_path)
             save_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Get format from config or infer from extension
@@ -380,6 +390,7 @@ class CopairsRunner:
         - dropna: Drop rows with NaN values in specified columns
         - remove_nan_features: Remove feature columns containing NaN
         - split_multilabel: Split pipe-separated values into lists
+        - add_column: Add boolean column based on query expression
         - filter_active: Filter based on activity CSV with below_corrected_p column
         - aggregate_replicates: Aggregate by taking median of features
         - merge_metadata: Merge external CSV metadata
@@ -392,6 +403,10 @@ class CopairsRunner:
           - type: filter
             params:
               query: "Metadata_mmoles_per_liter > 0.1"
+          - type: add_column
+            params:
+              query: '(Metadata_moa == "EGFR inhibitor") & (Metadata_mmoles_per_liter > 1)'
+              column: "Metadata_is_high_dose_EGFR_inhibitor"
           - type: filter_active
             params:
               activity_csv: "data/activity_map.csv"
@@ -477,11 +492,26 @@ class CopairsRunner:
         logger.info(f"Split multilabel column '{column}' by '{separator}'")
         return df
 
+    def _preprocess_add_column(
+        self, df: pd.DataFrame, params: Dict[str, Any]
+    ) -> pd.DataFrame:
+        """Add column based on query expression."""
+        query = params["query"]
+        column = params["column"]
+
+        # Create boolean mask from query
+        mask = df.query(query).index
+        df[column] = False
+        df.loc[mask, column] = True
+
+        logger.info(f"Added column '{column}' with {len(mask)} True values")
+        return df
+
     def _preprocess_filter_active(
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
         """Filter to active compounds based on below_corrected_p column."""
-        activity_csv = Path(params["activity_csv"])
+        activity_csv = self.resolve_path(params["activity_csv"])
         on_column = params["on_column"]
         filter_column = params.get("filter_column", "below_corrected_p")
 
@@ -512,7 +542,7 @@ class CopairsRunner:
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
         """Merge external metadata from CSV file."""
-        source_path = Path(params["source"])
+        source_path = self.resolve_path(params["source"])
         on_columns = params["on"] if isinstance(params["on"], list) else [params["on"]]
         how = params.get("how", "left")
 
