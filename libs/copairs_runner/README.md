@@ -16,6 +16,13 @@ data:
   path: "data.csv"  # or .parquet, URLs, S3 paths
   # lazy: true  # for large parquet files
 
+# Optional sections
+preprocessing:
+  steps:
+    - type: filter
+      params:
+        query: "Metadata_dose > 0.1"
+
 average_precision:
   params:
     pos_sameby: ["Metadata_compound"]
@@ -26,17 +33,10 @@ average_precision:
 output:
   path: "results.csv"
 
-# Optional sections
-preprocessing:
-  steps:
-    - type: filter
-      params:
-        query: "Metadata_dose > 0.1"
-
 mean_average_precision:
   params:
     sameby: ["Metadata_compound"]
-    null_size: 1000000
+    null_size: 10000  # Typically 10000-100000
     threshold: 0.05
     seed: 0
 
