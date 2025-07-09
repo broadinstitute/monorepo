@@ -109,11 +109,14 @@ class CopairsRunner:
     def resolve_path(self, path: Union[str, Path]) -> Union[str, Path]:
         """Resolve path relative to config file."""
         path_str = str(path)
-        
+
         # URLs and URIs should be returned as-is
-        if any(path_str.startswith(proto) for proto in ['http://', 'https://', 's3://', 'gs://']):
+        if any(
+            path_str.startswith(proto)
+            for proto in ["http://", "https://", "s3://", "gs://"]
+        ):
             return path_str
-        
+
         # File paths get resolved relative to config
         path = Path(path)
         if self.config_dir and not path.is_absolute():
@@ -133,46 +136,51 @@ class CopairsRunner:
         # 1. Load data
         path = self.resolve_path(self.config["data"]["path"])
         logger.info(f"Loading data from {path}")
-        
+
         # Check file extension (works for both Path objects and URL strings)
         path_str = str(path)
         columns = self.config["data"].get("columns")  # Optional column selection
-        
+
         # Check if lazy filtering is requested for parquet files
         use_lazy = self.config["data"].get("use_lazy_filter", False)
         filter_query = self.config["data"].get("filter_query")
-        
+
         if path_str.endswith(".parquet") and use_lazy and filter_query:
             # Use polars for lazy filtering
             import polars as pl
+
             logger.info(f"Using lazy filter: {filter_query}")
-            
+
             # Lazy load with polars
             lazy_df = pl.scan_parquet(path)
-            
+
             # Apply filter
             lazy_df = lazy_df.filter(pl.sql_expr(filter_query))
-            
+
             # Select columns if specified
             if columns:
                 lazy_df = lazy_df.select(columns)
-            
+
             # Collect and convert to pandas
             df = lazy_df.collect().to_pandas()
-            
+
             # Log column information
             metadata_cols = [col for col in df.columns if col.startswith("Metadata_")]
-            feature_cols = [col for col in df.columns if not col.startswith("Metadata_")]
-            
-            logger.info(f"Loaded {len(df)} rows after filtering with {len(df.columns)} columns")
+            feature_cols = [
+                col for col in df.columns if not col.startswith("Metadata_")
+            ]
+
+            logger.info(
+                f"Loaded {len(df)} rows after filtering with {len(df.columns)} columns"
+            )
             logger.info(f"  Metadata columns (first 5): {metadata_cols[:5]}")
             logger.info(f"  Feature columns (first 5): {feature_cols[:5]}")
-        
+
         elif path_str.endswith(".parquet"):
             df = pd.read_parquet(path, columns=columns)
         else:
             df = pd.read_csv(path, usecols=columns)
-        
+
         if not use_lazy or not filter_query:
             logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
 
