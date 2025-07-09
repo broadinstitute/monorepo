@@ -43,8 +43,7 @@ class CopairsRunner:
     - Saving results
 
     Configuration Notes:
-    - By default, metadata columns are identified using the regex "^Metadata".
-      You can override this by setting data.metadata_regex in your config.
+    - Metadata columns are always identified using the regex "^Metadata".
     - To enable plotting, add a "plotting" section to your config with "enabled: true".
 
     Filtering Options:
@@ -592,16 +591,16 @@ class CopairsRunner:
     ) -> pd.DataFrame:
         """Filter to active compounds based on below_corrected_p column."""
         activity_csv = self.resolve_path(params["activity_csv"])
-        on_column = params["on_columns"]
+        on_columns = params["on_columns"]
         filter_column = params.get("filter_column", "below_corrected_p")
 
         # Load activity data
         activity_df = pd.read_csv(activity_csv)
 
         # Get active compounds
-        active_values = activity_df[activity_df[filter_column]][on_column].unique()
+        active_values = activity_df[activity_df[filter_column]][on_columns].unique()
 
-        df = df[df[on_column].isin(active_values)]
+        df = df[df[on_columns].isin(active_values)]
 
         logger.info(f"Filtered to {len(df)} active compounds from {activity_csv}")
         return df

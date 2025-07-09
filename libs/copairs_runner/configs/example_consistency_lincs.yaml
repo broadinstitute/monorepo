@@ -3,14 +3,13 @@
 
 data:
   path: "../input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
-  metadata_regex: "^Metadata"
 
 preprocessing:
   # Filter to only active compounds based on activity analysis
   - type: filter_active
     params:
       activity_csv: "../output/activity_map_runner.csv"
-      on_column: "Metadata_broad_sample"
+      on_columns: "Metadata_broad_sample"
   
   # Remove rows with missing targets (implicit in notebook via query)
   - type: dropna

@@ -148,7 +148,6 @@ Note: Lazy filtering uses SQL syntax (polars), while preprocessing uses pandas q
 ```yaml
 data:
   path: "path/to/profiles.parquet"
-  # metadata_regex: "^Metadata"  # optional, this is the default
 
 average_precision:
   params:

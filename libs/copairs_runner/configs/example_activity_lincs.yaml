@@ -3,7 +3,6 @@
 
 data:
   path: "../input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
-  metadata_regex: "^Metadata"
 
 preprocessing:
   # Remove constant columns (as done in notebook)
