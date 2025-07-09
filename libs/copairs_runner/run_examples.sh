@@ -21,7 +21,7 @@ else
 fi
 
 echo -e "\nRunning phenotypic activity analysis..."
-uv run copairs_runner.py configs/activity_analysis.yaml --verbose
+uv run copairs_runner.py configs/example_activity_lincs.yaml --verbose
 
 echo -e "\nRunning phenotypic consistency analysis..."
 # Note: The consistency analysis requires the activity results to filter active compounds
