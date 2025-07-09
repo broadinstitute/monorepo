@@ -42,6 +42,7 @@ pytest tests/
    - `CopairsRunner` class: Handles data loading, preprocessing, analysis, and visualization
    - Key methods:
      - `run()`: Main pipeline orchestrator
+     - `load_data()`: Supports CSV/Parquet from local files, URLs, and S3
      - `preprocess_data()`: Applies configurable preprocessing pipeline
      - `run_average_precision()`: Calculates AP for compound activity
      - `run_mean_average_precision()`: Calculates mAP with significance testing
@@ -49,7 +50,7 @@ pytest tests/
      - `save_results()`: Saves results to CSV/Parquet files
 
 2. **Configuration System**: YAML-based configuration with sections for:
-   - `data`: Input paths and metadata patterns
+   - `data`: Input paths, metadata patterns, and lazy loading options
    - `preprocessing`: Pipeline steps (filtering, aggregation, etc.)
    - `average_precision`/`mean_average_precision`: Analysis parameters
    - `output`: Result file paths
@@ -80,14 +81,21 @@ This project is part of a monorepo that uses:
 ### Current State
 - The script uses inline dependencies (PEP 723 format)
 - Has a minimal pyproject.toml for ruff configuration
-- No test suite exists
+- No test suite exists yet
 - Examples use LINCS Cell Painting data from GitHub
+- Supports lazy loading for large parquet files using polars
 - Configuration files demonstrate typical usage patterns
 
 ### Dependencies
 Required packages (from inline script metadata):
 - python >= 3.8
-- pandas, numpy, copairs, pyyaml, matplotlib, seaborn
+- pandas, numpy, copairs, pyyaml, pyarrow, matplotlib, seaborn, polars
+
+### Data Loading Capabilities
+- Supports local files, HTTP URLs, and S3 paths
+- Automatic data download and caching for URLs
+- Lazy loading for large parquet files with polars
+- Path resolution relative to config file location
 
 ## Common Tasks
 
@@ -103,7 +111,56 @@ Required packages (from inline script metadata):
 3. Adjust analysis parameters as needed
 4. Run with: `uv run copairs_runner.py your_config.yaml`
 
+### Working with Large Datasets
+For memory-efficient processing:
+1. Use `lazy: true` in data config for parquet files
+2. Enable `save_intermediate: true` in preprocessing for debugging
+3. Consider filtering early in the preprocessing pipeline
+
 ### Debugging
 - Use `--verbose` flag for detailed logging
 - Check intermediate results with `save_intermediate: true` in preprocessing
 - Examine output CSV files for analysis results
+- Review preprocessing logs to understand data transformations
+
+## Configuration Examples
+
+### Minimal Activity Analysis
+```yaml
+data:
+  path: "path/to/profiles.parquet"
+  # metadata_regex: "^Metadata"  # optional, this is the default
+
+average_precision:
+  params:
+    pos_sameby: ["Metadata_broad_sample"]
+    pos_diffby: []
+    neg_sameby: []
+    neg_diffby: ["Metadata_broad_sample", "Metadata_Plate"]
+
+mean_average_precision:
+  params:
+    sameby: ["Metadata_broad_sample"]
+    null_size: 1000000
+    threshold: 0.05
+    seed: 0
+
+output:
+  path: "results/map_results.csv"
+```
+
+### Advanced Preprocessing Pipeline
+```yaml
+preprocessing:
+  steps:
+    - type: filter
+      params:
+        query: "Metadata_broad_sample != 'DMSO'"
+    - type: aggregate_replicates
+      params:
+        groupby: ["Metadata_broad_sample", "Metadata_Plate"]
+    - type: apply_assign_reference
+      params:
+        reference_query: "Metadata_broad_sample == 'DMSO'"
+        not_reference_query: "Metadata_broad_sample != 'DMSO'"
+```

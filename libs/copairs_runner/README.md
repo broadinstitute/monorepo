@@ -11,9 +11,10 @@ uv run copairs_runner.py config.yaml
 ## Configuration
 
 ```yaml
-# Required
+# Required sections
 data:
-  path: "data.csv"  # or .parquet
+  path: "data.csv"  # or .parquet, URLs, S3 paths
+  # lazy: true  # for large parquet files
 
 average_precision:
   params:
@@ -25,11 +26,12 @@ average_precision:
 output:
   path: "results.csv"
 
-# Optional
+# Optional sections
 preprocessing:
-  - type: filter
-    params:
-      query: "Metadata_dose > 0.1"
+  steps:
+    - type: filter
+      params:
+        query: "Metadata_dose > 0.1"
 
 mean_average_precision:
   params:
@@ -54,10 +56,10 @@ plotting:
 
 ## Examples
 
-- `configs/activity_analysis.yaml`: Phenotypic activity
-- `configs/consistency_analysis.yaml`: Target consistency
+- `configs/example_activity_lincs.yaml`: Phenotypic activity
+- `configs/example_consistency_lincs.yaml`: Target consistency
 
-Run both: `./run_examples.sh`
+Run all examples: `./run_examples.sh`
 
 ### Example Output
 
