@@ -1,0 +1,75 @@
+data:
+  path: "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/COMPOUND/v1.0/profiles_var_mad_int_featselect_harmony.parquet"
+  use_lazy_filter: true
+  filter_query: "(Metadata_Source == 'source_2')"
+  # Optional: specify columns to load (speeds up loading if you know which features you need)
+  columns: ["Metadata_Source", "Metadata_Plate", "Metadata_JCP2022", "Metadata_Well", "X_1", "X_2", "X_3"]
+
+preprocessing:
+  # 1. Merge plate metadata and filter for TARGET2 plates
+  - type: merge_metadata
+    params:
+      source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/plate.csv.gz"
+      # source: "../../../../datasets/metadata/plate.csv.gz"
+      on_columns: ["Metadata_Source", "Metadata_Plate"]
+      how: "inner"
+  
+  - type: filter
+    params:
+      query: "Metadata_PlateType == 'TARGET2'"
+  
+  # 2. Merge compound metadata
+  - type: merge_metadata
+    params:
+      source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/compound.csv.gz"
+      # source: "../../../../datasets/metadata/compound.csv.gz"
+      on_columns: ["Metadata_JCP2022"]
+      how: "inner"
+  
+  # 3. Remove features with NaN values
+  - type: remove_nan_features
+    params: {}
+  
+  # 4. Add negative control indicator column
+  - type: add_column
+    params:
+      query: "Metadata_JCP2022 == 'JCP2022_033924'"
+      column: "Metadata_negcon"
+
+  # 5. Force negcons not to have activity calculated
+  - type: apply_assign_reference
+    params:
+      condition: "Metadata_negcon"
+      reference_col: "Metadata_reference_index"
+      default_value: -1
+
+
+average_precision:
+  params:
+    pos_sameby: ["Metadata_JCP2022"]
+    pos_diffby: []
+    neg_sameby: ["Metadata_Plate"]
+    neg_diffby: ["Metadata_negcon"]
+    batch_size: 20000
+
+mean_average_precision:
+  params:
+    sameby: ["Metadata_JCP2022"]
+    null_size: 100000
+    threshold: 0.1  # FDR threshold
+    seed: 12527
+
+output:
+  path: "../output/phenotypic_activity_target2.csv"
+  save_ap_scores: true
+
+plotting:
+  enabled: true
+  path: "../examples/phenotypic_activity_target2_plot.png"
+  format: "png"
+  title: "Phenotypic Activity Assessment (TARGET2 from source_2)"
+  xlabel: "mAP"
+  ylabel: "-log10(p-value)"
+  annotation_prefix: "Phenotypically active"
+  figsize: [8, 6]
+  dpi: 100
