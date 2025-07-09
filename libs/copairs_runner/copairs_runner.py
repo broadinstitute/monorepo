@@ -5,8 +5,10 @@
 #     "numpy",
 #     "copairs",
 #     "pyyaml",
+#     "pyarrow",
 #     "matplotlib",
 #     "seaborn",
+#     "polars",
 # ]
 # ///
 
@@ -32,7 +34,8 @@ class CopairsRunner:
     """Generic runner for copairs analyses.
 
     This runner supports:
-    - Loading data from CSV/Parquet files
+    - Loading data from CSV/Parquet files (local, HTTP, S3)
+    - Lazy filtering for large parquet files using polars
     - Preprocessing steps (filtering, reference assignment, metadata merging, aggregation)
     - Running average precision calculations
     - Running mean average precision with significance testing
@@ -43,6 +46,14 @@ class CopairsRunner:
     - By default, metadata columns are identified using the regex "^Metadata".
       You can override this by setting data.metadata_regex in your config.
     - To enable plotting, add a "plotting" section to your config with "enabled: true".
+    - For large parquet files, use lazy filtering to reduce memory usage:
+      ```yaml
+      data:
+        path: "huge_dataset.parquet"
+        use_lazy_filter: true
+        filter_query: "Metadata_PlateType == 'TARGET2'"
+        columns: ["Metadata_JCP2022", "feature_1", "feature_2"]
+      ```
 
     Parameter Passing:
     The runner validates that required parameters are present but passes ALL parameters
@@ -95,8 +106,15 @@ class CopairsRunner:
 
         self.config = config
 
-    def resolve_path(self, path: Union[str, Path]) -> Path:
+    def resolve_path(self, path: Union[str, Path]) -> Union[str, Path]:
         """Resolve path relative to config file."""
+        path_str = str(path)
+        
+        # URLs and URIs should be returned as-is
+        if any(path_str.startswith(proto) for proto in ['http://', 'https://', 's3://', 'gs://']):
+            return path_str
+        
+        # File paths get resolved relative to config
         path = Path(path)
         if self.config_dir and not path.is_absolute():
             return self.config_dir / path
@@ -115,8 +133,48 @@ class CopairsRunner:
         # 1. Load data
         path = self.resolve_path(self.config["data"]["path"])
         logger.info(f"Loading data from {path}")
-        df = pd.read_parquet(path) if path.suffix == ".parquet" else pd.read_csv(path)
-        logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
+        
+        # Check file extension (works for both Path objects and URL strings)
+        path_str = str(path)
+        columns = self.config["data"].get("columns")  # Optional column selection
+        
+        # Check if lazy filtering is requested for parquet files
+        use_lazy = self.config["data"].get("use_lazy_filter", False)
+        filter_query = self.config["data"].get("filter_query")
+        
+        if path_str.endswith(".parquet") and use_lazy and filter_query:
+            # Use polars for lazy filtering
+            import polars as pl
+            logger.info(f"Using lazy filter: {filter_query}")
+            
+            # Lazy load with polars
+            lazy_df = pl.scan_parquet(path)
+            
+            # Apply filter
+            lazy_df = lazy_df.filter(pl.sql_expr(filter_query))
+            
+            # Select columns if specified
+            if columns:
+                lazy_df = lazy_df.select(columns)
+            
+            # Collect and convert to pandas
+            df = lazy_df.collect().to_pandas()
+            
+            # Log column information
+            metadata_cols = [col for col in df.columns if col.startswith("Metadata_")]
+            feature_cols = [col for col in df.columns if not col.startswith("Metadata_")]
+            
+            logger.info(f"Loaded {len(df)} rows after filtering with {len(df.columns)} columns")
+            logger.info(f"  Metadata columns (first 5): {metadata_cols[:5]}")
+            logger.info(f"  Feature columns (first 5): {feature_cols[:5]}")
+        
+        elif path_str.endswith(".parquet"):
+            df = pd.read_parquet(path, columns=columns)
+        else:
+            df = pd.read_csv(path, usecols=columns)
+        
+        if not use_lazy or not filter_query:
+            logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
 
         # 2. Preprocess
         df = self.preprocess_data(df)
@@ -512,7 +570,7 @@ class CopairsRunner:
     ) -> pd.DataFrame:
         """Filter to active compounds based on below_corrected_p column."""
         activity_csv = self.resolve_path(params["activity_csv"])
-        on_column = params["on_column"]
+        on_column = params["on_columns"]
         filter_column = params.get("filter_column", "below_corrected_p")
 
         # Load activity data
@@ -543,7 +601,11 @@ class CopairsRunner:
     ) -> pd.DataFrame:
         """Merge external metadata from CSV file."""
         source_path = self.resolve_path(params["source"])
-        on_columns = params["on"] if isinstance(params["on"], list) else [params["on"]]
+        on_columns = (
+            params["on_columns"]
+            if isinstance(params["on_columns"], list)
+            else [params["on_columns"]]
+        )
         how = params.get("how", "left")
 
         # Load external metadata
