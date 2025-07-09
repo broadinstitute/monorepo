@@ -1,6 +1,6 @@
 # Copairs Runner
 
-YAML-driven runner for [copairs](https://github.com/broadinstitute/copairs) morphological profiling analyses.
+YAML-driven runner for [copairs](https://github.com/broadinstitute/copairs).
 
 ## Usage
 
