@@ -14,14 +14,19 @@ uv run copairs_runner.py config.yaml
 # Required sections
 data:
   path: "data.csv"  # or .parquet, URLs, S3 paths
-  # lazy: true  # for large parquet files
+  
+  # For large parquet files - filter BEFORE loading into memory:
+  # use_lazy_filter: true
+  # filter_query: "Metadata_PlateType == 'TARGET2'"  # SQL syntax
+  # columns: ["Metadata_col1", "feature_1", "feature_2"]  # optional
 
 # Optional sections
 preprocessing:
   steps:
+    # Standard filtering - happens AFTER data is loaded:
     - type: filter
       params:
-        query: "Metadata_dose > 0.1"
+        query: "Metadata_dose > 0.1"  # pandas query syntax
 
 average_precision:
   params:

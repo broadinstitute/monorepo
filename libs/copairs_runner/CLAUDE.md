@@ -113,9 +113,28 @@ Required packages (from inline script metadata):
 
 ### Working with Large Datasets
 For memory-efficient processing:
-1. Use `lazy: true` in data config for parquet files
-2. Enable `save_intermediate: true` in preprocessing for debugging
-3. Consider filtering early in the preprocessing pipeline
+1. Use lazy filtering in the data config for parquet files:
+   ```yaml
+   data:
+     path: "huge_dataset.parquet"
+     use_lazy_filter: true
+     filter_query: "Metadata_PlateType == 'TARGET2'"  # SQL syntax
+     columns: ["Metadata_compound", "feature1", "feature2"]  # optional
+   ```
+   This filters BEFORE loading into memory using polars.
+
+2. For standard filtering after loading, use preprocessing:
+   ```yaml
+   preprocessing:
+     steps:
+       - type: filter
+         params:
+           query: "Metadata_dose > 0.1"  # pandas query syntax
+   ```
+
+3. Enable `save_intermediate: true` in preprocessing for debugging
+
+Note: Lazy filtering uses SQL syntax (polars), while preprocessing uses pandas query syntax
 
 ### Debugging
 - Use `--verbose` flag for detailed logging

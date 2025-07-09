@@ -46,14 +46,28 @@ class CopairsRunner:
     - By default, metadata columns are identified using the regex "^Metadata".
       You can override this by setting data.metadata_regex in your config.
     - To enable plotting, add a "plotting" section to your config with "enabled: true".
-    - For large parquet files, use lazy filtering to reduce memory usage:
-      ```yaml
-      data:
-        path: "huge_dataset.parquet"
-        use_lazy_filter: true
-        filter_query: "Metadata_PlateType == 'TARGET2'"
-        columns: ["Metadata_JCP2022", "feature_1", "feature_2"]
-      ```
+
+    Filtering Options:
+    1. **Lazy filtering** (for large parquet files, happens BEFORE loading):
+       ```yaml
+       data:
+         path: "huge_dataset.parquet"
+         use_lazy_filter: true
+         filter_query: "Metadata_PlateType == 'TARGET2'"  # SQL syntax (polars)
+         columns: ["Metadata_JCP2022", "feature_1", "feature_2"]  # optional
+       ```
+
+    2. **Standard filtering** (happens AFTER loading, in preprocessing):
+       ```yaml
+       preprocessing:
+         steps:
+           - type: filter
+             params:
+               query: "Metadata_dose > 0.1"  # pandas query syntax
+       ```
+
+    Use lazy filtering for memory efficiency with large files. Use preprocessing
+    filter for general data filtering as part of your analysis pipeline.
 
     Parameter Passing:
     The runner validates that required parameters are present but passes ALL parameters
