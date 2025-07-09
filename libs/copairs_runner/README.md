@@ -66,6 +66,10 @@ plotting:
 
 Run all examples: `./run_examples.sh`
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding preprocessing steps.
+
 ### Example Output
 
 The runner generates scatter plots showing mean average precision (mAP) vs statistical significance:
