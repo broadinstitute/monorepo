@@ -395,6 +395,12 @@ class CopairsRunner:
         - merge_metadata: Merge external CSV metadata
         - filter_single_replicates: Remove groups with < min_replicates members
         - apply_assign_reference: Apply copairs.matching.assign_reference_index
+
+        Design Note: Preprocessing uses a list-based configuration to maintain explicit
+        step ordering and allow multiple steps of the same type. While this makes
+        command-line overrides more complex (e.g., preprocessing[0].params.query="new"),
+        it aligns with the philosophy of keeping preprocessing minimal - most data
+        transformations should happen upstream before reaching this runner.
         ```
         """
         if "preprocessing" not in self.config:
