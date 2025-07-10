@@ -36,6 +36,7 @@ bash run_examples.sh
 2. **Dictionary-based Results**: `save_results()` takes a dict for easy extension
 3. **Preprocessing Pipeline**: Each step is a method `_preprocess_{type}` for consistency
 4. **Path Resolution**: Handles local files, URLs, and S3 uniformly via `resolve_path()`
+5. **Nested Subdirectory Pattern**: For dependent workflows (e.g., LINCS), each analysis uses its own subdirectory within a shared parent to prevent Hydra runtime file overwrites while maintaining predictable relative paths
 
 ## Monorepo Context
 
@@ -95,3 +96,4 @@ Then update the docstring in `preprocess_data()` to document the new step.
 1. **Environment Variables**: Must be set before running if configs use `${oc.env:VAR}`
 2. **Memory Usage**: Use lazy loading for large parquet files to avoid OOM
 3. **Path Resolution**: All paths are relative to where you run the script, not the config file location
+4. **Shared Directory Structure**: When creating dependent analyses (where one reads another's output), always use nested subdirectories (e.g., `shared/activity/` and `shared/consistency/`) to prevent Hydra runtime files from being overwritten between runs
