@@ -10,6 +10,9 @@ copairs_runner is a configurable Python script for running copairs analyses on c
 
 ### Running Analyses
 ```bash
+# Set environment variables (if used in config)
+export COPAIRS_DATA=. COPAIRS_OUTPUT=.
+
 # Run analysis with a config file
 uv run copairs_runner.py <config_file.yaml>
 
@@ -95,7 +98,8 @@ Required packages (from inline script metadata):
 - Supports local files, HTTP URLs, and S3 paths
 - Automatic data download and caching for URLs
 - Lazy loading for large parquet files with polars
-- Path resolution relative to config file location
+- Paths resolved relative to current working directory (CWD)
+- Environment variables must be set when used (e.g., ${COPAIRS_DATA})
 
 ## Common Tasks
 
