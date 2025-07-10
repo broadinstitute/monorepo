@@ -15,6 +15,13 @@ uv run copairs_runner.py --config-name example_activity_lincs
 uv run copairs_runner.py --config-name example_activity_lincs mean_average_precision.params.null_size=50000
 ```
 
+### Output Files
+
+Each analysis run generates exactly three files:
+- `{name}_ap_scores.csv` - Individual average precision scores
+- `{name}_map_results.csv` - Mean average precision with p-values
+- `{name}_map_plot.png` - Scatter plot of mAP vs -log10(p-value)
+
 ## Configuration
 
 ### Path Resolution
@@ -35,12 +42,9 @@ data:
   path: "https://example.com/data.parquet"
 
 output:
-  # Output to Hydra's directory (e.g., outputs/2024-01-10/12-34-56/)
-  path: "${hydra:runtime.output_dir}/results.csv"
-
-plotting:
-  # Also goes to Hydra's output directory
-  path: "${hydra:runtime.output_dir}/plot.png"
+  # Output directory and base name for all files
+  directory: "${hydra:runtime.output_dir}"
+  name: "activity"  # Creates: activity_ap_scores.csv, activity_map_results.csv, activity_map_plot.png
 ```
 
 ### Hydra Output Directory
@@ -55,7 +59,8 @@ The example configs demonstrate a project-based organization:
    ```
    - Used by both `example_activity_lincs.yaml` and `example_consistency_lincs.yaml`
    - Shared directory allows consistency analysis to read activity results
-   - Files are overwritten on each run
+   - Files are overwritten on each run (this is intentional - the consistency analysis 
+     reads `activity_map_results.csv` to filter compounds)
 
 2. **JUMP analyses** (independent runs):
    ```yaml
@@ -72,8 +77,12 @@ This creates a clean structure:
 output/
 ├── lincs/
 │   └── shared/           # LINCS workflow outputs
-│       ├── activity_map_runner.csv
-│       └── target_maps_runner.csv
+│       ├── activity_ap_scores.csv
+│       ├── activity_map_results.csv
+│       ├── activity_map_plot.png
+│       ├── consistency_ap_scores.csv
+│       ├── consistency_map_results.csv
+│       └── consistency_map_plot.png
 └── jump-target2/
     ├── 2024-01-10/      # JUMP experiment runs
     │   └── 14-23-45/
@@ -109,7 +118,8 @@ average_precision:
     neg_diffby: ["Metadata_compound"]
 
 output:
-  path: "results.csv"
+  directory: "${hydra:runtime.output_dir}"
+  name: "analysis"  # Base name for outputs
 
 mean_average_precision:
   params:
@@ -117,10 +127,6 @@ mean_average_precision:
     null_size: 10000  # Typically 10000-100000
     threshold: 0.05
     seed: 0
-
-plotting:
-  enabled: true
-  path: "plot.png"
 ```
 
 ## Preprocessing Steps

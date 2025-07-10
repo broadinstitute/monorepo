@@ -32,16 +32,5 @@ mean_average_precision:
     seed: 0
 
 output:
-  path: "${hydra:runtime.output_dir}/activity_map_runner.csv"
-  save_ap_scores: true 
-
-plotting:
-  enabled: true
-  path: "${hydra:runtime.output_dir}/example_activity_plot.png"
-  format: "png"
-  title: "Phenotypic Activity Assessment"
-  xlabel: "mAP"
-  ylabel: "-log10(p-value)"
-  annotation_prefix: "Phenotypically active"
-  figsize: [8, 6]
-  dpi: 100
+  directory: "${hydra:runtime.output_dir}"
+  name: "activity"
