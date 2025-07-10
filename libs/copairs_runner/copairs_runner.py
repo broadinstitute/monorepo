@@ -503,7 +503,7 @@ class CopairsRunner:
     def _preprocess_filter_active(
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
-        """Filter to active compounds based on below_corrected_p column."""
+        """Filter to active perturbations based on below_corrected_p column."""
         activity_csv = self.resolve_path(params["activity_csv"])
         on_columns = params["on_columns"]
         filter_column = params.get("filter_column", "below_corrected_p")
@@ -511,12 +511,15 @@ class CopairsRunner:
         # Load activity data
         activity_df = pd.read_csv(activity_csv)
 
-        # Get active compounds
+        # Get active perturbations
         active_values = activity_df[activity_df[filter_column]][on_columns].unique()
 
         df = df[df[on_columns].isin(active_values)]
 
-        logger.info(f"Filtered to {len(df)} active compounds from {activity_csv}")
+        logger.info(
+            f"Filtered to {len(df)} rows corresponding to {len(active_values)} perturbations from {activity_csv}"
+        )
+
         return df
 
     def _preprocess_aggregate_replicates(
@@ -526,7 +529,9 @@ class CopairsRunner:
         groupby_cols = params["groupby"]
         feature_cols = self._get_feature_columns(df)
 
-        df = df.groupby(groupby_cols, as_index=False)[feature_cols].median()
+        df = df.groupby(groupby_cols, as_index=False, observed=True)[
+            feature_cols
+        ].median()
 
         logger.info(f"Aggregated to {len(df)} rows by grouping on {groupby_cols}")
         return df
