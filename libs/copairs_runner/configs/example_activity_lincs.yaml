@@ -25,7 +25,7 @@ average_precision:
     
 mean_average_precision:
   params:
-    sameby: ["Metadata_broad_sample"
+    sameby: ["Metadata_broad_sample"]
     null_size: 1000000
     threshold: 0.05
     seed: 0
