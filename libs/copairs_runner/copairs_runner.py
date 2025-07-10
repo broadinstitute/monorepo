@@ -55,6 +55,43 @@ class CopairsRunner:
             Hydra configuration object
         """
         self.config = config
+        self._validate_config()
+
+    def _validate_config(self):
+        """Validate configuration paths and settings."""
+        # Check output path is configured
+        output_config = self.config.get("output", {})
+        if not output_config or "path" not in output_config:
+            raise ValueError("output.path must be configured")
+
+        # Skip validation warning if we can't get the original config string
+        # (OmegaConf may have already resolved the interpolation)
+
+    def resolve_path(self, path_str: Union[str, Path]) -> Union[str, Path]:
+        """Resolve path from config, handling URLs and local paths.
+
+        Parameters
+        ----------
+        path_str : str or Path
+            Path string from configuration
+
+        Returns
+        -------
+        str or Path
+            URL strings are returned as-is, local paths are converted to Path objects
+        """
+        # Already a Path object
+        if isinstance(path_str, Path):
+            return path_str
+
+        # URLs and S3 paths stay as strings
+        if isinstance(path_str, str) and path_str.startswith(
+            ("http://", "https://", "s3://")
+        ):
+            return path_str
+
+        # Convert local paths to Path objects
+        return Path(path_str).expanduser().resolve()
 
     def run(self) -> pd.DataFrame:
         """Run the complete analysis pipeline.
@@ -224,9 +261,8 @@ class CopairsRunner:
             Suffix to add to filename, by default ""
         """
         output_config = self.config["output"]
-        output_path = output_config["path"]
+        output_path = self.resolve_path(output_config["path"])
 
-        # Add suffix if provided
         if suffix:
             output_path = output_path.with_name(
                 output_path.stem + f"_{suffix}" + output_path.suffix
@@ -351,7 +387,7 @@ class CopairsRunner:
             save_path = plot_config.get("path")
 
         if save_path:
-            save_path = save_path
+            save_path = self.resolve_path(save_path)
             save_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Get format from config or infer from extension
@@ -515,7 +551,7 @@ class CopairsRunner:
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
         """Filter to active compounds based on below_corrected_p column."""
-        activity_csv = params["activity_csv"]
+        activity_csv = self.resolve_path(params["activity_csv"])
         on_columns = params["on_columns"]
         filter_column = params.get("filter_column", "below_corrected_p")
 
@@ -546,7 +582,7 @@ class CopairsRunner:
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
         """Merge external metadata from CSV file."""
-        source_path = params["source"]
+        source_path = self.resolve_path(params["source"])
         on_columns = (
             params["on_columns"]
             if isinstance(params["on_columns"], list)

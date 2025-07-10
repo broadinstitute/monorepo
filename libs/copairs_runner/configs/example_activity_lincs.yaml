@@ -1,8 +1,9 @@
 hydra:
   run:
-    dir: ${oc.env:COPAIRS_OUTPUT}/output
+    # Project-specific shared directory for LINCS analyses
+    dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared
   job:
-    chdir: true  # Change working directory to the output dir
+    chdir: false  # Stay in original working directory for clarity
 
 data:
   path: "${hydra:runtime.cwd}/${oc.env:COPAIRS_DATA}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
@@ -31,12 +32,12 @@ mean_average_precision:
     seed: 0
 
 output:
-  path: "activity_map_runner.csv"
+  path: "${hydra:runtime.output_dir}/activity_map_runner.csv"
   save_ap_scores: true 
 
 plotting:
   enabled: true
-  path: "example_activity_plot.png"
+  path: "${hydra:runtime.output_dir}/example_activity_plot.png"
   format: "png"
   title: "Phenotypic Activity Assessment"
   xlabel: "mAP"

@@ -1,5 +1,14 @@
 #!/bin/bash
 # Run copairs examples using the runner
+#
+# This script demonstrates:
+# 1. LINCS workflow: activity analysis → consistency analysis (shared directory)
+# 2. JUMP analysis: independent run with timestamped output
+#
+# Output structure:
+# output/
+# ├── lincs/shared/      # LINCS workflow outputs
+# └── jump-target2/      # JUMP experiment outputs (timestamped)
 
 # Create directories if they don't exist
 mkdir -p input
@@ -24,8 +33,17 @@ echo -e "\nSetting environment variables..."
 export COPAIRS_DATA=.
 export COPAIRS_OUTPUT=.
 
-echo -e "\nRunning phenotypic activity analysis..."
+echo -e "\nRunning LINCS workflow..."
+echo "1. Phenotypic activity analysis..."
 uv run copairs_runner.py --config-name example_activity_lincs
 
-echo -e "\nRunning phenotypic consistency analysis..."
+echo -e "\n2. Phenotypic consistency analysis (depends on activity results)..."
 uv run copairs_runner.py --config-name example_consistency_lincs
+
+echo -e "\nRunning JUMP-CP analysis..."
+echo "Note: This will download data from S3 on first run"
+uv run copairs_runner.py --config-name example_activity_jump_target2
+
+echo -e "\nAll analyses complete! Check the output directory:"
+echo "- output/lincs/shared/     # LINCS workflow results"
+echo "- output/jump-target2/     # JUMP timestamped results"

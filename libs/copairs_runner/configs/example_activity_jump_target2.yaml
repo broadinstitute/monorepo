@@ -1,6 +1,9 @@
 hydra:
+  run:
+    # Project-specific directory with timestamps for independent JUMP analyses
+    dir: ${oc.env:COPAIRS_OUTPUT}/output/jump-target2/${now:%Y-%m-%d}/${now:%H-%M-%S}
   job:
-    chdir: true  # Change working directory to the output dir
+    chdir: false  # Stay in original working directory for clarity
 
 data:
   path: "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/COMPOUND/v1.0/profiles_var_mad_int_featselect_harmony.parquet"
@@ -62,12 +65,12 @@ mean_average_precision:
     seed: 12527
 
 output:
-  path: "phenotypic_activity_target2.csv"
+  path: "${hydra:runtime.output_dir}/phenotypic_activity_target2.csv"
   save_ap_scores: true
 
 plotting:
   enabled: true
-  path: "phenotypic_activity_target2_plot.png"
+  path: "${hydra:runtime.output_dir}/phenotypic_activity_target2_plot.png"
   format: "png"
   title: "Phenotypic Activity Assessment (TARGET2 from source_2)"
   xlabel: "mAP"
