@@ -33,79 +33,17 @@ logger = logging.getLogger(__name__)
 
 
 class CopairsRunner:
-    """Generic runner for copairs analyses.
+    """YAML-driven runner for copairs analyses.
 
-    This runner supports:
-    - Loading data from CSV/Parquet files (local, HTTP, S3)
-    - Lazy filtering for large parquet files using polars
-    - Preprocessing steps (filtering, reference assignment, metadata merging, aggregation)
-    - Running average precision calculations
-    - Running mean average precision with significance testing
-    - Plotting mAP vs -log10(p-value) scatter plots
-    - Saving results
+    Usage: python copairs_runner.py --config-name=<config_name>
 
-    Configuration Notes:
-    - Uses Hydra for configuration management
-    - Run with: python copairs_runner.py --config-name=<config_name>
-    - All paths are resolved relative to the current working directory (CWD)
-    - Environment variables must be set when used (e.g., ${oc.env:COPAIRS_DATA}/input/file.csv)
-    - Home directory expansion is supported (~/path/to/file.csv)
-    - Metadata columns are always identified using the regex "^Metadata".
-    - To enable plotting, add a "plotting" section to your config with "enabled: true".
+    Key features:
+    - Lazy filtering for large parquet files (SQL syntax, before loading)
+    - Standard preprocessing pipeline (pandas syntax, after loading)
+    - All config parameters passed through to copairs functions
+    - Automatic mAP vs -log10(p-value) plotting
 
-    Filtering Options:
-    1. **Lazy filtering** (for large parquet files, happens BEFORE loading):
-       ```yaml
-       data:
-         path: "huge_dataset.parquet"
-         use_lazy_filter: true
-         filter_query: "Metadata_PlateType == 'TARGET2'"  # SQL syntax (polars)
-         columns: ["Metadata_JCP2022", "feature_1", "feature_2"]  # optional
-       ```
-
-    2. **Standard filtering** (happens AFTER loading, in preprocessing):
-       ```yaml
-       preprocessing:
-         steps:
-           - type: filter
-             params:
-               query: "Metadata_dose > 0.1"  # pandas query syntax
-       ```
-
-    Use lazy filtering for memory efficiency with large files. Use preprocessing
-    filter for general data filtering as part of your analysis pipeline.
-
-    Parameter Passing:
-    The runner validates that required parameters are present but passes ALL parameters
-    specified in the config to the underlying copairs functions. This means you can
-    specify any additional parameters supported by the copairs functions:
-
-    For average_precision and multilabel.average_precision:
-    - Required: pos_sameby, pos_diffby, neg_sameby, neg_diffby
-    - Optional: batch_size (default: 20000), distance (default: "cosine"),
-      progress_bar (default: True), and others
-
-    For mean_average_precision:
-    - Required: sameby, null_size, threshold, seed
-    - Optional: progress_bar (default: True), max_workers (default: CPU count + 4),
-      cache_dir (default: None), and others
-
-    Example config with optional parameters:
-    ```yaml
-    average_precision:
-      params:
-        pos_sameby: ["Metadata_gene_symbol"]
-        pos_diffby: []
-        neg_sameby: []
-        neg_diffby: ["Metadata_cell_line"]
-        batch_size: 50000  # Optional: larger batch for more memory
-        distance: "euclidean"  # Optional: different distance metric
-    ```
-
-    Refer to the copairs function signatures for complete parameter details:
-    - copairs.map.average_precision
-    - copairs.map.multilabel.average_precision
-    - copairs.map.mean_average_precision
+    See configs/ directory for examples.
     """
 
     def __init__(self, config: DictConfig):
@@ -118,23 +56,6 @@ class CopairsRunner:
         """
         self.config = config
 
-    def resolve_path(self, path: Union[str, Path]) -> Union[str, Path]:
-        """Resolve path with ~ expansion.
-
-        Note: Environment variables are already resolved by OmegaConf.
-        """
-        path_str = str(path)
-
-        # URLs and URIs should be returned as-is
-        if any(
-            path_str.startswith(proto)
-            for proto in ["http://", "https://", "s3://", "gs://"]
-        ):
-            return path_str
-
-        # Only handle home directory expansion
-        return Path(path_str).expanduser()
-
     def run(self) -> pd.DataFrame:
         """Run the complete analysis pipeline.
 
@@ -146,7 +67,7 @@ class CopairsRunner:
         logger.info("Starting copairs analysis")
 
         # 1. Load data
-        path = self.resolve_path(self.config["data"]["path"])
+        path = self.config["data"]["path"]
         logger.info(f"Loading data from {path}")
 
         # Check file extension (works for both Path objects and URL strings)
@@ -303,7 +224,7 @@ class CopairsRunner:
             Suffix to add to filename, by default ""
         """
         output_config = self.config["output"]
-        output_path = self.resolve_path(output_config["path"])
+        output_path = output_config["path"]
 
         # Add suffix if provided
         if suffix:
@@ -430,7 +351,7 @@ class CopairsRunner:
             save_path = plot_config.get("path")
 
         if save_path:
-            save_path = self.resolve_path(save_path)
+            save_path = save_path
             save_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Get format from config or infer from extension
@@ -594,7 +515,7 @@ class CopairsRunner:
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
         """Filter to active compounds based on below_corrected_p column."""
-        activity_csv = self.resolve_path(params["activity_csv"])
+        activity_csv = params["activity_csv"]
         on_columns = params["on_columns"]
         filter_column = params.get("filter_column", "below_corrected_p")
 
@@ -625,7 +546,7 @@ class CopairsRunner:
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
         """Merge external metadata from CSV file."""
-        source_path = self.resolve_path(params["source"])
+        source_path = params["source"]
         on_columns = (
             params["on_columns"]
             if isinstance(params["on_columns"], list)
