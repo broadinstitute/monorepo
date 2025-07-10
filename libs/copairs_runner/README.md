@@ -34,7 +34,7 @@ The runner uses Hydra's best practices for path handling:
 
 ```yaml
 # Example path configuration
-data:
+input:
   # Local file - relative to original CWD
   path: "${hydra:runtime.cwd}/${oc.env:COPAIRS_DATA}/input/data.csv"
   
@@ -94,7 +94,7 @@ All configs use `chdir: false` to stay in the original directory for easier debu
 
 ```yaml
 # Required sections
-data:
+input:
   path: "data.csv"  # or .parquet, URLs, S3 paths
   
   # For large parquet files - filter BEFORE loading into memory:

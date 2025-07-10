@@ -5,7 +5,7 @@ hydra:
   job:
     chdir: false  # Stay in original working directory for clarity
 
-data:
+input:
   path: "${hydra:runtime.cwd}/${oc.env:COPAIRS_DATA}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
 
 preprocessing:
