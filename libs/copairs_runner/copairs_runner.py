@@ -63,10 +63,10 @@ class CopairsRunner:
         output_config = self.config.get("output", {})
         if not output_config:
             raise ValueError("output section must be configured")
-        
+
         if "directory" not in output_config:
             raise ValueError("output.directory must be configured")
-        
+
         if "name" not in output_config:
             raise ValueError("output.name must be configured")
 
@@ -104,17 +104,17 @@ class CopairsRunner:
         pd.DataFrame
             Loaded dataframe
         """
-        data_config = self.config["data"]
-        path = data_config["path"]
+        input_config = self.config["input"]
+        path = input_config["path"]
         logger.info(f"Loading data from {path}")
 
         # Check file extension (works for both Path objects and URL strings)
         path_str = str(path)
-        columns = data_config.get("columns")  # Optional column selection
+        columns = input_config.get("columns")  # Optional column selection
 
         # Check if lazy filtering is requested for parquet files
-        use_lazy = data_config.get("use_lazy_filter", False)
-        filter_query = data_config.get("filter_query")
+        use_lazy = input_config.get("use_lazy_filter", False)
+        filter_query = input_config.get("filter_query")
 
         if path_str.endswith(".parquet") and use_lazy and filter_query:
             # Use polars for lazy filtering
@@ -185,13 +185,13 @@ class CopairsRunner:
 
         # 4. Collect all outputs
         outputs = {
-            'ap_scores': ap_results,
-            'map_results': map_results,
+            "ap_scores": ap_results,
+            "map_results": map_results,
         }
 
         # 5. Create plot if mAP results exist
-        if 'mean_average_precision' in map_results.columns:
-            outputs['map_plot'] = self.create_map_plot(map_results)
+        if "mean_average_precision" in map_results.columns:
+            outputs["map_plot"] = self.create_map_plot(map_results)
 
         # 6. Save everything
         output_config = self.config["output"]
@@ -284,7 +284,7 @@ class CopairsRunner:
 
             elif isinstance(value, plt.Figure):
                 path = output_dir / f"{name}_{key}.png"
-                value.savefig(path, dpi=100, bbox_inches='tight')
+                value.savefig(path, dpi=100, bbox_inches="tight")
                 plt.close(value)
                 logger.info(f"Saved {key} to {path}")
 
@@ -395,21 +395,6 @@ class CopairsRunner:
         - merge_metadata: Merge external CSV metadata
         - filter_single_replicates: Remove groups with < min_replicates members
         - apply_assign_reference: Apply copairs.matching.assign_reference_index
-
-        Example:
-        ```yaml
-        preprocessing:
-          - type: filter
-            params:
-              query: "Metadata_mmoles_per_liter > 0.1"
-          - type: add_column
-            params:
-              query: '(Metadata_moa == "EGFR inhibitor") & (Metadata_mmoles_per_liter > 1)'
-              column: "Metadata_is_high_dose_EGFR_inhibitor"
-          - type: filter_active
-            params:
-              activity_csv: "data/activity_map.csv"
-              on: "Metadata_broad_sample"
         ```
         """
         if "preprocessing" not in self.config:

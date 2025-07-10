@@ -70,7 +70,7 @@ Then update the docstring in `preprocess_data()` to document the new step.
 ### Important Implementation Details
 
 1. **Lazy Loading vs Preprocessing**:
-   - `data.filter_query` uses SQL syntax (polars) - happens BEFORE loading
+   - `input.filter_query` uses SQL syntax (polars) - happens BEFORE loading
    - `preprocessing.filter` uses pandas query syntax - happens AFTER loading
    - This distinction is critical for large datasets
 

@@ -5,7 +5,7 @@ hydra:
   job:
     chdir: false  # Stay in original working directory for clarity
 
-data:
+input:
   path: "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/COMPOUND/v1.0/profiles_var_mad_int_featselect_harmony.parquet"
   use_lazy_filter: true
   filter_query: "(Metadata_Source == 'source_2')"
