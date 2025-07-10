@@ -60,12 +60,12 @@ mean_average_precision:
     seed: 12527
 
 output:
-  path: "../output/phenotypic_activity_target2.csv"
+  path: "${COPAIRS_OUTPUT}/output/phenotypic_activity_target2.csv"
   save_ap_scores: true
 
 plotting:
   enabled: true
-  path: "../examples/phenotypic_activity_target2_plot.png"
+  path: "${COPAIRS_OUTPUT}/output/phenotypic_activity_target2_plot.png"
   format: "png"
   title: "Phenotypic Activity Assessment (TARGET2 from source_2)"
   xlabel: "mAP"

@@ -1,8 +1,8 @@
 #!/bin/bash
 # Run copairs examples using the runner
 
-# Create data directory if it doesn't exist
-mkdir -p input
+# Create directories if they don't exist
+mkdir -p input output examples
 
 # Download the data file if it doesn't exist
 DATA_FILE="input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
@@ -20,15 +20,15 @@ else
     echo "Data file already exists, skipping download."
 fi
 
+echo -e "\nSetting environment variables..."
+export COPAIRS_DATA=.
+export COPAIRS_OUTPUT=.
+
 echo -e "\nRunning phenotypic activity analysis..."
 uv run copairs_runner.py configs/example_activity_lincs.yaml --verbose
 
 echo -e "\nRunning phenotypic consistency analysis..."
-# Note: The consistency analysis requires the activity results to filter active compounds
-# In the notebook, this is done by loading activity_map.csv
-# For the runner, you may need to modify the consistency config or the runner
-# to support filtering based on previous results
-uv run copairs_runner.py configs/consistency_analysis.yaml --verbose
+uv run copairs_runner.py configs/example_consistency_lincs.yaml --verbose
 
 echo -e "\nAnalyses complete!"
 echo "Results saved to:"

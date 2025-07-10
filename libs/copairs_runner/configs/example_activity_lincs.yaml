@@ -2,7 +2,7 @@
 # Matches the phenotypic_activity.ipynb example
 
 data:
-  path: "../input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
+  path: "${COPAIRS_DATA}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
 
 preprocessing:
   # Remove constant columns (as done in notebook)
@@ -35,12 +35,12 @@ mean_average_precision:
     seed: 0                            # As used in notebook
 
 output:
-  path: "../output/activity_map_runner.csv"
+  path: "${COPAIRS_OUTPUT}/output/activity_map_runner.csv"
   save_ap_scores: true  # Save AP scores to match notebook output
 
 plotting:
   enabled: true
-  path: "../examples/example_activity_plot.png"
+  path: "${COPAIRS_OUTPUT}/output/example_activity_plot.png"
   format: "png"  # or pdf, svg, etc.
   title: "Phenotypic Activity Assessment"
   xlabel: "mAP"

@@ -5,6 +5,9 @@ YAML-driven runner for [copairs](https://github.com/broadinstitute/copairs).
 ## Usage
 
 ```bash
+# Set environment variables if used in config
+export COPAIRS_DATA=. COPAIRS_OUTPUT=.
+
 uv run copairs_runner.py config.yaml
 ```
 

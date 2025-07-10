@@ -15,6 +15,7 @@
 """Generic runner for copairs analyses with configuration support."""
 
 import logging
+import os
 from typing import Any, Dict, Union, Optional
 from pathlib import Path
 
@@ -43,6 +44,9 @@ class CopairsRunner:
     - Saving results
 
     Configuration Notes:
+    - All paths are resolved relative to the current working directory (CWD)
+    - Environment variables must be set when used (e.g., ${COPAIRS_DATA}/input/file.csv)
+    - Home directory expansion is supported (~/path/to/file.csv)
     - Metadata columns are always identified using the regex "^Metadata".
     - To enable plotting, add a "plotting" section to your config with "enabled: true".
 
@@ -110,17 +114,14 @@ class CopairsRunner:
             Configuration dictionary or path to YAML config file
         """
         # Load config if it's a file path
-        self.config_dir = None
         if isinstance(config, (str, Path)):
-            config_path = Path(config)
-            self.config_dir = config_path.parent
-            with open(config_path, "r") as f:
+            with open(config, "r") as f:
                 config = yaml.safe_load(f)
 
         self.config = config
 
     def resolve_path(self, path: Union[str, Path]) -> Union[str, Path]:
-        """Resolve path relative to config file."""
+        """Resolve path with environment variable and ~ expansion."""
         path_str = str(path)
 
         # URLs and URIs should be returned as-is
@@ -130,11 +131,9 @@ class CopairsRunner:
         ):
             return path_str
 
-        # File paths get resolved relative to config
-        path = Path(path)
-        if self.config_dir and not path.is_absolute():
-            return self.config_dir / path
-        return path
+        # Expand environment variables first, then create Path (which handles ~)
+        path_str = os.path.expandvars(path_str)
+        return Path(path_str).expanduser()
 
     def run(self) -> pd.DataFrame:
         """Run the complete analysis pipeline.
