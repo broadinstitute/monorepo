@@ -1,8 +1,9 @@
 hydra:
   run:
-    dir: ${oc.env:COPAIRS_OUTPUT}/output
+    # Using same project-specific directory to read outputs from activity analysis
+    dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared
   job:
-    chdir: true  # Change working directory to the output dir
+    chdir: false  # Stay in original working directory for clarity
 
 data:
   path: "${hydra:runtime.cwd}/${oc.env:COPAIRS_DATA}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
@@ -11,7 +12,7 @@ preprocessing:
   # Filter to only active compounds based on activity analysis
   - type: filter_active
     params:
-      activity_csv: "activity_map_runner.csv"
+      activity_csv: "${hydra:runtime.output_dir}/activity_map_runner.csv"
       on_columns: "Metadata_broad_sample"
   
   # Remove rows with missing targets (implicit in notebook via query)
@@ -54,12 +55,12 @@ mean_average_precision:
     seed: 0                      # As used in notebook
 
 output:
-  path: "target_maps_runner.csv"
+  path: "${hydra:runtime.output_dir}/target_maps_runner.csv"
   save_ap_scores: false
 
 plotting:
   enabled: true
-  path: "example_consistency_plot.png"
+  path: "${hydra:runtime.output_dir}/example_consistency_plot.png"
   format: "png"  # or pdf, svg, etc.
   title: "Phenotypic Consistency Assessment"
   xlabel: "mAP"
