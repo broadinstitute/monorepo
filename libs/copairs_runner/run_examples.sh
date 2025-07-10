@@ -2,7 +2,7 @@
 # Run copairs examples using the runner
 
 # Create directories if they don't exist
-mkdir -p input output examples
+mkdir -p input
 
 # Download the data file if it doesn't exist
 DATA_FILE="input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
@@ -29,8 +29,3 @@ uv run copairs_runner.py --config-name example_activity_lincs
 
 echo -e "\nRunning phenotypic consistency analysis..."
 uv run copairs_runner.py --config-name example_consistency_lincs
-
-echo -e "\nAnalyses complete!"
-echo "Results saved to:"
-echo "  - output/activity_map_runner.csv"
-echo "  - output/target_maps_runner.csv"
