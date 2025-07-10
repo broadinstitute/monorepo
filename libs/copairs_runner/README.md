@@ -17,6 +17,13 @@ uv run copairs_runner.py --config-name example_activity_lincs mean_average_preci
 
 ## Configuration
 
+### Hydra Output Directory
+
+By default, the example configs use `hydra.run.dir: ${oc.env:COPAIRS_OUTPUT}/output` to:
+- Save all outputs to a shared directory
+- Allow analyses to read each other's outputs
+- Store Hydra's `.hydra/` config snapshots
+
 ```yaml
 # Required sections
 data:
