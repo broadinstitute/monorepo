@@ -1,7 +1,3 @@
-# Configuration for phenotypic consistency analysis
-# Matches the phenotypic_consistency.ipynb example
-
-# Configure Hydra to use our output directory
 hydra:
   run:
     dir: ${oc.env:COPAIRS_OUTPUT}/output
