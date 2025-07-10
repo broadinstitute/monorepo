@@ -95,7 +95,7 @@ This project is part of a monorepo that uses:
 ### Dependencies
 Required packages (from inline script metadata):
 - python >= 3.8
-- pandas, numpy, copairs, omegaconf, pyarrow, matplotlib, seaborn, polars
+- pandas, numpy, copairs, omegaconf, hydra-core, pyarrow, matplotlib, seaborn, polars
 
 ### Data Loading Capabilities
 - Supports local files, HTTP URLs, and S3 paths
