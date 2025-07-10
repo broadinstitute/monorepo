@@ -13,11 +13,14 @@ copairs_runner is a configurable Python script for running copairs analyses on c
 # Set environment variables (if used in config)
 export COPAIRS_DATA=. COPAIRS_OUTPUT=.
 
-# Run analysis with a config file
-uv run copairs_runner.py <config_file.yaml>
+# Run analysis with a config file from the configs/ directory
+uv run copairs_runner.py --config-name <config_name>
 
 # Run with verbose logging
-uv run copairs_runner.py <config_file.yaml> --verbose
+uv run copairs_runner.py --config-name <config_name> hydra.verbose=true
+
+# Override configuration parameters
+uv run copairs_runner.py --config-name <config_name> param.name=value
 
 # Run the example analyses (downloads data if needed)
 bash run_examples.sh
@@ -113,7 +116,7 @@ Required packages (from inline script metadata):
 1. Copy an existing config from `configs/`
 2. Modify data paths and preprocessing steps
 3. Adjust analysis parameters as needed
-4. Run with: `uv run copairs_runner.py your_config.yaml`
+4. Run with: `uv run copairs_runner.py --config-name your_config`
 
 ### Working with Large Datasets
 For memory-efficient processing:
@@ -141,7 +144,7 @@ For memory-efficient processing:
 Note: Lazy filtering uses SQL syntax (polars), while preprocessing uses pandas query syntax
 
 ### Debugging
-- Use `--verbose` flag for detailed logging
+- Use `hydra.verbose=true` for detailed logging
 - Check intermediate results with `save_intermediate: true` in preprocessing
 - Examine output CSV files for analysis results
 - Review preprocessing logs to understand data transformations

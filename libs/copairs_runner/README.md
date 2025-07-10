@@ -8,7 +8,11 @@ YAML-driven runner for [copairs](https://github.com/broadinstitute/copairs).
 # Set environment variables if used in config
 export COPAIRS_DATA=. COPAIRS_OUTPUT=.
 
-uv run copairs_runner.py config.yaml
+# Run with a config from the configs/ directory
+uv run copairs_runner.py --config-name example_activity_lincs
+
+# Override parameters
+uv run copairs_runner.py --config-name example_activity_lincs mean_average_precision.params.null_size=50000
 ```
 
 ## Configuration
