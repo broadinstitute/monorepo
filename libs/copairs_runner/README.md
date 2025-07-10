@@ -53,14 +53,20 @@ The example configs demonstrate a project-based organization:
 
 1. **LINCS analyses** (dependent workflow):
    ```yaml
+   # Activity analysis
    hydra:
      run:
-       dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared
+       dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared/activity
+   
+   # Consistency analysis
+   hydra:
+     run:
+       dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared/consistency
    ```
-   - Used by both `example_activity_lincs.yaml` and `example_consistency_lincs.yaml`
-   - Shared directory allows consistency analysis to read activity results
-   - Files are overwritten on each run (this is intentional - the consistency analysis 
-     reads `activity_map_results.csv` to filter compounds)
+   - **Important**: Each analysis uses a nested subdirectory (`activity/` and `consistency/`)
+   - This prevents Hydra runtime files from being overwritten between runs
+   - Consistency analysis can still reference activity results via `../activity/activity_map_results.csv`
+   - The shared parent directory maintains the dependency relationship
 
 2. **JUMP analyses** (independent runs):
    ```yaml
@@ -76,13 +82,17 @@ This creates a clean structure:
 ```
 output/
 ├── lincs/
-│   └── shared/           # LINCS workflow outputs
-│       ├── activity_ap_scores.csv
-│       ├── activity_map_results.csv
-│       ├── activity_map_plot.png
-│       ├── consistency_ap_scores.csv
-│       ├── consistency_map_results.csv
-│       └── consistency_map_plot.png
+│   └── shared/           # LINCS workflow parent directory
+│       ├── activity/     # Activity analysis outputs
+│       │   ├── .hydra/   # Hydra runtime files preserved
+│       │   ├── activity_ap_scores.csv
+│       │   ├── activity_map_results.csv
+│       │   └── activity_map_plot.png
+│       └── consistency/  # Consistency analysis outputs
+│           ├── .hydra/   # Separate Hydra runtime files
+│           ├── consistency_ap_scores.csv
+│           ├── consistency_map_results.csv
+│           └── consistency_map_plot.png
 └── jump-target2/
     ├── 2024-01-10/      # JUMP experiment runs
     │   └── 14-23-45/

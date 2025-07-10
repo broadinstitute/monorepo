@@ -1,7 +1,10 @@
 hydra:
   run:
     # Using same project-specific directory to read outputs from activity analysis
-    dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared
+    # IMPORTANT: The nested 'consistency' subdirectory prevents overwriting Hydra runtime
+    # files from the activity analysis. The '../activity/' relative path allows access
+    # to activity outputs while maintaining separate Hydra runtime environments.
+    dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared/consistency
   job:
     chdir: false  # Stay in original working directory for clarity
 
@@ -10,9 +13,10 @@ input:
 
 preprocessing:
   # Filter to only active compounds based on activity analysis
+  # Note: The '../activity/' path works because of the nested subdirectory structure
   - type: filter_active
     params:
-      activity_csv: "${hydra:runtime.output_dir}/activity_map_results.csv"
+      activity_csv: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
       on_columns: "Metadata_broad_sample"
   
   # Remove rows with missing targets (implicit in notebook via query)
