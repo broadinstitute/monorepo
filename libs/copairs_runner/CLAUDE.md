@@ -92,14 +92,14 @@ This project is part of a monorepo that uses:
 ### Dependencies
 Required packages (from inline script metadata):
 - python >= 3.8
-- pandas, numpy, copairs, pyyaml, pyarrow, matplotlib, seaborn, polars
+- pandas, numpy, copairs, omegaconf, pyarrow, matplotlib, seaborn, polars
 
 ### Data Loading Capabilities
 - Supports local files, HTTP URLs, and S3 paths
 - Automatic data download and caching for URLs
 - Lazy loading for large parquet files with polars
 - Paths resolved relative to current working directory (CWD)
-- Environment variables must be set when used (e.g., ${COPAIRS_DATA})
+- Environment variables must be set when used (e.g., ${oc.env:COPAIRS_DATA})
 
 ## Common Tasks
 

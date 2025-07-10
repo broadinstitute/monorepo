@@ -4,7 +4,7 @@
 #     "pandas",
 #     "numpy",
 #     "copairs",
-#     "pyyaml",
+#     "omegaconf",
 #     "pyarrow",
 #     "matplotlib",
 #     "seaborn",
@@ -15,11 +15,10 @@
 """Generic runner for copairs analyses with configuration support."""
 
 import logging
-import os
 from typing import Any, Dict, Union, Optional
 from pathlib import Path
 
-import yaml
+from omegaconf import OmegaConf
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -45,7 +44,7 @@ class CopairsRunner:
 
     Configuration Notes:
     - All paths are resolved relative to the current working directory (CWD)
-    - Environment variables must be set when used (e.g., ${COPAIRS_DATA}/input/file.csv)
+    - Environment variables must be set when used (e.g., ${oc.env:COPAIRS_DATA}/input/file.csv)
     - Home directory expansion is supported (~/path/to/file.csv)
     - Metadata columns are always identified using the regex "^Metadata".
     - To enable plotting, add a "plotting" section to your config with "enabled: true".
@@ -115,13 +114,16 @@ class CopairsRunner:
         """
         # Load config if it's a file path
         if isinstance(config, (str, Path)):
-            with open(config, "r") as f:
-                config = yaml.safe_load(f)
+            config = OmegaConf.load(config)
+            OmegaConf.resolve(config)  # Resolve all interpolations
 
         self.config = config
 
     def resolve_path(self, path: Union[str, Path]) -> Union[str, Path]:
-        """Resolve path with environment variable and ~ expansion."""
+        """Resolve path with ~ expansion.
+
+        Note: Environment variables are already resolved by OmegaConf.
+        """
         path_str = str(path)
 
         # URLs and URIs should be returned as-is
@@ -131,8 +133,7 @@ class CopairsRunner:
         ):
             return path_str
 
-        # Expand environment variables first, then create Path (which handles ~)
-        path_str = os.path.expandvars(path_str)
+        # Only handle home directory expansion
         return Path(path_str).expanduser()
 
     def run(self) -> pd.DataFrame:
@@ -248,7 +249,8 @@ class CopairsRunner:
             Average precision results
         """
         ap_config = self.config["average_precision"]
-        params = ap_config["params"]
+        # Convert OmegaConf to regular dict to avoid ListConfig issues
+        params = OmegaConf.to_container(ap_config["params"])
 
         # Check if multilabel
         if ap_config.get("multilabel", False):
@@ -277,7 +279,8 @@ class CopairsRunner:
             return ap_results
 
         map_config = self.config["mean_average_precision"]
-        params = map_config["params"]
+        # Convert OmegaConf to regular dict to avoid ListConfig issues
+        params = OmegaConf.to_container(map_config["params"])
 
         logger.info("Running mean average precision")
         map_results = map.mean_average_precision(ap_results, **params)
@@ -505,6 +508,9 @@ class CopairsRunner:
                 raise ValueError(
                     f"Preprocessing step '{step_type}' requires a 'params' section"
                 )
+
+            # Convert OmegaConf to regular dict to avoid ListConfig issues
+            params = OmegaConf.to_container(params) if params else {}
 
             # Use getattr to call the appropriate preprocessing method
             method_name = f"_preprocess_{step_type}"
