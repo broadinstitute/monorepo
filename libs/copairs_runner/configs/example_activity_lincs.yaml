@@ -1,7 +1,3 @@
-# Configuration for phenotypic activity analysis
-# Matches the phenotypic_activity.ipynb example
-
-# Configure Hydra to use our output directory
 hydra:
   run:
     dir: ${oc.env:COPAIRS_OUTPUT}/output
@@ -12,10 +8,7 @@ data:
   path: "${hydra:runtime.cwd}/${oc.env:COPAIRS_DATA}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
 
 preprocessing:
-  # Remove constant columns (as done in notebook)
-  # Note: This is handled differently in the runner, but we can achieve similar results
-  
-  # Assign reference index for controls (DMSO)
+  # Force negcons not to have activity calculated
   - type: apply_assign_reference
     params:
       condition: "Metadata_broad_sample == 'DMSO'"
@@ -24,31 +17,27 @@ preprocessing:
 
 average_precision:
   params:
-    # Positive pairs: replicates of the same compound
     pos_sameby: ["Metadata_broad_sample", "Metadata_reference_index"]
     pos_diffby: []
     
-    # Negative pairs: compound vs control
     neg_sameby: []
     neg_diffby: ["Metadata_broad_sample", "Metadata_reference_index"]
     
-    # Using default distance (cosine) as in notebook
-
 mean_average_precision:
   params:
-    sameby: ["Metadata_broad_sample"]  # Group by compound
-    null_size: 1000000                 # As used in notebook
+    sameby: ["Metadata_broad_sample"
+    null_size: 1000000
     threshold: 0.05
-    seed: 0                            # As used in notebook
+    seed: 0
 
 output:
   path: "activity_map_runner.csv"
-  save_ap_scores: true  # Save AP scores to match notebook output
+  save_ap_scores: true 
 
 plotting:
   enabled: true
   path: "example_activity_plot.png"
-  format: "png"  # or pdf, svg, etc.
+  format: "png"
   title: "Phenotypic Activity Assessment"
   xlabel: "mAP"
   ylabel: "-log10(p-value)"
