@@ -16,7 +16,7 @@
 """Generic runner for copairs analyses with configuration support."""
 
 import logging
-from typing import Any, Dict, Union, Optional
+from typing import Any, Dict, Union
 from pathlib import Path
 
 import hydra
@@ -59,13 +59,16 @@ class CopairsRunner:
 
     def _validate_config(self):
         """Validate configuration paths and settings."""
-        # Check output path is configured
+        # Check output configuration
         output_config = self.config.get("output", {})
-        if not output_config or "path" not in output_config:
-            raise ValueError("output.path must be configured")
-
-        # Skip validation warning if we can't get the original config string
-        # (OmegaConf may have already resolved the interpolation)
+        if not output_config:
+            raise ValueError("output section must be configured")
+        
+        if "directory" not in output_config:
+            raise ValueError("output.directory must be configured")
+        
+        if "name" not in output_config:
+            raise ValueError("output.name must be configured")
 
     def resolve_path(self, path_str: Union[str, Path]) -> Union[str, Path]:
         """Resolve path from config, handling URLs and local paths.
@@ -93,27 +96,25 @@ class CopairsRunner:
         # Convert local paths to Path objects
         return Path(path_str).expanduser().resolve()
 
-    def run(self) -> pd.DataFrame:
-        """Run the complete analysis pipeline.
+    def load_data(self) -> pd.DataFrame:
+        """Load data from configured path.
 
         Returns
         -------
         pd.DataFrame
-            Final analysis results
+            Loaded dataframe
         """
-        logger.info("Starting copairs analysis")
-
-        # 1. Load data
-        path = self.config["data"]["path"]
+        data_config = self.config["data"]
+        path = data_config["path"]
         logger.info(f"Loading data from {path}")
 
         # Check file extension (works for both Path objects and URL strings)
         path_str = str(path)
-        columns = self.config["data"].get("columns")  # Optional column selection
+        columns = data_config.get("columns")  # Optional column selection
 
         # Check if lazy filtering is requested for parquet files
-        use_lazy = self.config["data"].get("use_lazy_filter", False)
-        filter_query = self.config["data"].get("filter_query")
+        use_lazy = data_config.get("use_lazy_filter", False)
+        filter_query = data_config.get("filter_query")
 
         if path_str.endswith(".parquet") and use_lazy and filter_query:
             # Use polars for lazy filtering
@@ -154,10 +155,23 @@ class CopairsRunner:
         if not use_lazy or not filter_query:
             logger.info(f"Loaded {len(df)} rows with {len(df.columns)} columns")
 
-        # 2. Preprocess
+        return df
+
+    def run(self) -> Dict[str, Any]:
+        """Run the complete analysis pipeline.
+
+        Returns
+        -------
+        dict
+            Dictionary containing all analysis outputs
+        """
+        logger.info("Starting copairs analysis")
+
+        # 1. Load and preprocess data
+        df = self.load_data()
         df = self.preprocess_data(df)
 
-        # 3. Extract metadata and features
+        # 2. Extract metadata and features
         metadata = df.filter(regex="^Metadata")
         feature_cols = [col for col in df.columns if not col.startswith("Metadata")]
         features = df[feature_cols].values
@@ -165,28 +179,26 @@ class CopairsRunner:
             f"Extracted {metadata.shape[1]} metadata columns and {features.shape[1]} features"
         )
 
-        # 4. Run average precision
+        # 3. Run analyses
         ap_results = self.run_average_precision(metadata, features)
+        map_results = self.run_mean_average_precision(ap_results)
 
-        # 5. Save AP results if requested
-        if self.config["output"].get("save_ap_scores", False):
-            self.save_results(ap_results, suffix="ap_scores")
+        # 4. Collect all outputs
+        outputs = {
+            'ap_scores': ap_results,
+            'map_results': map_results,
+        }
 
-        # 6. Run mean average precision
-        final_results = self.run_mean_average_precision(ap_results)
+        # 5. Create plot if mAP results exist
+        if 'mean_average_precision' in map_results.columns:
+            outputs['map_plot'] = self.create_map_plot(map_results)
 
-        # 7. Generate and save plot if enabled
-        if (
-            "mean_average_precision" in self.config
-            and "-log10(p-value)" in final_results.columns
-        ):
-            self.plot_map_results(final_results)
-
-        # 8. Save final results
-        self.save_results(final_results)
+        # 6. Save everything
+        output_config = self.config["output"]
+        self.save_results(outputs, output_config["name"])
 
         logger.info("Analysis complete")
-        return final_results
+        return outputs
 
     def run_average_precision(
         self, metadata: pd.DataFrame, features: np.ndarray
@@ -250,80 +262,59 @@ class CopairsRunner:
 
         return map_results
 
-    def save_results(self, results: pd.DataFrame, suffix: str = ""):
-        """Save results to configured output path.
+    def save_results(self, outputs: Dict[str, Any], name: str) -> None:
+        """Save all outputs with consistent naming: {name}_{key}.{ext}
 
         Parameters
         ----------
-        results : pd.DataFrame
-            Results dataframe to save
-        suffix : str, optional
-            Suffix to add to filename, by default ""
+        outputs : dict
+            Dictionary with string keys and DataFrame/Figure values
+        name : str
+            Base name for all output files
         """
         output_config = self.config["output"]
-        output_path = self.resolve_path(output_config["path"])
+        output_dir = self.resolve_path(output_config["directory"])
+        output_dir.mkdir(parents=True, exist_ok=True)
 
-        if suffix:
-            output_path = output_path.with_name(
-                output_path.stem + f"_{suffix}" + output_path.suffix
-            )
+        for key, value in outputs.items():
+            if isinstance(value, pd.DataFrame):
+                path = output_dir / f"{name}_{key}.csv"
+                value.to_csv(path, index=False)
+                logger.info(f"Saved {key} to {path}")
 
-        # Create directory if needed and save
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        if output_path.suffix == ".parquet":
-            results.to_parquet(output_path, index=False)
-        else:
-            results.to_csv(output_path, index=False)
-        logger.info(f"Saved results to {output_path}")
+            elif isinstance(value, plt.Figure):
+                path = output_dir / f"{name}_{key}.png"
+                value.savefig(path, dpi=100, bbox_inches='tight')
+                plt.close(value)
+                logger.info(f"Saved {key} to {path}")
 
-    def plot_map_results(
-        self,
-        map_results: pd.DataFrame,
-        save_path: Optional[Union[str, Path]] = None,
-    ) -> Optional[plt.Figure]:
-        """Create and optionally save a scatter plot of mean average precision vs -log10(p-value).
+    def create_map_plot(self, map_results: pd.DataFrame) -> plt.Figure:
+        """Create scatter plot of mean average precision vs -log10(p-value).
 
         Parameters
         ----------
         map_results : pd.DataFrame
             Results from mean_average_precision containing 'mean_average_precision',
             'corrected_p_value', and 'below_corrected_p' columns
-        save_path : str or Path, optional
-            If provided, save the plot to this path. If None, uses config settings.
 
         Returns
         -------
-        plt.Figure or None
-            The matplotlib figure object if created, None if plotting is disabled
+        plt.Figure
+            The matplotlib figure object
         """
-        # Check if plotting is enabled
-        plot_config = self.config.get("plotting", {})
-        if not plot_config.get("enabled", False):
-            return None
-
-        # Get plot parameters from config
-        title = plot_config.get("title")
-        xlabel = plot_config.get("xlabel", "mAP")
-        ylabel = plot_config.get("ylabel", "-log10(p-value)")
-        annotation_prefix = plot_config.get("annotation_prefix", "Significant")
-        figsize = tuple(plot_config.get("figsize", [8, 6]))
-        dpi = plot_config.get("dpi", 100)
-
-        # Set seaborn style
+        # Fixed settings for consistency
         sns.set_style("whitegrid", {"axes.grid": False})
-
-        # Create figure
-        fig, ax = plt.subplots(figsize=figsize, dpi=dpi)
+        fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
 
         # Calculate percentage of significant results
         significant_ratio = map_results["below_corrected_p"].mean()
 
-        # Better color scheme
+        # Fixed color scheme
         colors = map_results["below_corrected_p"].map(
             {True: "#2166ac", False: "#969696"}
         )
 
-        # Create scatter plot with better styling
+        # Create scatter plot
         ax.scatter(
             data=map_results,
             x="mean_average_precision",
@@ -339,11 +330,11 @@ class CopairsRunner:
             -np.log10(0.05), color="#d6604d", linestyle="--", linewidth=1.5, alpha=0.8
         )
 
-        # Add annotation without box (top left)
+        # Add annotation (top left)
         ax.text(
             0.02,
             0.98,
-            f"{annotation_prefix}: {100 * significant_ratio:.1f}%",
+            f"Significant: {100 * significant_ratio:.1f}%",
             transform=ax.transAxes,
             va="top",
             ha="left",
@@ -351,29 +342,22 @@ class CopairsRunner:
             color="#525252",
         )
 
-        # Remove top and right spines (range frames)
+        # Remove top and right spines
         sns.despine()
 
         # Set x-axis limits to always show 0-1.05 range
         ax.set_xlim(0, 1.05)
 
         # Set y-axis limits based on the null size
-
-        null_size = (
-            self.config["mean_average_precision"].get("params", {}).get("null_size")
-            if "mean_average_precision" in self.config
-            else None
-        )
-        assert null_size  # This must exist if we are plotting mAP
-
+        map_config = self.config["mean_average_precision"]
+        null_size = map_config["params"]["null_size"]
         ymax = -np.log10(1 / (1 + null_size))
         ax.set_ylim(0, ymax)
 
-        # Set labels with better formatting
-        ax.set_xlabel(xlabel, fontsize=12)
-        ax.set_ylabel(ylabel, fontsize=12)
-        if title:
-            ax.set_title(title, fontsize=14, pad=20)
+        # Set labels with fixed formatting
+        ax.set_xlabel("mAP", fontsize=12)
+        ax.set_ylabel("-log10(p-value)", fontsize=12)
+        ax.set_title("Phenotypic Assessment", fontsize=14, pad=20)
 
         # Customize grid
         ax.grid(True, alpha=0.2, linestyle="-", linewidth=0.5)
@@ -381,28 +365,6 @@ class CopairsRunner:
 
         # Adjust layout
         plt.tight_layout()
-
-        # Save plot if path is provided
-        if save_path is None:
-            save_path = plot_config.get("path")
-
-        if save_path:
-            save_path = self.resolve_path(save_path)
-            save_path.parent.mkdir(parents=True, exist_ok=True)
-
-            # Get format from config or infer from extension
-            plot_format = plot_config.get("format")
-            if not plot_format and save_path.suffix:
-                plot_format = save_path.suffix[1:]  # Remove the dot
-            elif not plot_format:
-                plot_format = "png"
-
-            fig.savefig(save_path, format=plot_format, bbox_inches="tight")
-            logger.info(f"Saved plot to {save_path}")
-
-            # Close figure to free memory
-            plt.close(fig)
-            return None  # Return None since figure is closed
 
         return fig
 
@@ -637,7 +599,7 @@ def main(cfg: DictConfig) -> None:
     """Main function for Hydra-based execution."""
     runner = CopairsRunner(cfg)
     results = runner.run()
-    logger.info(f"Analysis complete. Results shape: {results.shape}")
+    logger.info(f"Analysis complete. Generated {len(results)} outputs.")
 
 
 if __name__ == "__main__":

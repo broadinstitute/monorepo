@@ -12,7 +12,7 @@ preprocessing:
   # Filter to only active compounds based on activity analysis
   - type: filter_active
     params:
-      activity_csv: "${hydra:runtime.output_dir}/activity_map_runner.csv"
+      activity_csv: "${hydra:runtime.output_dir}/activity_map_results.csv"
       on_columns: "Metadata_broad_sample"
   
   # Remove rows with missing targets (implicit in notebook via query)
@@ -55,16 +55,5 @@ mean_average_precision:
     seed: 0                      # As used in notebook
 
 output:
-  path: "${hydra:runtime.output_dir}/target_maps_runner.csv"
-  save_ap_scores: false
-
-plotting:
-  enabled: true
-  path: "${hydra:runtime.output_dir}/example_consistency_plot.png"
-  format: "png"  # or pdf, svg, etc.
-  title: "Phenotypic Consistency Assessment"
-  xlabel: "mAP"
-  ylabel: "-log10(p-value)"
-  annotation_prefix: "Phenotypically consistent"
-  figsize: [8, 6]
-  dpi: 100
+  directory: "${hydra:runtime.output_dir}"
+  name: "consistency"
