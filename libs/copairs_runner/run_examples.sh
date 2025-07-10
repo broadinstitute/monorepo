@@ -25,10 +25,10 @@ export COPAIRS_DATA=.
 export COPAIRS_OUTPUT=.
 
 echo -e "\nRunning phenotypic activity analysis..."
-uv run copairs_runner.py configs/example_activity_lincs.yaml --verbose
+uv run copairs_runner.py --config-name example_activity_lincs
 
 echo -e "\nRunning phenotypic consistency analysis..."
-uv run copairs_runner.py configs/example_consistency_lincs.yaml --verbose
+uv run copairs_runner.py --config-name example_consistency_lincs
 
 echo -e "\nAnalyses complete!"
 echo "Results saved to:"

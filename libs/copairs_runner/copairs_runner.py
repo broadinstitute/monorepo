@@ -5,6 +5,7 @@
 #     "numpy",
 #     "copairs",
 #     "omegaconf",
+#     "hydra-core",
 #     "pyarrow",
 #     "matplotlib",
 #     "seaborn",
@@ -18,7 +19,8 @@ import logging
 from typing import Any, Dict, Union, Optional
 from pathlib import Path
 
-from omegaconf import OmegaConf
+import hydra
+from omegaconf import DictConfig, OmegaConf
 import numpy as np
 import pandas as pd
 import seaborn as sns
@@ -43,6 +45,8 @@ class CopairsRunner:
     - Saving results
 
     Configuration Notes:
+    - Uses Hydra for configuration management
+    - Run with: python copairs_runner.py --config-name=<config_name>
     - All paths are resolved relative to the current working directory (CWD)
     - Environment variables must be set when used (e.g., ${oc.env:COPAIRS_DATA}/input/file.csv)
     - Home directory expansion is supported (~/path/to/file.csv)
@@ -104,19 +108,14 @@ class CopairsRunner:
     - copairs.map.mean_average_precision
     """
 
-    def __init__(self, config: Union[Dict[str, Any], str, Path]):
-        """Initialize runner with configuration.
+    def __init__(self, config: DictConfig):
+        """Initialize runner with Hydra configuration.
 
         Parameters
         ----------
-        config : dict, str, or Path
-            Configuration dictionary or path to YAML config file
+        config : DictConfig
+            Hydra configuration object
         """
-        # Load config if it's a file path
-        if isinstance(config, (str, Path)):
-            config = OmegaConf.load(config)
-            OmegaConf.resolve(config)  # Resolve all interpolations
-
         self.config = config
 
     def resolve_path(self, path: Union[str, Path]) -> Union[str, Path]:
@@ -250,7 +249,7 @@ class CopairsRunner:
         """
         ap_config = self.config["average_precision"]
         # Convert OmegaConf to regular dict to avoid ListConfig issues
-        params = OmegaConf.to_container(ap_config["params"])
+        params = OmegaConf.to_container(ap_config["params"], resolve=True)
 
         # Check if multilabel
         if ap_config.get("multilabel", False):
@@ -280,7 +279,7 @@ class CopairsRunner:
 
         map_config = self.config["mean_average_precision"]
         # Convert OmegaConf to regular dict to avoid ListConfig issues
-        params = OmegaConf.to_container(map_config["params"])
+        params = OmegaConf.to_container(map_config["params"], resolve=True)
 
         logger.info("Running mean average precision")
         map_results = map.mean_average_precision(ap_results, **params)
@@ -510,7 +509,7 @@ class CopairsRunner:
                 )
 
             # Convert OmegaConf to regular dict to avoid ListConfig issues
-            params = OmegaConf.to_container(params) if params else {}
+            params = OmegaConf.to_container(params, resolve=True) if params else {}
 
             # Use getattr to call the appropriate preprocessing method
             method_name = f"_preprocess_{step_type}"
@@ -676,17 +675,13 @@ class CopairsRunner:
         return df
 
 
+@hydra.main(version_base=None, config_path="configs", config_name=None)
+def main(cfg: DictConfig) -> None:
+    """Main function for Hydra-based execution."""
+    runner = CopairsRunner(cfg)
+    results = runner.run()
+    logger.info(f"Analysis complete. Results shape: {results.shape}")
+
+
 if __name__ == "__main__":
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Run copairs analysis")
-    parser.add_argument("config", help="Path to config file")
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose logging")
-
-    args = parser.parse_args()
-
-    if args.verbose:
-        logging.basicConfig(level=logging.INFO)
-
-    results = CopairsRunner(args.config).run()
-    print(f"Analysis complete. Results shape: {results.shape}")
+    main()
