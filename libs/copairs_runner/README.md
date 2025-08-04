@@ -6,7 +6,7 @@ YAML-driven runner for [copairs](https://github.com/broadinstitute/copairs).
 
 ```bash
 # Install as package
-uv add git+https://github.com/broadinstitute/monorepo.git@copairs-runner#subdirectory=libs/copairs_runner
+uv add "git+https://github.com/broadinstitute/monorepo.git@copairs-runner#subdirectory=libs/copairs_runner"
 ```
 
 ## Usage
