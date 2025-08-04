@@ -12,6 +12,7 @@
 #     "polars",
 # ]
 # ///
+# NOTE: Keep dependencies in sync with pyproject.toml
 
 """Generic runner for copairs analyses with configuration support."""
 
