@@ -100,6 +100,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
         prefix = (
             "Explore the most similar perturbations to find matches (up to 50 will be shown). "
             + prefix
+            + 'Click the "Perturbation-Match Similarity" header to sort the matches. '
         )
     elif table_type == "gallery":
         prefix = "Explore the JUMP images. " + prefix
