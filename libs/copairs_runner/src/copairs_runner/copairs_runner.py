@@ -593,7 +593,12 @@ class CopairsRunner:
 
 @hydra.main(version_base=None, config_path=None, config_name=None)
 def main(cfg: DictConfig) -> None:
-    """Main function for Hydra-based execution."""
+    """Run copairs analysis with Hydra configuration.
+    
+    Examples:
+        uv run copairs-runner --config-path ./configs --config-name example_simple
+        uv run copairs-runner --config-path ./configs --config-name example_simple output.name=my_analysis
+    """
     runner = CopairsRunner(cfg)
     results = runner.run()
     logger.info(f"Analysis complete. Generated {len(results)} outputs.")
