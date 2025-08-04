@@ -24,6 +24,9 @@ dependencies = [
 [project.scripts]
 copairs-runner = "copairs_runner.copairs_runner:main"
 
+[tool.hatch.build.targets.wheel]
+packages = ["src/copairs_runner"]
+
 [tool.ruff.lint]
 # 1. Enable flake8-bugbear (`B`) rules, in addition to the defaults.
 select = ["E4", "E7", "E9", "F", "B"]
