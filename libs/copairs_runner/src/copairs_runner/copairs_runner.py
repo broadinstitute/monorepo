@@ -591,7 +591,7 @@ class CopairsRunner:
         return df
 
 
-@hydra.main(version_base=None, config_path="configs", config_name=None)
+@hydra.main(version_base=None, config_path=None, config_name=None)
 def main(cfg: DictConfig) -> None:
     """Main function for Hydra-based execution."""
     runner = CopairsRunner(cfg)
