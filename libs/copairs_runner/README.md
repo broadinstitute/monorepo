@@ -2,17 +2,28 @@
 
 YAML-driven runner for [copairs](https://github.com/broadinstitute/copairs).
 
+## Installation
+
+```bash
+# Install as package
+uv add git+https://github.com/broadinstitute/monorepo.git@copairs-runner#subdirectory=libs/copairs_runner
+```
+
 ## Usage
 
 ```bash
 # Set environment variables if used in config
 export COPAIRS_DATA=. COPAIRS_OUTPUT=.
 
-# Run with a config from the configs/ directory
-uv run copairs_runner.py --config-name example_activity_lincs
+# As installed package
+uv run copairs-runner --config-name example_activity_lincs
+
+# Or run standalone script directly from GitHub (includes inline dependencies)
+SCRIPT_URL="https://raw.githubusercontent.com/broadinstitute/monorepo/copairs-runner/libs/copairs_runner/src/copairs_runner/copairs_runner.py"
+uv run $SCRIPT_URL --config-name example_activity_lincs
 
 # Override parameters
-uv run copairs_runner.py --config-name example_activity_lincs mean_average_precision.params.null_size=50000
+uv run copairs-runner --config-name example_activity_lincs mean_average_precision.params.null_size=50000
 ```
 
 ### Output Files
