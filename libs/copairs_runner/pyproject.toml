@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "copairs-runner"
-version = "0.1.0"
 description = "Configurable runner for copairs analyses on cell painting data"
+dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.8"
 # Dependencies must be kept in sync with PEP 723 inline deps in src/copairs_runner/copairs_runner.py
@@ -23,6 +23,9 @@ dependencies = [
 
 [project.scripts]
 copairs-runner = "copairs_runner.copairs_runner:main"
+
+[tool.hatch.version]
+path = "src/copairs_runner/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/copairs_runner"]
