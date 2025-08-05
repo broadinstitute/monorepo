@@ -13,8 +13,8 @@ copairs_runner is a configurable Python script for running copairs analyses on c
 ### Key Development Commands
 ```bash
 # Lint and format (monorepo standard)
-uvx ruff check copairs_runner.py --fix
-uvx ruff format copairs_runner.py
+uvx ruff check src/copairs_runner/copairs_runner.py --fix
+uvx ruff format src/copairs_runner/copairs_runner.py
 
 # Run tests (when implemented)
 pytest tests/
@@ -26,9 +26,10 @@ bash run_examples.sh
 
 ## Architecture Decisions
 
-### Single-File Design
-- **copairs_runner.py** uses inline dependencies (PEP 723) for easy distribution
-- No separate modules - all logic in one file for simplicity
+### Package Design
+- **src/copairs_runner/copairs_runner.py** maintains single-file logic with inline dependencies (PEP 723)
+- Now packaged for easy installation via `uv add`
+- Supports both standalone script execution and installed package usage
 - Hydra-based configuration for flexibility without code changes
 
 ### Key Design Patterns
