@@ -495,7 +495,7 @@ class CopairsRunner:
 
         # Create boolean mask from query
         mask = df.query(query).index
-        df[column] = False
+        df.loc[:, column] = False
         df.loc[mask, column] = True
 
         logger.info(f"Added column '{column}' with {len(mask)} True values")
