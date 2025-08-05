@@ -493,6 +493,9 @@ class CopairsRunner:
         query = params["query"]
         column = params["column"]
 
+        # Ensure we have a copy to avoid SettingWithCopyWarning when adding new columns
+        df = df.copy()
+        
         # Create boolean mask from query
         mask = df.query(query).index
         df.loc[:, column] = False
