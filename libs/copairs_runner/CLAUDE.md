@@ -98,3 +98,7 @@ Then update the docstring in `preprocess_data()` to document the new step.
 2. **Memory Usage**: Use lazy loading for large parquet files to avoid OOM
 3. **Path Resolution**: All paths are relative to where you run the script, not the config file location
 4. **Shared Directory Structure**: When creating dependent analyses (where one reads another's output), always use nested subdirectories (e.g., `shared/activity/` and `shared/consistency/`) to prevent Hydra runtime files from being overwritten between runs
+
+## Collaboration Guidelines
+
+- Never coauthor commits with Claude
