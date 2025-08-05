@@ -15,15 +15,15 @@ uv add "git+https://github.com/broadinstitute/monorepo.git@copairs-runner#subdir
 # Set environment variables if used in config
 export COPAIRS_DATA=. COPAIRS_OUTPUT=.
 
-# As installed package (need to specify config path)
-uv run copairs-runner --config-path /path/to/configs --config-name example_activity_lincs
+# As installed package (use absolute paths for reliability)
+uv run copairs-runner --config-path /absolute/path/to/configs --config-name example_activity_lincs
 
 # Or run standalone script directly from GitHub (includes inline dependencies)
 SCRIPT_URL="https://raw.githubusercontent.com/broadinstitute/monorepo/copairs-runner/libs/copairs_runner/src/copairs_runner/copairs_runner.py"
 uv run $SCRIPT_URL --config-name example_activity_lincs
 
 # Override parameters
-uv run copairs-runner --config-name example_activity_lincs mean_average_precision.params.null_size=50000
+uv run copairs-runner --config-path /absolute/path/to/configs --config-name example_activity_lincs mean_average_precision.params.null_size=50000
 ```
 
 ### Output Files
