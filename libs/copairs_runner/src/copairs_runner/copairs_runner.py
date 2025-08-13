@@ -10,6 +10,7 @@
 #     "matplotlib",
 #     "seaborn",
 #     "polars",
+#     "duckdb",
 # ]
 # ///
 # NOTE: Keep dependencies in sync with pyproject.toml
@@ -26,6 +27,7 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import duckdb
 
 from copairs import map
 from copairs.matching import assign_reference_index
@@ -393,7 +395,7 @@ class CopairsRunner:
         - add_column: Add boolean column based on query expression
         - filter_active: Filter based on activity CSV with below_corrected_p column
         - aggregate_replicates: Aggregate by taking median of features
-        - merge_metadata: Merge external CSV metadata
+        - merge_metadata: Merge external CSV or DuckDB metadata (requires 'table' param for DuckDB)
         - filter_single_replicates: Remove groups with < min_replicates members
         - apply_assign_reference: Apply copairs.matching.assign_reference_index
 
@@ -495,7 +497,7 @@ class CopairsRunner:
 
         # Ensure we have a copy to avoid SettingWithCopyWarning when adding new columns
         df = df.copy()
-        
+
         # Create boolean mask from query
         mask = df.query(query).index
         df.loc[:, column] = False
@@ -543,7 +545,7 @@ class CopairsRunner:
     def _preprocess_merge_metadata(
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
-        """Merge external metadata from CSV file."""
+        """Merge external metadata from CSV or DuckDB file."""
         source_path = self.resolve_path(params["source"])
         on_columns = (
             params["on_columns"]
@@ -553,8 +555,25 @@ class CopairsRunner:
         how = params.get("how", "left")
 
         # Load external metadata
-        metadata_df = pd.read_csv(source_path)
-        logger.info(f"Loaded metadata from {source_path}: {len(metadata_df)} rows")
+        if str(source_path).endswith(".duckdb"):
+            # For DuckDB files, require table parameter
+            table_name = params.get("table")
+            if not table_name:
+                raise ValueError(
+                    "DuckDB source requires 'table' parameter to specify which table to query"
+                )
+
+            # Connect to DuckDB and read table
+            conn = duckdb.connect(str(source_path))
+            metadata_df = conn.execute(f"SELECT * FROM {table_name}").df()
+            conn.close()
+            logger.info(
+                f"Loaded metadata from {source_path} table '{table_name}': {len(metadata_df)} rows"
+            )
+        else:
+            # Assume CSV file
+            metadata_df = pd.read_csv(source_path)
+            logger.info(f"Loaded metadata from {source_path}: {len(metadata_df)} rows")
 
         original_len = len(df)
         df = df.merge(metadata_df, on=on_columns, how=how)
