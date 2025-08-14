@@ -115,6 +115,10 @@ class CopairsRunner:
         path_str = str(path)
         columns = input_config.get("columns")  # Optional column selection
 
+        # Handle empty string as None (no column filtering)
+        if isinstance(columns, str) and columns.strip() == "":
+            columns = None
+
         # Check if lazy filtering is requested for parquet files
         use_lazy = input_config.get("use_lazy_filter", False)
         filter_query = input_config.get("filter_query")
