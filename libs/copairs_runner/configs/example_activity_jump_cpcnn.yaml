@@ -1,6 +1,6 @@
 hydra:
   run:
-    dir: ${oc.env:COPAIRS_OUTPUT}/output/jump-cpcnn/shared/activity
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/jump-cpcnn/shared/activity
   job:
     chdir: false  # Stay in original working directory for clarity
 
@@ -11,26 +11,27 @@ input:
   columns: ["Metadata_Source", "Metadata_Plate", "Metadata_JCP2022", "Metadata_PlateType", "Metadata_pert_type", "Metadata_Well", "X_1", "X_2", "X_3"]
 
 preprocessing:
-  - type: filter
-    params:
-      query: "Metadata_PlateType == 'TARGET2'"
-   
-  # Remove features with NaN values
-  - type: remove_nan_features
-    params: {}
-  
-  # Add negative control indicator column
-  - type: add_column
-    params:
-      query: "Metadata_pert_type == 'negcon'"
-      column: "Metadata_negcon"
+  steps:
+    - type: filter
+      params:
+        query: "Metadata_PlateType == 'TARGET2'"
+    
+    # Remove features with NaN values
+    - type: remove_nan_features
+      params: {}
+    
+    # Add negative control indicator column
+    - type: add_column
+      params:
+        query: "Metadata_pert_type == 'negcon'"
+        column: "Metadata_negcon"
 
-  # Force negcons not to have activity calculated
-  - type: apply_assign_reference
-    params:
-      condition: "Metadata_negcon"
-      reference_col: "Metadata_reference_index"
-      default_value: -1
+    # Force negcons not to have activity calculated
+    - type: apply_assign_reference
+      params:
+        condition: "Metadata_negcon"
+        reference_col: "Metadata_reference_index"
+        default_value: -1
 
 average_precision:
   params:

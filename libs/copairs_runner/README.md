@@ -15,15 +15,15 @@ uv add "git+https://github.com/broadinstitute/monorepo.git@copairs-runner#subdir
 # Set environment variables if used in config
 export COPAIRS_DATA=. COPAIRS_OUTPUT=.
 
-# As installed package (use absolute paths for reliability)
-uv run copairs-runner --config-path /absolute/path/to/configs --config-name example_activity_lincs
+# As installed package
+uv run copairs-runner --config-dir configs --config-name example_activity_lincs
 
 # Or run standalone script directly from GitHub (includes inline dependencies)
 SCRIPT_URL="https://raw.githubusercontent.com/broadinstitute/monorepo/copairs-runner/libs/copairs_runner/src/copairs_runner/copairs_runner.py"
 uv run $SCRIPT_URL --config-name example_activity_lincs
 
 # Override parameters
-uv run copairs-runner --config-path /absolute/path/to/configs --config-name example_activity_lincs mean_average_precision.params.null_size=50000
+uv run copairs-runner --config-dir configs --config-name example_activity_lincs mean_average_precision.params.null_size=50000
 ```
 
 ### Output Files
@@ -39,15 +39,15 @@ Each analysis run generates exactly three files:
 
 The runner uses Hydra's best practices for path handling:
 
-- **Input paths** are relative to where you run the script (original working directory)
+- **Input paths** are resolved using Hydra utilities, relative to the original working directory
 - **Output paths** should use `${hydra:runtime.output_dir}` to save in Hydra's organized structure
 - **URLs and S3 paths** are supported for data loading and metadata merging
 
 ```yaml
 # Example path configuration
 input:
-  # Local file - relative to original CWD
-  path: "${hydra:runtime.cwd}/${oc.env:COPAIRS_DATA}/input/data.csv"
+  # Local file - relative to COPAIRS_DATA (defaults to current directory)
+  path: "${oc.env:COPAIRS_DATA,.}/input/data.csv"
   
   # URL - no changes needed
   path: "https://example.com/data.parquet"

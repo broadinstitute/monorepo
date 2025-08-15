@@ -22,6 +22,7 @@ from typing import Any, Dict, Union
 from pathlib import Path
 
 import hydra
+from hydra.utils import to_absolute_path
 from omegaconf import DictConfig, OmegaConf
 import numpy as np
 import pandas as pd
@@ -74,7 +75,7 @@ class CopairsRunner:
             raise ValueError("output.name must be configured")
 
     def resolve_path(self, path_str: Union[str, Path]) -> Union[str, Path]:
-        """Resolve path from config, handling URLs and local paths.
+        """Resolve path using Hydra utilities for consistent path handling.
 
         Parameters
         ----------
@@ -84,7 +85,7 @@ class CopairsRunner:
         Returns
         -------
         str or Path
-            URL strings are returned as-is, local paths are converted to Path objects
+            URL strings are returned as-is, local paths resolved via Hydra utilities
         """
         # Already a Path object
         if isinstance(path_str, Path):
@@ -96,8 +97,8 @@ class CopairsRunner:
         ):
             return path_str
 
-        # Convert local paths to Path objects
-        return Path(path_str).expanduser().resolve()
+        # Use Hydra's path resolution for local paths
+        return Path(to_absolute_path(str(path_str)))
 
     def load_data(self) -> pd.DataFrame:
         """Load data from configured path.
@@ -108,20 +109,15 @@ class CopairsRunner:
             Loaded dataframe
         """
         input_config = self.config["input"]
-        path = input_config["path"]
+        path = self.resolve_path(input_config["path"])
         logger.info(f"Loading data from {path}")
 
         # Check file extension (works for both Path objects and URL strings)
         path_str = str(path)
-        columns = input_config.get("columns")  # Optional column selection
 
-        # Handle empty string as None (no column filtering)
-        if isinstance(columns, str) and columns.strip() == "":
-            columns = None
-
-        # Check if lazy filtering is requested for parquet files
+        columns = input_config.get("columns", None)
         use_lazy = input_config.get("use_lazy_filter", False)
-        filter_query = input_config.get("filter_query")
+        filter_query = input_config.get("filter_query", None)
 
         if path_str.endswith(".parquet") and use_lazy and filter_query:
             # Use polars for lazy filtering
@@ -413,7 +409,13 @@ class CopairsRunner:
         if "preprocessing" not in self.config:
             return df
 
-        for step in self.config["preprocessing"]:
+        preprocessing_config = self.config["preprocessing"]
+        if "steps" not in preprocessing_config:
+            raise ValueError(
+                "Preprocessing config must contain a 'steps' key (list of steps)"
+            )
+
+        for step in preprocessing_config["steps"]:
             step_type = step["type"]
             logger.info(f"Applying preprocessing: {step_type}")
 

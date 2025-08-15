@@ -1,6 +1,6 @@
 hydra:
   run:
-    dir: ${oc.env:COPAIRS_OUTPUT}/output/jump-cpcnn/shared/consistency
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/jump-cpcnn/shared/consistency
   job:
     chdir: false  # Stay in original working directory for clarity
 
@@ -11,20 +11,21 @@ input:
   columns: ["Metadata_Source", "Metadata_Plate", "Metadata_JCP2022", "Metadata_PlateType", "Metadata_pert_type", "Metadata_Well", "X_1", "X_2", "X_3"]
 
 preprocessing:
-  - type: filter
-    params:
-      query: "Metadata_PlateType == 'TARGET2'"
+  steps:
+    - type: filter
+      params:
+        query: "Metadata_PlateType == 'TARGET2'"
 
-  # Filter to only active compounds based on activity analysis
-  - type: filter_active
-    params:
-      activity_csv: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
-      on_columns: "Metadata_JCP2022"
-  
-  # Aggregate replicates by taking median of features (as done in notebook)
-  - type: aggregate_replicates
-    params:
-      groupby: ["Metadata_JCP2022", "Metadata_Plate"]
+    # Filter to only active compounds based on activity analysis
+    - type: filter_active
+      params:
+        activity_csv: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
+        on_columns: "Metadata_JCP2022"
+    
+    # Aggregate replicates by taking median of features (as done in notebook)
+    - type: aggregate_replicates
+      params:
+        groupby: ["Metadata_JCP2022", "Metadata_Plate"]
 
 average_precision:
   params:

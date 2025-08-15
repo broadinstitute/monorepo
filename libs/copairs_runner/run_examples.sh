@@ -35,14 +35,14 @@ export COPAIRS_OUTPUT=.
 
 echo -e "\nRunning LINCS workflow..."
 echo "1. Phenotypic activity analysis..."
-uv run src/copairs_runner/copairs_runner.py --config-name example_activity_lincs
+uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_activity_lincs
 
 echo -e "\n2. Phenotypic consistency analysis (depends on activity results)..."
-uv run src/copairs_runner/copairs_runner.py --config-name example_consistency_lincs
+uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_consistency_lincs
 
 echo -e "\nRunning JUMP-CP analysis..."
 echo "Note: This will download data from S3 on first run"
-uv run src/copairs_runner/copairs_runner.py --config-name example_activity_jump_target2
+uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_activity_jump_target2
 
 echo -e "\nAll analyses complete! Check the output directory:"
 echo "- output/lincs/shared/     # LINCS workflow results"
