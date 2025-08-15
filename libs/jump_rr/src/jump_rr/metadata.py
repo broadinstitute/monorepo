@@ -131,7 +131,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
                 "source_url": "http://broad.io/jump",
                 "tables": {
                     "content": {
-                        "description_html": f"{prefix} <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.json> Data Index</a>. <a href = {source_url}>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/{broad_suffix}>Latest</a> version of this page.",
+                        "description_html": f"{prefix} <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.json> Data Index</a>. <a href = {source_url}>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information and tutorials. <a href = http://broad.io/{broad_suffix}>Latest</a> version of this page.",
                         "title": f"{dset.upper()} {table_type_to_suffix(table_type)}",
                     }
                 },
