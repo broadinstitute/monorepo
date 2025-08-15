@@ -1,7 +1,7 @@
 hydra:
   run:
     # Project-specific directory with timestamps for independent JUMP analyses
-    dir: ${oc.env:COPAIRS_OUTPUT}/output/jump-target2/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/jump-target2/${now:%Y-%m-%d}/${now:%H-%M-%S}
   job:
     chdir: false  # Stay in original working directory for clarity
 
@@ -12,42 +12,43 @@ input:
   columns: ["Metadata_Source", "Metadata_Plate", "Metadata_JCP2022", "Metadata_Well", "X_1", "X_2", "X_3"]
 
 preprocessing:
-  # Merge plate metadata and filter for TARGET2 plates
-  - type: merge_metadata
-    params:
-      source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/plate.csv.gz"
-      # source: "../../../../datasets/metadata/plate.csv.gz"
-      on_columns: ["Metadata_Source", "Metadata_Plate"]
-      how: "inner"
-  
-  - type: filter
-    params:
-      query: "Metadata_PlateType == 'TARGET2'"
-  
-  # Merge compound metadata
-  - type: merge_metadata
-    params:
-      source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/compound.csv.gz"
-      # source: "../../../../datasets/metadata/compound.csv.gz"
-      on_columns: ["Metadata_JCP2022"]
-      how: "inner"
-  
-  # Remove features with NaN values
-  - type: remove_nan_features
-    params: {}
-  
-  # Add negative control indicator column
-  - type: add_column
-    params:
-      query: "Metadata_JCP2022 == 'JCP2022_033924'"
-      column: "Metadata_negcon"
+  steps:
+    # Merge plate metadata and filter for TARGET2 plates
+    - type: merge_metadata
+      params:
+        source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/plate.csv.gz"
+        # source: "../../../../datasets/metadata/plate.csv.gz"
+        on_columns: ["Metadata_Source", "Metadata_Plate"]
+        how: "inner"
+    
+    - type: filter
+      params:
+        query: "Metadata_PlateType == 'TARGET2'"
+    
+    # Merge compound metadata
+    - type: merge_metadata
+      params:
+        source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/compound.csv.gz"
+        # source: "../../../../datasets/metadata/compound.csv.gz"
+        on_columns: ["Metadata_JCP2022"]
+        how: "inner"
+    
+    # Remove features with NaN values
+    - type: remove_nan_features
+      params: {}
+    
+    # Add negative control indicator column
+    - type: add_column
+      params:
+        query: "Metadata_JCP2022 == 'JCP2022_033924'"
+        column: "Metadata_negcon"
 
-  # Force negcons not to have activity calculated
-  - type: apply_assign_reference
-    params:
-      condition: "Metadata_negcon"
-      reference_col: "Metadata_reference_index"
-      default_value: -1
+    # Force negcons not to have activity calculated
+    - type: apply_assign_reference
+      params:
+        condition: "Metadata_negcon"
+        reference_col: "Metadata_reference_index"
+        default_value: -1
 
 average_precision:
   params:

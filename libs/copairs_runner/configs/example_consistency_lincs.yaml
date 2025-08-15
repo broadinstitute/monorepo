@@ -4,36 +4,37 @@ hydra:
     # IMPORTANT: The nested 'consistency' subdirectory prevents overwriting Hydra runtime
     # files from the activity analysis. The '../activity/' relative path allows access
     # to activity outputs while maintaining separate Hydra runtime environments.
-    dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared/consistency
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/lincs/shared/consistency
   job:
     chdir: false  # Stay in original working directory for clarity
 
 input:
-  path: "${hydra:runtime.cwd}/${oc.env:COPAIRS_DATA}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
+  path: "${oc.env:COPAIRS_DATA,.}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
 
 preprocessing:
-  # Filter to only active compounds based on activity analysis
-  # Note: The '../activity/' path works because of the nested subdirectory structure
-  - type: filter_active
-    params:
-      activity_csv: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
-      on_columns: "Metadata_broad_sample"
-  
-  # Remove rows with missing targets (implicit in notebook via query)
-  - type: dropna
-    params:
-      columns: ["Metadata_target"]
-  
-  # Aggregate replicates by taking median of features (as done in notebook)
-  - type: aggregate_replicates
-    params:
-      groupby: ["Metadata_broad_sample", "Metadata_target"]
-  
-  # Split the pipe-separated target values into lists for multilabel analysis
-  - type: split_multilabel
-    params:
-      column: "Metadata_target"
-      separator: "|"
+  steps:
+    # Filter to only active compounds based on activity analysis
+    # Note: The '../activity/' path works because of the nested subdirectory structure
+    - type: filter_active
+      params:
+        activity_csv: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
+        on_columns: "Metadata_broad_sample"
+    
+    # Remove rows with missing targets (implicit in notebook via query)
+    - type: dropna
+      params:
+        columns: ["Metadata_target"]
+    
+    # Aggregate replicates by taking median of features (as done in notebook)
+    - type: aggregate_replicates
+      params:
+        groupby: ["Metadata_broad_sample", "Metadata_target"]
+    
+    # Split the pipe-separated target values into lists for multilabel analysis
+    - type: split_multilabel
+      params:
+        column: "Metadata_target"
+        separator: "|"
 
 average_precision:
   # Use multilabel since compounds have multiple targets (separated by |)

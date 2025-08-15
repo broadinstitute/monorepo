@@ -4,20 +4,20 @@ hydra:
     # IMPORTANT: The nested 'activity' subdirectory prevents overwriting Hydra runtime files
     # when running the consistency analysis. Without this, both analyses would write to
     # the same directory, causing the second run to overwrite .hydra/ files from the first.
-    dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared/activity
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/lincs/shared/activity
   job:
     chdir: false  # Stay in original working directory for clarity
 
 input:
-  path: "${hydra:runtime.cwd}/${oc.env:COPAIRS_DATA}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
+  path: "${oc.env:COPAIRS_DATA,.}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
 
 preprocessing:
-  # Force negcons not to have activity calculated
-  - type: apply_assign_reference
-    params:
-      condition: "Metadata_broad_sample == 'DMSO'"
-      reference_col: "Metadata_reference_index"
-      default_value: -1
+  steps:  # Force negcons not to have activity calculated
+    - type: apply_assign_reference
+      params:
+        condition: "Metadata_broad_sample == 'DMSO'"
+        reference_col: "Metadata_reference_index"
+        default_value: -1
 
 average_precision:
   params:
