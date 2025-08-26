@@ -46,6 +46,7 @@ class CopairsRunner:
     - Standard preprocessing pipeline (pandas syntax, after loading)
     - All config parameters passed through to copairs functions
     - Automatic mAP vs -log10(p-value) plotting
+    - Support for CSV or Parquet output formats
 
     See configs/ directory for examples.
     """
@@ -279,10 +280,22 @@ class CopairsRunner:
         output_dir = self.resolve_path(output_config["directory"])
         output_dir.mkdir(parents=True, exist_ok=True)
 
+        # Get format preference (defaults to csv for backwards compatibility)
+        output_format = output_config.get("format", "csv").lower()
+        if output_format not in ["csv", "parquet"]:
+            logger.warning(
+                f"Unknown output format '{output_format}', defaulting to csv"
+            )
+            output_format = "csv"
+
         for key, value in outputs.items():
             if isinstance(value, pd.DataFrame):
-                path = output_dir / f"{name}_{key}.csv"
-                value.to_csv(path, index=False)
+                if output_format == "parquet":
+                    path = output_dir / f"{name}_{key}.parquet"
+                    value.to_parquet(path, index=False)
+                else:
+                    path = output_dir / f"{name}_{key}.csv"
+                    value.to_csv(path, index=False)
                 logger.info(f"Saved {key} to {path}")
 
             elif isinstance(value, plt.Figure):
@@ -475,6 +488,8 @@ class CopairsRunner:
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
         """Remove feature columns containing NaN."""
+        # params not used for this preprocessing step
+        _ = params
         feature_cols = self._get_feature_columns(df)
         nan_cols = df[feature_cols].isna().any()
         nan_cols = nan_cols[nan_cols].index.tolist()
