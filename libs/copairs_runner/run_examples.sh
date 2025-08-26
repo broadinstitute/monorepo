@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e  # Exit on any failure
 # Run copairs examples using the runner
 #
 # This script demonstrates:
@@ -37,13 +38,47 @@ echo -e "\nRunning LINCS workflow..."
 echo "1. Phenotypic activity analysis..."
 uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_activity_lincs
 
+# Check LINCS activity outputs exist
+test -f output/lincs/shared/activity/activity_ap_scores.csv && echo "  ✓ activity_ap_scores.csv"
+test -f output/lincs/shared/activity/activity_map_results.csv && echo "  ✓ activity_map_results.csv"
+test -f output/lincs/shared/activity/activity_map_plot.png && echo "  ✓ activity_map_plot.png"
+
+# Quick data check - CSV should have more than header row
+[ $(wc -l < output/lincs/shared/activity/activity_ap_scores.csv) -gt 1 ] && echo "  ✓ AP scores has data"
+
+# Store a hash of full results for drift detection
+AP_HASH=$(tail -n +2 output/lincs/shared/activity/activity_ap_scores.csv | md5sum | cut -c1-8)
+echo "  Activity hash: $AP_HASH"
+
+# Validate against expected hash
+[ "$AP_HASH" = "4b7a48cd" ] || echo "  WARNING: Output changed! Expected: 4b7a48cd, got: $AP_HASH"
+
 echo -e "\n2. Phenotypic consistency analysis (depends on activity results)..."
 uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_consistency_lincs
+
+# Check consistency outputs
+test -f output/lincs/shared/consistency/consistency_ap_scores.csv && echo "  ✓ consistency_ap_scores.csv"
+test -f output/lincs/shared/consistency/consistency_map_results.csv && echo "  ✓ consistency_map_results.csv"
+test -f output/lincs/shared/consistency/consistency_map_plot.png && echo "  ✓ consistency_map_plot.png"
+
+# Check consistency hash
+CONS_HASH=$(tail -n +2 output/lincs/shared/consistency/consistency_ap_scores.csv | md5sum | cut -c1-8)
+echo "  Consistency hash: $CONS_HASH"
+[ "$CONS_HASH" = "5c350bf1" ] || echo "  WARNING: Output changed! Expected: 5c350bf1, got: $CONS_HASH"
 
 echo -e "\nRunning JUMP-CP analysis..."
 echo "Note: This will download data from S3 on first run"
 uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_activity_jump_target2
 
-echo -e "\nAll analyses complete! Check the output directory:"
+# Check JUMP outputs (find the timestamped directory)
+JUMP_DIR=$(ls -td output/jump-target2/*/*/ 2>/dev/null | head -1)
+if [ -n "$JUMP_DIR" ]; then
+    test -f "${JUMP_DIR}activity_ap_scores.csv" && echo "  ✓ activity_ap_scores.csv"
+    test -f "${JUMP_DIR}activity_map_results.csv" && echo "  ✓ activity_map_results.csv" 
+    test -f "${JUMP_DIR}activity_map_plot.png" && echo "  ✓ activity_map_plot.png"
+fi
+
+echo -e "\nAll tests passed!"
+echo -e "\nOutput directories:"
 echo "- output/lincs/shared/     # LINCS workflow results"
 echo "- output/jump-target2/     # JUMP timestamped results"
