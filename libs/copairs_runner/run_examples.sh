@@ -78,7 +78,6 @@ if [ -n "$JUMP_DIR" ]; then
     test -f "${JUMP_DIR}activity_map_plot.png" && echo "  ✓ activity_map_plot.png"
 fi
 
-echo -e "\nAll tests passed!"
 echo -e "\nOutput directories:"
 echo "- output/lincs/shared/     # LINCS workflow results"
 echo "- output/jump-target2/     # JUMP timestamped results"
