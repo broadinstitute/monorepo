@@ -68,27 +68,31 @@ def test_standardizer_idempotency(method, sample_size):
     result2 = standardizer2.run()
 
     # Merge results with compound IDs for better error reporting
+    # Use reset_index to ensure proper alignment
     comparison = pd.DataFrame(
         {
-            "compound_id": compound_smiles["Metadata_JCP2022"].values,
-            "original": compound_smiles["Metadata_SMILES"].values,
-            "pass1_smiles": result1["SMILES_standardized"].values,
-            "pass2_smiles": result2["SMILES_standardized"].values,
-            "pass1_inchi": result1["InChI_standardized"].values,
-            "pass2_inchi": result2["InChI_standardized"].values,
-            "pass1_inchikey": result1["InChIKey_standardized"].values,
-            "pass2_inchikey": result2["InChIKey_standardized"].values,
+            "compound_id": compound_smiles["Metadata_JCP2022"].reset_index(drop=True),
+            "original": compound_smiles["Metadata_SMILES"].reset_index(drop=True),
+            "pass1_smiles": result1["SMILES_standardized"].reset_index(drop=True),
+            "pass2_smiles": result2["SMILES_standardized"].reset_index(drop=True),
+            "pass1_inchi": result1["InChI_standardized"].reset_index(drop=True),
+            "pass2_inchi": result2["InChI_standardized"].reset_index(drop=True),
+            "pass1_inchikey": result1["InChIKey_standardized"].reset_index(drop=True),
+            "pass2_inchikey": result2["InChIKey_standardized"].reset_index(drop=True),
         }
     )
 
-    # Check idempotency
+    # Check idempotency and track failures
     failures = []
+    standardization_failures = 0
 
-    for idx, row in comparison.iterrows():
-        # Skip if standardization failed (NaN values)
+    for _, row in comparison.iterrows():
+        # Track standardization failures
         if pd.isna(row["pass1_smiles"]) or pd.isna(row["pass2_smiles"]):
+            standardization_failures += 1
             continue
 
+        # Check for idempotency violations
         if row["pass1_smiles"] != row["pass2_smiles"]:
             failures.append(
                 f"SMILES mismatch for {row['compound_id']}: {row['original'][:50]}..."
@@ -102,6 +106,13 @@ def test_standardizer_idempotency(method, sample_size):
                 f"InChIKey mismatch for {row['compound_id']}: {row['original'][:50]}..."
             )
 
+    # Report standardization failures if any
+    if standardization_failures > 0:
+        print(
+            f"⚠️  {standardization_failures} compounds failed standardization and were skipped"
+        )
+
+    # Report idempotency failures if any
     if failures:
         failure_msg = f"\n{len(failures)} idempotency failures found:\n"
         failure_msg += "\n".join(failures[:10])  # Show first 10
