@@ -66,9 +66,9 @@ def test_standardize_molecule(method):
         assert len(inchikey) == 27, f"Invalid InChIKey length: {inchikey}"
         assert inchikey.count("-") == 2, f"Invalid InChIKey format: {inchikey}"
         parts = inchikey.split("-")
-        assert all(
-            len(part) == length for part, length in zip(parts, [14, 10, 1])
-        ), f"Incorrect InChIKey sections length: {inchikey}"
+        assert all(len(part) == length for part, length in zip(parts, [14, 10, 1])), (
+            f"Incorrect InChIKey sections length: {inchikey}"
+        )
 
     # Read the expected output file
     expected_df = pd.read_csv(expected_output_file)
