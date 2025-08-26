@@ -12,8 +12,8 @@ git clone <repository-url>
 cd jump-smiles
 uv sync --python 3.11
 
-# Or add to your project
-uv add jump-smiles
+# Or add to your project (replace BRANCH_NAME with desired branch, or omit @BRANCH_NAME for main)
+uv add "git+https://github.com/broadinstitute/monorepo.git@BRANCH_NAME#subdirectory=libs/jump_smiles"
 ```
 
 ## Usage
@@ -24,8 +24,8 @@ uv add jump-smiles
 # If installed locally
 uv run jump-smiles --input molecules.csv --output standardized.csv
 
-# Without installation
-uvx --python 3.11 --from jump-smiles jump-smiles --input molecules.csv --output standardized.csv
+# Without installation (replace BRANCH_NAME with desired branch, or omit @BRANCH_NAME for main)
+uvx --python 3.11 --from "git+https://github.com/broadinstitute/monorepo.git@BRANCH_NAME#subdirectory=libs/jump_smiles" jump-smiles --input molecules.csv --output standardized.csv
 ```
 
 ### Python API
