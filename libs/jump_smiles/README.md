@@ -78,6 +78,15 @@ uv sync --python 3.11 --extra dev
 # Run tests
 uv run pytest
 
+# Run fast tests only (skip slow idempotency tests)
+uv run pytest -m "not slow"
+
+# Test idempotency with JUMP compounds (data already included)
+uv run pytest test/test_idempotency.py -v  # Tests with 100 compounds
+uv run pytest test/test_idempotency.py -m "not very_slow" -v  # Skip full dataset test
+uv run pytest test/test_idempotency.py::test_standardizer_idempotency[all-jump_canonical] -v  # Test full dataset (~115k compounds, very slow)
+# To refresh/update the test data: uv run --script scripts/download_jump_compounds.py
+
 # Lint and format
 uv run ruff check src/
 uv run ruff format src/
