@@ -617,7 +617,7 @@ class CopairsRunner:
                 )
 
             # Connect to DuckDB and read table
-            conn = duckdb.connect(str(source_path))
+            conn = duckdb.connect(str(source_path), read_only=True)
             metadata_df = conn.execute(f"SELECT * FROM {table_name}").df()
             conn.close()
             logger.info(
