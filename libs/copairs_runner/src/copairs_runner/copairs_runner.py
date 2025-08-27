@@ -195,7 +195,12 @@ class CopairsRunner:
 
         # 5. Create plot if mAP results exist
         if "mean_average_precision" in map_results.columns:
-            outputs["map_plot"] = self.create_map_plot(map_results)
+            # Get threshold from config if available, default to 0.05
+            threshold = 0.05
+            if "mean_average_precision" in self.config:
+                map_params = self.config["mean_average_precision"].get("params", {})
+                threshold = map_params.get("threshold", 0.05)
+            outputs["map_plot"] = self.create_map_plot(map_results, threshold)
 
         # 6. Save everything
         output_config = self.config["output"]
@@ -304,7 +309,9 @@ class CopairsRunner:
                 plt.close(value)
                 logger.info(f"Saved {key} to {path}")
 
-    def create_map_plot(self, map_results: pd.DataFrame) -> plt.Figure:
+    def create_map_plot(
+        self, map_results: pd.DataFrame, threshold: float = 0.05
+    ) -> plt.Figure:
         """Create scatter plot of mean average precision vs -log10(p-value).
 
         Parameters
@@ -312,6 +319,8 @@ class CopairsRunner:
         map_results : pd.DataFrame
             Results from mean_average_precision containing 'mean_average_precision',
             'corrected_p_value', and 'below_corrected_p' columns
+        threshold : float, optional
+            P-value threshold for significance line, by default 0.05
 
         Returns
         -------
@@ -343,7 +352,11 @@ class CopairsRunner:
 
         # Add significance threshold line
         ax.axhline(
-            -np.log10(0.05), color="#d6604d", linestyle="--", linewidth=1.5, alpha=0.8
+            -np.log10(threshold),
+            color="#d6604d",
+            linestyle="--",
+            linewidth=1.5,
+            alpha=0.8,
         )
 
         # Add annotation (top left)
@@ -531,12 +544,16 @@ class CopairsRunner:
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
         """Filter to active perturbations based on below_corrected_p column."""
-        activity_csv = self.resolve_path(params["activity_csv"])
+        activity_file = self.resolve_path(params["activity_file"])
         on_columns = params["on_columns"]
         filter_column = params.get("filter_column", "below_corrected_p")
 
-        # Load activity data
-        activity_df = pd.read_csv(activity_csv)
+        # Load activity data - support both CSV and Parquet
+        if str(activity_file).endswith(".parquet"):
+            activity_df = pd.read_parquet(activity_file)
+        else:
+            # Default to CSV for backward compatibility
+            activity_df = pd.read_csv(activity_file)
 
         # Get active perturbations
         active_values = activity_df[activity_df[filter_column]][on_columns].unique()
@@ -544,7 +561,7 @@ class CopairsRunner:
         df = df[df[on_columns].isin(active_values)]
 
         logger.info(
-            f"Filtered to {len(df)} rows corresponding to {len(active_values)} perturbations from {activity_csv}"
+            f"Filtered to {len(df)} rows corresponding to {len(active_values)} perturbations from {activity_file}"
         )
 
         return df

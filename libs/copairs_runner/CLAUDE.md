@@ -102,3 +102,4 @@ Then update the docstring in `preprocess_data()` to document the new step.
 ## Collaboration Guidelines
 
 - Never coauthor commits with Claude
+- Always use `uv run python` instead of `python3`
