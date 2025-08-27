@@ -11,19 +11,18 @@ input:
   filter_query: "(Metadata_Source == 'source_2')"
   columns: ["Metadata_Source", "Metadata_Plate", "Metadata_JCP2022", "Metadata_Well", "X_1", "X_2", "X_3"]
 
-preprocessing:
+# Example of modular preprocessing - these sections are processed in alphabetical order
+# You can have multiple preprocessing_* sections for better modularity
+
+preprocessing_01_metadata:
   steps:
-    # Merge plate metadata and filter for TARGET2 plates
+    # Merge plate metadata
     - type: merge_metadata
       params:
         source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/plate.csv.gz"
         # source: "../../../../datasets/metadata/plate.csv.gz"
         on_columns: ["Metadata_Source", "Metadata_Plate"]
         how: "inner"
-    
-    - type: filter
-      params:
-        query: "Metadata_PlateType == 'TARGET2'"
     
     # Merge compound metadata
     - type: merge_metadata
@@ -32,11 +31,20 @@ preprocessing:
         # source: "../../../../datasets/metadata/compound.csv.gz"
         on_columns: ["Metadata_JCP2022"]
         how: "inner"
+
+preprocessing_02_filters:
+  steps:
+    # Filter for TARGET2 plates
+    - type: filter
+      params:
+        query: "Metadata_PlateType == 'TARGET2'"
     
     # Remove features with NaN values
     - type: remove_nan_features
       params: {}
-    
+
+preprocessing_03_features:
+  steps:
     # Add negative control indicator column
     - type: add_column
       params:
