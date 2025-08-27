@@ -432,16 +432,31 @@ class CopairsRunner:
         transformations should happen upstream before reaching this runner.
         ```
         """
-        if "preprocessing" not in self.config:
+        # Collect all preprocessing steps from all preprocessing_* sections
+        all_steps = []
+
+        # Find all preprocessing sections (sorted for deterministic order)
+        preprocessing_sections = sorted(
+            [key for key in self.config.keys() if key.startswith("preprocessing")]
+        )
+
+        if not preprocessing_sections:
             return df
 
-        preprocessing_config = self.config["preprocessing"]
-        if "steps" not in preprocessing_config:
-            raise ValueError(
-                "Preprocessing config must contain a 'steps' key (list of steps)"
-            )
+        # Gather all steps from all preprocessing sections
+        for section_name in preprocessing_sections:
+            section_config = self.config[section_name]
+            if "steps" in section_config:
+                logger.info(f"Loading steps from {section_name}")
+                all_steps.extend(section_config["steps"])
+            elif section_name == "preprocessing":
+                # Backwards compatibility - main preprocessing must have steps
+                raise ValueError(
+                    "Preprocessing config must contain a 'steps' key (list of steps)"
+                )
 
-        for step in preprocessing_config["steps"]:
+        # Now process all collected steps
+        for step in all_steps:
             step_type = step["type"]
             logger.info(f"Applying preprocessing: {step_type}")
 
