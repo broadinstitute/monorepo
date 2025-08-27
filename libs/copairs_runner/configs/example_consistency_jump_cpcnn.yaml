@@ -19,7 +19,7 @@ preprocessing:
     # Filter to only active compounds based on activity analysis
     - type: filter_active
       params:
-        activity_csv: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
+        activity_file: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
         on_columns: "Metadata_JCP2022"
     
     # Aggregate replicates by taking median of features (as done in notebook)

@@ -17,7 +17,7 @@ preprocessing:
     # Note: The '../activity/' path works because of the nested subdirectory structure
     - type: filter_active
       params:
-        activity_csv: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
+        activity_file: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
         on_columns: "Metadata_broad_sample"
     
     # Remove rows with missing targets (implicit in notebook via query)
