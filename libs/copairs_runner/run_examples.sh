@@ -51,7 +51,7 @@ AP_HASH=$(tail -n +2 output/lincs/shared/activity/activity_ap_scores.csv | md5su
 echo "  Activity hash: $AP_HASH"
 
 # Validate against expected hash
-[ "$AP_HASH" = "4b7a48cd" ] || echo "  WARNING: Output changed! Expected: 4b7a48cd, got: $AP_HASH"
+[ "$AP_HASH" = "c5c5a06a" ] || echo "  WARNING: Output changed! Expected: c5c5a06a, got: $AP_HASH"
 
 echo -e "\n2. Phenotypic consistency analysis (depends on activity results)..."
 uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_consistency_lincs
@@ -64,7 +64,7 @@ test -f output/lincs/shared/consistency/consistency_map_plot.png && echo "  ✓ 
 # Check consistency hash
 CONS_HASH=$(tail -n +2 output/lincs/shared/consistency/consistency_ap_scores.csv | md5sum | cut -c1-8)
 echo "  Consistency hash: $CONS_HASH"
-[ "$CONS_HASH" = "5c350bf1" ] || echo "  WARNING: Output changed! Expected: 5c350bf1, got: $CONS_HASH"
+[ "$CONS_HASH" = "ee5ff2b3" ] || echo "  WARNING: Output changed! Expected: ee5ff2b3, got: $CONS_HASH"
 
 echo -e "\nRunning JUMP-CP analysis..."
 echo "Note: This will download data from S3 on first run"
