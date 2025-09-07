@@ -3,7 +3,7 @@
 # dependencies = [
 #     "pandas",
 #     "numpy",
-#     "copairs",
+#     "copairs @ git+https://github.com/cytomining/copairs.git@normalizedAP",
 #     "omegaconf",
 #     "hydra-core",
 #     "pyarrow",
@@ -329,7 +329,7 @@ class CopairsRunner:
         """
         # Fixed settings for consistency
         sns.set_style("whitegrid", {"axes.grid": False})
-        fig, ax = plt.subplots(figsize=(8, 6), dpi=100)
+        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=100)
 
         # Calculate percentage of significant results
         significant_ratio = map_results["below_corrected_p"].mean()
@@ -339,8 +339,8 @@ class CopairsRunner:
             {True: "#2166ac", False: "#969696"}
         )
 
-        # Create scatter plot
-        ax.scatter(
+        # Left plot: mean_average_precision
+        ax1.scatter(
             data=map_results,
             x="mean_average_precision",
             y="-log10(p-value)",
@@ -350,21 +350,72 @@ class CopairsRunner:
             edgecolors="none",
         )
 
-        # Add significance threshold line
-        ax.axhline(
-            -np.log10(threshold),
-            color="#d6604d",
-            linestyle="--",
-            linewidth=1.5,
-            alpha=0.8,
-        )
+        # Right plot: mean_normalized_average_precision
+        # Handle negative values by clipping and using different markers
+        negative_mask = map_results["mean_normalized_average_precision"] < 0
 
-        # Add annotation (top left)
-        ax.text(
+        # Plot normal (non-negative) values
+        if (~negative_mask).any():
+            ax2.scatter(
+                data=map_results[~negative_mask],
+                x="mean_normalized_average_precision",
+                y="-log10(p-value)",
+                c=colors[~negative_mask],
+                s=40,
+                alpha=0.6,
+                edgecolors="none",
+            )
+
+        # Plot clipped negative values with different marker
+        if negative_mask.any():
+            clipped_x = map_results.loc[
+                negative_mask, "mean_normalized_average_precision"
+            ].clip(lower=0)
+            ax2.scatter(
+                x=clipped_x,
+                y=map_results.loc[negative_mask, "-log10(p-value)"],
+                c=colors[negative_mask],
+                s=40,
+                alpha=0.6,
+                marker="<",  # Left-pointing triangle to indicate clipped values
+                edgecolors="#d6604d",
+                linewidths=1.5,
+            )
+
+        # Add significance threshold line to both plots
+        for ax in [ax1, ax2]:
+            ax.axhline(
+                -np.log10(threshold),
+                color="#d6604d",
+                linestyle="--",
+                linewidth=1.5,
+                alpha=0.8,
+            )
+
+        # Add annotation to both plots
+        ax1.text(
             0.02,
             0.98,
             f"Significant: {100 * significant_ratio:.1f}%",
-            transform=ax.transAxes,
+            transform=ax1.transAxes,
+            va="top",
+            ha="left",
+            fontsize=11,
+            color="#525252",
+        )
+
+        # For ax2, add note about clipped values if any
+        negative_count = (map_results["mean_normalized_average_precision"] < 0).sum()
+        if negative_count > 0:
+            annotation_text = f"Significant: {100 * significant_ratio:.1f}%\n◀ {negative_count} clipped (<0)"
+        else:
+            annotation_text = f"Significant: {100 * significant_ratio:.1f}%"
+
+        ax2.text(
+            0.02,
+            0.98,
+            annotation_text,
+            transform=ax2.transAxes,
             va="top",
             ha="left",
             fontsize=11,
@@ -374,23 +425,36 @@ class CopairsRunner:
         # Remove top and right spines
         sns.despine()
 
-        # Set x-axis limits to always show 0-1.05 range
-        ax.set_xlim(0, 1.05)
-
         # Set y-axis limits based on the null size
         map_config = self.config["mean_average_precision"]
         null_size = map_config["params"]["null_size"]
         ymax = -np.log10(1 / (1 + null_size))
-        ax.set_ylim(0, ymax)
+
+        # Configure both subplots
+        ax1.set_xlim(0, 1.05)
+        ax2.set_xlim(
+            0, 1.05
+        )  # Same as ax1 for consistency, negative values are clipped to 0
+
+        for ax in [ax1, ax2]:
+            ax.set_ylim(0, ymax)
+            ax.grid(True, alpha=0.2, linestyle="-", linewidth=0.5)
 
         # Set labels with fixed formatting
-        ax.set_xlabel("mAP", fontsize=12)
-        ax.set_ylabel("-log10(p-value)", fontsize=12)
-        ax.set_title("Phenotypic Assessment", fontsize=14, pad=20)
+        ax1.set_xlabel("Mean Average Precision (mAP)", fontsize=12)
+        ax1.set_ylabel("-log10(p-value)", fontsize=12)
+        ax1.set_title("Mean Average Precision", fontsize=13)
 
-        # Customize grid
-        ax.grid(True, alpha=0.2, linestyle="-", linewidth=0.5)
-        ax.set_axisbelow(True)
+        ax2.set_xlabel("Mean Normalized Average Precision", fontsize=12)
+        ax2.set_ylabel("-log10(p-value)", fontsize=12)
+        ax2.set_title("Normalized Mean Average Precision", fontsize=13)
+
+        # Overall title
+        fig.suptitle("Phenotypic Assessment", fontsize=14, y=1.02)
+
+        # Set axis below for both plots
+        for ax in [ax1, ax2]:
+            ax.set_axisbelow(True)
 
         # Adjust layout
         plt.tight_layout()
