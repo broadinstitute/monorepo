@@ -407,7 +407,7 @@ class CopairsRunner:
         # For ax2, add note about clipped values if any
         negative_count = (map_results["mean_normalized_average_precision"] < 0).sum()
         if negative_count > 0:
-            annotation_text = f"Significant: {100 * significant_ratio:.1f}%\n◀ {negative_count} clipped (<0)"
+            annotation_text = f"Significant: {100 * significant_ratio:.1f}%\n< {negative_count} clipped (<0)"
         else:
             annotation_text = f"Significant: {100 * significant_ratio:.1f}%"
 
