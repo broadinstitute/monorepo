@@ -9,11 +9,15 @@ import numpy
 import polars as pl
 
 
-def get_nan_inf_indices(arr: numpy.ndarray, axis: int = 0):
-    return numpy.where((numpy.isnan(arr) | numpy.isinf(arr)).sum(axis=axis))
+def get_nan_inf_indices(
+    arr: numpy.ndarray, axis: int = 0, threshold: int = 0
+) -> numpy.ndarray:
+    return numpy.where(
+        (numpy.isnan(arr) | numpy.isinf(arr)).sum(axis=axis) > threshold
+    )[0]
 
 
-def median_abs_deviation(arr: numpy.ndarray, axis=None, keepdims=True):
+def median_abs_deviation(arr: numpy.ndarray, axis=None, keepdims=True) -> numpy.ndarray:
     """
     Calculate median absolute deviation
     """
@@ -103,39 +107,63 @@ def drop_indices(values: numpy.ndarray, indices: list[int], axis=1):
     return result
 
 
-def basic_cleanup(df: pl.DataFrame, meta_selector: pl.selectors) -> pl.DataFrame:
+def basic_cleanup(
+    df: pl.DataFrame,
+    meta_selector: pl.selectors,
+    params: dict[str, int] = {"nan_rows": 160, "redundancy": 0.9, "outliers": 500},
+) -> tuple[pl.DataFrame, dict[str, int]]:
     """
     df: data+metadata data frame.
     meta_selector: metadata it determines which columns are metadata and which are data.
     """
+    ndropped = {}
     values_df = df.select(~meta_selector)
-    values = values_df.to_numpy()
+    current_vals = values_df.to_numpy()
 
-    # Remove NaNs
-    nan_indices = get_nan_inf_indices(values)
-    no_nans = drop_indices(values, nan_indices)
+    # Drop rows firstk iwth a threshold, then columns.
+    # Remove NaN rows
+    nan_indices_rows = get_nan_inf_indices(
+        current_vals, axis=1, threshold=params["nan_rows"]
+    )
+    current_vals = drop_indices(current_vals, nan_indices_rows, axis=0)
+    ndropped["nan_rows"] = len(nan_indices_rows)
+
+    # Remove NaNs columns
+    nan_indices_cols = get_nan_inf_indices(current_vals, threshold=0)
+    current_vals = drop_indices(current_vals, nan_indices_cols, axis=1)
+    ndropped["nan_cols"] = len(nan_indices_cols)
 
     # MAD-robustize
-    mad = calculate_mad(no_nans)
+    current_vals = calculate_mad(current_vals)
 
     # Drop outlier features
-    outlier_indices = find_outliers(mad)
-    no_outliers = drop_indices(mad, outlier_indices)
+    outlier_indices = find_outliers(current_vals, params["outliers"])
+    current_vals = drop_indices(current_vals, outlier_indices)
+    ndropped["outliers"] = len(outlier_indices)
 
     # Drop redundant features
-    redundant_indices = get_redundant_features(no_outliers)
-    uncorrelated = drop_indices(no_outliers, redundant_indices)
+    redundant_indices = get_redundant_features(current_vals, params["redundancy"])
+    current_vals = drop_indices(current_vals, redundant_indices)
+    ndropped["redundant"] = len(redundant_indices)
 
-    # Adjust indices
+    # Adjust column indices
     colnames = numpy.array(values_df.columns)
     for indices_to_drop in (
-        nan_indices,
+        nan_indices_cols,
         outlier_indices,
         redundant_indices,
     ):
         colnames = drop_indices(colnames, indices_to_drop, axis=0)
 
-    new_values_df = pl.DataFrame(uncorrelated, schema=colnames.tolist())
-    processed = pl.concat((df.select(meta_selector), new_values_df), how="horizontal")
+    new_values_df = pl.DataFrame(current_vals, schema=colnames.tolist())
+    processed = pl.concat(
+        (
+            df.select(meta_selector)
+            .with_row_index(name="nr")
+            .filter(~pl.col("nr").is_in(nan_indices_rows)),
+            new_values_df,
+        ),
+        how="horizontal",
+    )
 
-    return processed
+    return processed, ndropped
