@@ -10,8 +10,12 @@ import polars as pl
 
 
 def get_nan_inf_indices(
-    arr: numpy.ndarray, axis: int = 0, threshold: int = 0
+    arr: numpy.ndarray, axis: int = 0, threshold: int or float = 0
 ) -> numpy.ndarray:
+    # Use threshold as fraction if 0 < x < size
+    if 0 < threshold < 1:
+        threshold = arr.shape[axis] * threshold
+
     return numpy.where(
         (numpy.isnan(arr) | numpy.isinf(arr)).sum(axis=axis) > threshold
     )[0]
@@ -110,7 +114,7 @@ def drop_indices(values: numpy.ndarray, indices: list[int], axis=1):
 def basic_cleanup(
     df: pl.DataFrame,
     meta_selector: pl.selectors,
-    params: dict[str, int] = {"nan_rows": 160, "redundancy": 0.9, "outliers": 500},
+    params: dict[str, int] = {"nan_rows": 0.5, "redundancy": 0.9, "outliers": 500},
 ) -> tuple[pl.DataFrame, dict[str, int]]:
     """
     df: data+metadata data frame.
@@ -146,6 +150,7 @@ def basic_cleanup(
     current_vals = drop_indices(current_vals, redundant_indices)
     ndropped["redundant"] = len(redundant_indices)
 
+    assert len(current_vals), "Data preprocessing emptied out matrix."
     # Adjust column indices
     colnames = numpy.array(values_df.columns)
     for indices_to_drop in (
