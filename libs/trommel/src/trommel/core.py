@@ -124,7 +124,7 @@ def basic_cleanup(
     values_df = df.select(~meta_selector)
     current_vals = values_df.to_numpy()
 
-    # Drop rows firstk iwth a threshold, then columns.
+    # Drop rows first with a threshold, then columns.
     # Remove NaN rows
     nan_indices_rows = get_nan_inf_indices(
         current_vals, axis=1, threshold=params["nan_rows"]
