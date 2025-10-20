@@ -54,6 +54,11 @@ This module provides tools to efficiently compare vectors of [JUMP](https://jump
 
 You can read more about JUMP data and find other useful tools at the [JUMP-Cell Painting Hub](https://broad.io/jump).
 
+## Troubleshooting
+
+If the tables are not working, generally refreshing the website a couple of times should make it work, the possible errors are:
+- Loading takes too long and then times out. This can be caused by slow connections and/or not enough processing power, generally the former.
+- The host website from where the interface is loaded may be down. If this is the case and it is not resolved within an hour please open an issue.
 
 <a id="Data%20accessibility"></a>
 
