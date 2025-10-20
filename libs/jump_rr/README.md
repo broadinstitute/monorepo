@@ -4,7 +4,7 @@
 - [Data accessibility](#Data%20accessibility)
 - [Installation](#Installation)
   - [pip](#pip)
-  - [poetry (dev)](#poetry%20%28dev%29)
+  - [uv (dev)](#uv%20%28dev%29)
 - [Contributions](#Contributions)
 
 
@@ -18,7 +18,6 @@ flowchart LR
     A[Start] --> B{What kind of data do I have?}
     B -- Compounds --> compounds{Are you looking for specific features?}
     B -- Genes --> D{What kind of genetic perturbation?}
-    B -- Genes and Chemicals --> asd[(WIP)]
     B -- None, I just want to explore images --> images[(broad.io/orf,crispr,compound_gallery)]
     D -- Overexpression --> orf{Are you looking for specific features?}
     D -- Knock-out --> crispr{Are you looking for specific features?}
@@ -82,7 +81,7 @@ pip install jump_rr
 ```
 
 
-<a id="poetry%20%28dev%29"></a>
+<a id="uv%20%28dev%29"></a>
 
 ## Development (uv)
 
