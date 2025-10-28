@@ -6,7 +6,7 @@ Based on github.com/jump-cellpainting/datasets/blob/baacb8be98cfa4b5a03b627b8cd0
 
 The general workflow is a bit contrived but it works:
 a) If you have an item of interest and want to see them:
-- Use broad_babel to convert item name to jump id (get_item_location_metadata)
+- Use broad_babel to convert item name to jump id (get_item_location_info)
 - Use JUMP identifier to fetch the metadata dataframe with image locations (TODO isolate this)
 - Use this location dataframe to build a full path and fetch it from there
 
@@ -169,12 +169,10 @@ def get_jump_image(
     if lazy:
         unique_site = unique_site.collect()
 
-    assert (
-        len(unique_site) > 0
-    ), f"No valid site was found: {source, batch, plate, well, site}"
-    assert (
-        len(unique_site) < 2
-    ), f"More than one site found: {source, batch, plate, well, site}"
+    n_unique_sites = len(unique_site)
+    assert n_unique_sites == 1, (
+        f"{n_unique_sites} sites  found: {source=}, {batch=}, {plate=}, {well=}, {site=}"
+    )
 
     first_row = unique_site.row(0, named=True)
 
@@ -263,9 +261,12 @@ def get_item_location_metadata(
         If the item_name is "JCP2022_033924", which is not supported as it is a negative control and fills the memory of most computers.
 
     """
-    assert (
-        item_name != "JCP2022_033924"
-    ), "The negative control is not supported, please use a smaller selection before fetching plate information"
+    assert item_name != "JCP2022_033924", (
+        "The negative control is not supported, please use a smaller selection before fetching plate information"
+    )
+    assert input_column in ("standard_key", "JCP2022"), (
+        "Only standard_key and JCP2022 are valid input_columns."
+    )
 
     # Get plates
     jcp_ids = query.run_query(
@@ -401,9 +402,9 @@ def get_item_location_info(
     well_level_metadata = get_item_location_metadata(
         item_name, input_column=input_column
     )
-    assert len(
-        well_level_metadata
-    ), f"Item {item_name} was not found in column {input_column}"
+    assert len(well_level_metadata), (
+        f"Item {item_name} was not found in column {input_column}"
+    )
 
     # Note that this breaks if we pass item_name="JCP2022_033924" and
     # input_column="JCP2022", as it is the negative control. There is an assertion on the top
