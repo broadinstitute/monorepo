@@ -1,100 +1,98 @@
-# JUMP-SMILES Documentation
+# JUMP-SMILES
 
-A Python library for standardizing chemical structures using RDKit. Designed to standardize SMILES strings for consistency with the [JUMP Cell Painting datasets](https://github.com/jump-cellpainting/datasets).
+Python library for standardizing chemical structures using RDKit. Designed for consistency with [JUMP Cell Painting datasets](https://github.com/jump-cellpainting/datasets).
 
 ## Installation
 
-Requires Python 3.11+ and Poetry package manager.
+Requires Python 3.11 or 3.12 (RDKit 2023.9.5 constraint).
 
 ```bash
+# Clone and install
 git clone <repository-url>
 cd jump-smiles
-poetry install
-poetry shell
-```
+uv sync --python 3.11
 
-Core dependencies (managed by Poetry):
-- rdkit 2023.9.5
-- pandas 2.2.2
-- numpy 2.1.1
-- fire 0.4.0+
-- tqdm 4.64.1
-- requests 2.28.2
+# Or add to your project (replace BRANCH_NAME with desired branch, or omit @BRANCH_NAME for main)
+uv add "git+https://github.com/broadinstitute/monorepo.git@BRANCH_NAME#subdirectory=libs/jump_smiles"
+```
 
 ## Usage
 
 ### Command Line
+
 ```bash
-poetry run python standardize_smiles.py \
-  --input molecules.csv \
-  --output standardized_molecules.csv \
-  --num_cpu 4 \
-  --method jump_canonical
+# If installed locally
+uv run jump-smiles --input molecules.csv --output standardized.csv
+
+# Without installation (replace BRANCH_NAME with desired branch, or omit @BRANCH_NAME for main)
+uvx --python 3.11 --from "git+https://github.com/broadinstitute/monorepo.git@BRANCH_NAME#subdirectory=libs/jump_smiles" jump-smiles --input molecules.csv --output standardized.csv
 ```
 
 ### Python API
-```python
-from smiles.standardize_smiles import StandardizeMolecule
 
-# With file input
+```python
+from jump_smiles.standardize_smiles import StandardizeMolecule
+
+# File input
 standardizer = StandardizeMolecule(
     input="molecules.csv",
-    output="standardized_molecules.csv",
+    output="standardized.csv",
     num_cpu=4
 )
-standardized_df = standardizer.run()
+result = standardizer.run()
 
-# With DataFrame input
+# DataFrame input
 import pandas as pd
-df = pd.DataFrame({
-    'SMILES': [
-        'CC(=O)OC1=CC=CC=C1C(=O)O',  # Aspirin
-        'CN1C=NC2=C1C(=O)N(C(=O)N2C)C'  # Caffeine
-    ]
-})
-standardized_df = StandardizeMolecule(input=df).run()
+df = pd.DataFrame({'SMILES': ['CC(=O)OC1=CC=CC=C1C(=O)O']})
+result = StandardizeMolecule(input=df).run()
 ```
 
 ## Parameters
 
-- `input`: CSV/TSV file path or pandas DataFrame with 'SMILES'/'smiles' column
+- `input`: CSV/TSV file or DataFrame with SMILES column
 - `output`: Output file path (optional)
 - `num_cpu`: Number of CPU cores (default: 1)
 - `limit_rows`: Maximum rows to process (optional)
 - `augment`: Include original columns in output (default: False)
-- `method`: Standardization method (default: "jump_canonical")
+- `method`: Standardization method - "jump_canonical" (default) or "jump_alternate_1"
 - `random_seed`: For reproducibility (default: 42)
 
 ## Standardization Methods
 
-### jump_canonical
-The default method used in JUMP Cell Painting datasets. Performs iterative steps until convergence (max 5 iterations):
-- Charge parent normalization
-- Isotope removal
-- Stereo parent normalization
-- Tautomer parent normalization
-- General standardization
+**jump_canonical** (default): The method used in JUMP Cell Painting datasets. Performs iterative normalization until convergence.
 
-If no convergence, selects most common form.
+**jump_alternate_1**: Sequential InChI-based standardization, recommended for tautomer-heavy datasets.
 
-### jump_alternate_1
-Recommended for tautomer-heavy datasets. Performs sequential steps:
-1. InChI-based standardization
-2. Structure cleanup
-3. Fragment handling
-4. Charge neutralization
-5. Tautomer canonicalization
+See the class docstring for detailed method descriptions.
 
 ## Output Format
-Returns DataFrame with columns:
-- `SMILES_original`: Input SMILES
-- `SMILES_standardized`: Standardized SMILES
-- `InChI_standardized`: Standardized InChI
-- `InChIKey_standardized`: Standardized InChIKey
 
-If `augment=True`, includes all original columns.
+Returns DataFrame with standardized SMILES, InChI, and InChIKey. Use `augment=True` to include original columns.
 
-## Limitations
-1. No 3D structure processing
-2. May not find most chemically relevant tautomer
-3. Limited handling of complex metal-organic structures
+## Development
+
+```bash
+# Install with dev dependencies
+uv sync --python 3.11 --extra dev
+
+# Run tests
+uv run pytest
+
+# Run fast tests only (skip slow idempotency tests)
+uv run pytest -m "not slow"
+
+# Test idempotency with JUMP compounds (data already included)
+uv run pytest test/test_idempotency.py -v  # Tests with 100 compounds
+uv run pytest test/test_idempotency.py -m "not very_slow" -v  # Skip full dataset test
+uv run pytest test/test_idempotency.py::test_standardizer_idempotency[all-jump_canonical] -v  # Test full dataset (~115k compounds, very slow)
+# To refresh/update the test data: uv run --script scripts/download_jump_compounds.py
+
+# Lint and format
+uv run ruff check src/
+uv run ruff format src/
+```
+
+## Important Notes
+
+- **RDKit 2023.9.5** is strictly required for reproducibility with JUMP datasets
+- Must use Python 3.11 or 3.12 due to RDKit compatibility
