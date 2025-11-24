@@ -9,7 +9,7 @@ Monorepo of the Carpenter-Singh Lab, hosting many of the tools and methods we de
 - [jump\_portrait](https://github.com/broadinstitute/monorepo/tree/main/libs/jump_portrait): Fetch JUMP images from CellPainting&rsquo;s AWS servers. It also contains some utilities to explore file names.
 - [jump\_rr](https://github.com/broadinstitute/monorepo/tree/main/libs/jump_rr): Generate browsable databases of perturbation similarities and morphological feature rankings to be explored and queried on a browser.
 - [trommel](https://github.com/broadinstitute/monorepo/tree/main/libs/trommel): Data-cleaning functions and pipelines to improve the signal of morphological profiles.
--  [jump\_smiles](https://github.com/broadinstitute/monorepo/tree/swb/libs/smiles): Standardiser of (Chemical) SMILES.
+- [jump\_smiles](https://github.com/broadinstitute/monorepo/main/libs/smiles): Standardiser of (Chemical) SMILES.
 
 ### Tools outside the monorepo
 
