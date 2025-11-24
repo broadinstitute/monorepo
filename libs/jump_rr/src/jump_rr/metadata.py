@@ -100,6 +100,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
         prefix = (
             "Explore the most similar perturbations to find matches (up to 50 will be shown). "
             + prefix
+            + 'Click the "Perturbation-Match Similarity" header to sort the matches. '
         )
     elif table_type == "gallery":
         prefix = "Explore the JUMP images. " + prefix
@@ -130,7 +131,7 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
                 "source_url": "http://broad.io/jump",
                 "tables": {
                     "content": {
-                        "description_html": f"{prefix} <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.json> Data Index</a>. <a href = {source_url}>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information. <a href = http://broad.io/{broad_suffix}>Latest</a> version of this page.",
+                        "description_html": f"{prefix} <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.json> Data Index</a>. <a href = {source_url}>Download</a> source profiles. <a href = https://broad.io/jump>JUMP Hub</a> for more information and tutorials. <a href = http://broad.io/{broad_suffix}>Latest</a> version of this page.",
                         "title": f"{dset.upper()} {table_type_to_suffix(table_type)}",
                     }
                 },

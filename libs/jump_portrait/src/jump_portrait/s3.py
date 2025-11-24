@@ -7,6 +7,7 @@ prefix = "/cpg0020-varchamp/broad/images/".
 """
 
 import os
+from functools import lru_cache
 from io import BytesIO
 
 import boto3
@@ -214,6 +215,7 @@ def build_s3_image_path(
     return url
 
 
+@lru_cache
 def read_ldcsv_s3(path: str, lazy: bool = False) -> pl.DataFrame or pl.LazyFrame:
     """
     Read `load data csv` file from S3 onto memory.
