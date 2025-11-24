@@ -4,7 +4,7 @@
 - [Data accessibility](#Data%20accessibility)
 - [Installation](#Installation)
   - [pip](#pip)
-  - [poetry (dev)](#poetry%20%28dev%29)
+  - [uv (dev)](#uv%20%28dev%29)
 - [Contributions](#Contributions)
 
 
@@ -18,7 +18,6 @@ flowchart LR
     A[Start] --> B{What kind of data do I have?}
     B -- Compounds --> compounds{Are you looking for specific features?}
     B -- Genes --> D{What kind of genetic perturbation?}
-    B -- Genes and Chemicals --> asd[(WIP)]
     B -- None, I just want to explore images --> images[(broad.io/orf,crispr,compound_gallery)]
     D -- Overexpression --> orf{Are you looking for specific features?}
     D -- Knock-out --> crispr{Are you looking for specific features?}
@@ -41,7 +40,7 @@ Use the following datasets to explore morphological similarities between gene an
 |----------|------------------------------------------------|-------------------------------------------------------------|-----------------------------------------------------------------|---------------------|
 | ORF      | [broad.io/orf](https://broad.io/orf)           | [broad.io/orf\_feature](https://broad.io/orf_feature)       | [broad.io/orf\_gallery](https://broad.io/orf_gallery)           | Gene overexpression |
 | CRISPR   | [broad.io/crispr](https://broad.io/crispr)     | [broad.io/crispr\_feature](https://broad.io/crispr_feature) | [broad.io/crispr\_gallery](https://broad.io/crispr_gallery)     | Gene knock-out      |
-| Compound | [broad.io/compound](https://broad.io/compound) | [broad.io/feature](https://broad.io/compound_feature)       | [broad.io/compound\_gallery](https://broad.io/compound_gallery) | Chemical compounds  |
+| Compound | [broad.io/compound](https://broad.io/compound) | [broad.io/compound\_feature](https://broad.io/compound_feature)       | [broad.io/compound\_gallery](https://broad.io/compound_gallery) | Chemical compounds  |
 
 Note that the feature databases are based on interpretable features. The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
 
@@ -55,6 +54,11 @@ This module provides tools to efficiently compare vectors of [JUMP](https://jump
 
 You can read more about JUMP data and find other useful tools at the [JUMP-Cell Painting Hub](https://broad.io/jump).
 
+## Troubleshooting
+
+If the tables are not working, generally refreshing the website a couple of times should make it work, the possible errors are:
+- Loading takes too long and then times out. This can be caused by slow connections and/or not enough processing power, generally the former.
+- The host website from where the interface is loaded may be down. If this is the case and it is not resolved within an hour please open an issue on this github repository to let us know and we will attend to it as soon as possible.
 
 <a id="Data%20accessibility"></a>
 
@@ -82,7 +86,7 @@ pip install jump_rr
 ```
 
 
-<a id="poetry%20%28dev%29"></a>
+<a id="uv%20%28dev%29"></a>
 
 ## Development (uv)
 

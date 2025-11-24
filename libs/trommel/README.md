@@ -36,8 +36,9 @@ shape: (100, 3_677)
 └─────────────────┴────────────────┴───────────────┴───┴─────────────────┴─────────────────┴────────────────┘
 """
 
-cleanup = basic_cleanup(profiles, meta_selector = meta_selector)
-
+# the second argument is a dictionary indicating how many samples or columns were dropped at each step
+preprocessed, _ = basic_cleanup(profiles, meta_selector = meta_selector)
+preprocessed
 """
 shape: (100, 554)
 ┌─────────────────┬────────────────┬───────────────┬───┬─────────────────┬─────────────────┬────────────────┐
@@ -63,6 +64,8 @@ shape: (100, 554)
 ```
 The basic cleanup steps are:
 1. Remove NaNs
+   - First, remove rows with more than 50% NaNs.
+   - Second, remove columns with any NaNs.
 2. Calculate Robust Mean Average Deviation (following [pycytominer's](https://github.com/cytomining/pycytominer/blob/f6d0f6668571e39a8cf3a10dc290389b42891777/pycytominer/operations/transform.py#L313) implementation)
 3. Remove outliers
 4. Remove redundant (highly correlated) features

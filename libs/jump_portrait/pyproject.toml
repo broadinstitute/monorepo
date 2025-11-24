@@ -1,9 +1,9 @@
 [project]
 name = "jump-portrait"
-version = "0.0.28"
+version = "0.0.29"
 description = "Tools to fetch and visualize JUMP images"
 authors = [{ name = "Alan Munoz" }]
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10,<3.14"
 readme = "README.md"
 dependencies = [
     "boto3>=1.33.1",
@@ -22,10 +22,12 @@ dependencies = [
 [dependency-groups]
 dev = [
     "jupyter>=1.0.0,<2",
-    "pytest>=7.4.1,<8",
     "ruff-lsp>=0.0.48,<0.0.49",
     "ruff>=0.3.2,<0.4",
     "ipdb>=0.13.13,<0.14",
+]
+test = [
+    "pytest>=7.4.4",
 ]
 
 [tool.hatch.build.targets.sdist]
