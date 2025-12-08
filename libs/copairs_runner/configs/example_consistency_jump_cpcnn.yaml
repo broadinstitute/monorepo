@@ -1,0 +1,50 @@
+hydra:
+  run:
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/jump-cpcnn/shared/consistency
+  job:
+    chdir: false  # Stay in original working directory for clarity
+
+input:
+  path: "https://cellpainting-gallery.s3.amazonaws.com/cpg0042-chandrasekaran-jump/source_all/workspace/profiles_assembled/compound_DL_CPCNN/v1.0/profiles_dropna_var_mad_int_featselect.parquet"
+  use_lazy_filter: true
+  filter_query: "Metadata_Source = 'source_2' AND Metadata_JCP2022 NOT IN ('JCP2022_012818', 'JCP2022_050797', 'JCP2022_064022', 'JCP2022_035095', 'JCP2022_046054', 'JCP2022_025848', 'JCP2022_037716', 'JCP2022_085227', 'JCP2022_805264', 'JCP2022_915132')"
+  columns: ["Metadata_Source", "Metadata_Plate", "Metadata_JCP2022", "Metadata_PlateType", "Metadata_pert_type", "Metadata_Well", "X_1", "X_2", "X_3"]
+
+preprocessing:
+  steps:
+    - type: filter
+      params:
+        query: "Metadata_PlateType == 'TARGET2'"
+
+    # Filter to only active compounds based on activity analysis
+    - type: filter_active
+      params:
+        activity_file: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
+        on_columns: "Metadata_JCP2022"
+    
+    # Aggregate replicates by taking median of features (as done in notebook)
+    - type: aggregate_replicates
+      params:
+        groupby: ["Metadata_JCP2022", "Metadata_Plate"]
+
+average_precision:
+  params:
+    # Positive pairs: compounds sharing the same target
+    pos_sameby: ["Metadata_Plate"]
+    pos_diffby: []
+    
+    # Negative pairs: compounds with different targets
+    neg_sameby: []
+    neg_diffby: ["Metadata_Plate"]
+
+
+mean_average_precision:
+  params:
+    sameby: ["Metadata_Plate"]  # Group by target
+    null_size: 10000           # As used in notebook
+    threshold: 0.05
+    seed: 0                      # As used in notebook
+
+output:
+  directory: "${hydra:runtime.output_dir}"
+  name: "consistency"
