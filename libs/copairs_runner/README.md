@@ -170,29 +170,15 @@ mean_average_precision:
 
 ## Examples
 
-- `configs/example_activity_lincs.yaml`: Phenotypic activity
-- `configs/example_activity_lincs_dose.yaml`: Dose-response activity (flat BH)
-- `configs/example_activity_lincs_hierarchical.yaml`: Dose-response activity (hierarchical FDR)
-- `configs/example_consistency_lincs.yaml`: Target consistency
+| Config | Question | Output |
+|--------|----------|--------|
+| `example_activity_lincs.yaml` | Do replicates of the same compound look similar? | ![](examples/example_activity_plot.png) |
+| `example_activity_lincs_dose.yaml` | Same, but per dose (flat BH) | ![](examples/activity_dose_map_plot.png) |
+| `example_activity_lincs_hierarchical.yaml` | Same, but per dose (hierarchical FDR) | ![](examples/activity_hierarchical_map_plot.png) |
+| `example_consistency_lincs.yaml` | Do compounds with the same target look similar? | ![](examples/example_consistency_plot.png) |
 
 Run all examples: `./run_examples.sh`
 
 ## Contributing
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding preprocessing steps.
-
-### Example Output
-
-The runner generates scatter plots showing mean average precision (mAP) vs statistical significance:
-
-**Phenotypic Activity Assessment:**
-![Activity Plot](examples/example_activity_plot.png)
-
-**Phenotypic Activity (Dose-response with flat BH):**
-![Activity Dose Plot](examples/activity_dose_map_plot.png)
-
-**Phenotypic Activity (Dose-response with hierarchical FDR):**
-![Activity Hierarchical Plot](examples/activity_hierarchical_map_plot.png)
-
-**Phenotypic Consistency (Target-based):**
-![Consistency Plot](examples/example_consistency_plot.png)
