@@ -29,6 +29,7 @@ uv run copairs-runner --config-dir configs --config-name example_activity_lincs 
 ### Output Files
 
 Each analysis run generates exactly three files:
+
 - `{name}_ap_scores.csv` - Individual average precision scores
 - `{name}_map_results.csv` - Mean average precision with p-values
 - `{name}_map_plot.png` - Scatter plot of mAP vs -log10(p-value)
@@ -63,6 +64,7 @@ output:
 The example configs demonstrate a project-based organization:
 
 1. **LINCS analyses** (dependent workflow):
+
    ```yaml
    # Activity analysis
    hydra:
@@ -74,23 +76,27 @@ The example configs demonstrate a project-based organization:
      run:
        dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared/consistency
    ```
+
    - **Important**: Each analysis uses a nested subdirectory (`activity/` and `consistency/`)
    - This prevents Hydra runtime files from being overwritten between runs
    - Consistency analysis can still reference activity results via `../activity/activity_map_results.csv`
    - The shared parent directory maintains the dependency relationship
 
 2. **JUMP analyses** (independent runs):
+
    ```yaml
    hydra:
      run:
        dir: ${oc.env:COPAIRS_OUTPUT}/output/jump-target2/${now:%Y-%m-%d}/${now:%H-%M-%S}
    ```
+
    - Used by `example_activity_jump_target2.yaml`
    - Timestamped subdirectories preserve results from each run
    - Better for experiments and parameter sweeps
 
 This creates a clean structure:
-```
+
+```text
 output/
 ├── lincs/
 │   └── shared/           # LINCS workflow parent directory
