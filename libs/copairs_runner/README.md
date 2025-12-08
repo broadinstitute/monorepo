@@ -154,6 +154,9 @@ mean_average_precision:
     null_size: 10000  # Typically 10000-100000
     threshold: 0.05
     seed: 0
+
+    # Optional: Hierarchical FDR for dose-response data (see copairs docs)
+    # hierarchical_by: ["Metadata_compound"]
 ```
 
 ## Preprocessing Steps
@@ -168,6 +171,8 @@ mean_average_precision:
 ## Examples
 
 - `configs/example_activity_lincs.yaml`: Phenotypic activity
+- `configs/example_activity_lincs_dose.yaml`: Dose-response activity (flat BH)
+- `configs/example_activity_lincs_hierarchical.yaml`: Dose-response activity (hierarchical FDR)
 - `configs/example_consistency_lincs.yaml`: Target consistency
 
 Run all examples: `./run_examples.sh`
