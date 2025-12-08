@@ -7,12 +7,12 @@ name = "copairs-runner"
 description = "Configurable runner for copairs analyses on cell painting data"
 dynamic = ["version"]
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.9,<3.13"
 # Dependencies must be kept in sync with PEP 723 inline deps in src/copairs_runner/copairs_runner.py
 dependencies = [
     "pandas",
     "numpy",
-    "copairs @ git+https://github.com/cytomining/copairs.git@main",
+    "copairs @ git+https://github.com/cytomining/copairs.git@hierarchical-fdr",
     "omegaconf",
     "hydra-core",
     "pyarrow",

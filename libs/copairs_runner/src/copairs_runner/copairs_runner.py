@@ -1,9 +1,9 @@
 # /// script
-# requires-python = ">=3.8"
+# requires-python = ">=3.9,<3.13"
 # dependencies = [
 #     "pandas",
 #     "numpy",
-#     "copairs @ git+https://github.com/cytomining/copairs.git@main",
+#     "copairs @ git+https://github.com/cytomining/copairs.git@hierarchical-fdr",
 #     "omegaconf",
 #     "hydra-core",
 #     "pyarrow",
