@@ -5,6 +5,7 @@
 The preprocessing pipeline intentionally provides a minimal DSL to avoid recreating pandas/SQL in YAML. Before adding new steps, consider whether users should handle the transformation externally.
 
 **Important context**: Copairs analysis typically happens at the end of a morphological profiling pipeline. By this stage, your data should already be:
+
 - Quality-controlled and normalized
 - Aggregated to appropriate levels
 - Filtered for relevant samples
@@ -15,6 +16,7 @@ If you find yourself needing extensive preprocessing here, it likely indicates i
 ### Alternatives to New Steps
 
 1. **Lazy filtering** - For large parquet files, use polars' SQL syntax before loading:
+
    ```yaml
    data:
      use_lazy_filter: true
@@ -28,6 +30,7 @@ If you find yourself needing extensive preprocessing here, it likely indicates i
 ### When to Add a Step
 
 Add a step only if it:
+
 - Integrates with copairs-specific functionality (e.g., `apply_assign_reference`)
 - Handles last-mile transformations specific to copairs analysis
 - Requires runner context (resolved paths, metadata patterns)

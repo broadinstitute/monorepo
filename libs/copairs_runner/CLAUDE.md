@@ -11,6 +11,7 @@ copairs_runner is a configurable Python script for running copairs analyses on c
 ## Development Context
 
 ### Key Development Commands
+
 ```bash
 # Lint and format (monorepo standard)
 uvx ruff check src/copairs_runner/copairs_runner.py --fix
@@ -27,12 +28,14 @@ bash run_examples.sh
 ## Architecture Decisions
 
 ### Package Design
+
 - **src/copairs_runner/copairs_runner.py** maintains single-file logic with inline dependencies (PEP 723)
 - Now packaged for easy installation via `uv add`
 - Supports both standalone script execution and installed package usage
 - Hydra-based configuration for flexibility without code changes
 
 ### Key Design Patterns
+
 1. **Fixed Output Pattern**: Always saves 3 files per analysis (ap_scores, map_results, map_plot)
 2. **Dictionary-based Results**: `save_results()` takes a dict for easy extension
 3. **Preprocessing Pipeline**: Each step is a method `_preprocess_{type}` for consistency
@@ -42,6 +45,7 @@ bash run_examples.sh
 ## Monorepo Context
 
 This project follows monorepo standards:
+
 - **uv** for package management (not Poetry)
 - **ruff** for formatting/linting (run via `uvx`)
 - **pytest** for testing (target >90% coverage)
@@ -49,6 +53,7 @@ This project follows monorepo standards:
 - Conventional commits
 
 ### Current Limitations
+
 - No test suite yet (priority for future work)
 - Single-file design may need refactoring if complexity grows
 - Fixed 3-file output pattern (by design for simplicity)
@@ -56,6 +61,7 @@ This project follows monorepo standards:
 ## Implementation Guidelines
 
 ### Adding New Preprocessing Steps
+
 ```python
 def _preprocess_<step_name>(self, df: pd.DataFrame, params: Dict[str, Any]) -> pd.DataFrame:
     """One-line description.
@@ -77,7 +83,7 @@ Then update the docstring in `preprocess_data()` to document the new step.
    - This distinction is critical for large datasets
 
 2. **Error Handling**:
-   - Config validation happens in `_validate_config()` 
+   - Config validation happens in `_validate_config()`
    - Missing required params raise `ValueError` with clear messages
    - Use `params.get("key", default)` for optional parameters
 
@@ -87,6 +93,7 @@ Then update the docstring in `preprocess_data()` to document the new step.
    - Use `logger.info()` not print()
 
 ### Testing Approach (when implemented)
+
 - Unit test each preprocessing step independently
 - Integration test full pipeline with small test data
 - Test config validation edge cases
