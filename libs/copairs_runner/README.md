@@ -188,5 +188,11 @@ The runner generates scatter plots showing mean average precision (mAP) vs stati
 **Phenotypic Activity Assessment:**
 ![Activity Plot](examples/example_activity_plot.png)
 
+**Phenotypic Activity (Dose-response with flat BH):**
+![Activity Dose Plot](examples/activity_dose_map_plot.png)
+
+**Phenotypic Activity (Dose-response with hierarchical FDR):**
+![Activity Hierarchical Plot](examples/activity_hierarchical_map_plot.png)
+
 **Phenotypic Consistency (Target-based):**
 ![Consistency Plot](examples/example_consistency_plot.png)
