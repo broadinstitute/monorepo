@@ -24,6 +24,40 @@ RDLogger.DisableLog("rdApp.*")
 
 
 class StandardizeMolecule:
+    """
+    Standardize chemical structures for consistency with JUMP Cell Painting datasets.
+
+    This class provides two standardization methods:
+
+    1. **jump_canonical** (default): The method used in JUMP Cell Painting datasets.
+       Performs iterative standardization until convergence (max 5 iterations):
+       - Charge parent normalization
+       - Isotope removal
+       - Stereo parent normalization
+       - Tautomer parent normalization
+       - General standardization
+       If no convergence after 5 iterations, selects the most common form.
+
+    2. **jump_alternate_1**: Recommended for tautomer-heavy datasets.
+       Performs sequential steps:
+       - InChI-based standardization
+       - Structure cleanup
+       - Fragment handling
+       - Charge neutralization
+       - Tautomer canonicalization
+
+    Output includes:
+    - SMILES_original: Input SMILES
+    - SMILES_standardized: Standardized SMILES
+    - InChI_standardized: Standardized InChI
+    - InChIKey_standardized: Standardized InChIKey
+
+    Limitations:
+    - No 3D structure processing
+    - May not find most chemically relevant tautomer
+    - Limited handling of complex metal-organic structures
+    """
+
     def __init__(
         self,
         input: Union[str, pd.DataFrame],
@@ -43,7 +77,7 @@ class StandardizeMolecule:
         :param limit_rows: Limit the number of rows to be processed (optional)
         :param augment: The output is the input file augmented with the standardized SMILES, InChI, and InChIKey (default: False)
         :param method: Standardization method to use: "jump_canonical" or "jump_alternate_1" (default: "jump_canonical")
-
+        :param random_seed: Random seed for reproducibility (default: 42)
         """
         self.input = input
         self.output = output
@@ -308,5 +342,9 @@ class StandardizeMolecule:
         return standardized_df
 
 
-if __name__ == "__main__":
+def main():
     fire.Fire(StandardizeMolecule)
+
+
+if __name__ == "__main__":
+    main()
