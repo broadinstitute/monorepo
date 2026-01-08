@@ -1,0 +1,184 @@
+# Copairs Runner
+
+YAML-driven runner for [copairs](https://github.com/broadinstitute/copairs).
+
+## Installation
+
+```bash
+# Install as package
+uv add "git+https://github.com/broadinstitute/monorepo.git@copairs-runner#subdirectory=libs/copairs_runner"
+```
+
+## Usage
+
+```bash
+# Set environment variables if used in config
+export COPAIRS_DATA=. COPAIRS_OUTPUT=.
+
+# As installed package
+uv run copairs-runner --config-dir configs --config-name example_activity_lincs
+
+# Or run standalone script directly from GitHub (includes inline dependencies)
+SCRIPT_URL="https://raw.githubusercontent.com/broadinstitute/monorepo/copairs-runner/libs/copairs_runner/src/copairs_runner/copairs_runner.py"
+uv run $SCRIPT_URL --config-name example_activity_lincs
+
+# Override parameters
+uv run copairs-runner --config-dir configs --config-name example_activity_lincs mean_average_precision.params.null_size=50000
+```
+
+### Output Files
+
+Each analysis run generates exactly three files:
+
+- `{name}_ap_scores.csv` - Individual average precision scores
+- `{name}_map_results.csv` - Mean average precision with p-values
+- `{name}_map_plot.png` - Scatter plot of mAP vs -log10(p-value)
+
+## Configuration
+
+### Path Resolution
+
+The runner uses Hydra's best practices for path handling:
+
+- **Input paths** are resolved using Hydra utilities, relative to the original working directory
+- **Output paths** should use `${hydra:runtime.output_dir}` to save in Hydra's organized structure
+- **URLs and S3 paths** are supported for data loading and metadata merging
+
+```yaml
+# Example path configuration
+input:
+  # Local file - relative to COPAIRS_DATA (defaults to current directory)
+  path: "${oc.env:COPAIRS_DATA,.}/input/data.csv"
+  
+  # URL - no changes needed
+  path: "https://example.com/data.parquet"
+
+output:
+  # Output directory and base name for all files
+  directory: "${hydra:runtime.output_dir}"
+  name: "activity"  # Creates: activity_ap_scores.csv, activity_map_results.csv, activity_map_plot.png
+```
+
+### Hydra Output Directory
+
+The example configs demonstrate a project-based organization:
+
+1. **LINCS analyses** (dependent workflow):
+
+   ```yaml
+   # Activity analysis
+   hydra:
+     run:
+       dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared/activity
+   
+   # Consistency analysis
+   hydra:
+     run:
+       dir: ${oc.env:COPAIRS_OUTPUT}/output/lincs/shared/consistency
+   ```
+
+   - **Important**: Each analysis uses a nested subdirectory (`activity/` and `consistency/`)
+   - This prevents Hydra runtime files from being overwritten between runs
+   - Consistency analysis can still reference activity results via `../activity/activity_map_results.csv`
+   - The shared parent directory maintains the dependency relationship
+
+2. **JUMP analyses** (independent runs):
+
+   ```yaml
+   hydra:
+     run:
+       dir: ${oc.env:COPAIRS_OUTPUT}/output/jump-target2/${now:%Y-%m-%d}/${now:%H-%M-%S}
+   ```
+
+   - Used by `example_activity_jump_target2.yaml`
+   - Timestamped subdirectories preserve results from each run
+   - Better for experiments and parameter sweeps
+
+This creates a clean structure:
+
+```text
+output/
+├── lincs/
+│   └── shared/           # LINCS workflow parent directory
+│       ├── activity/     # Activity analysis outputs
+│       │   ├── .hydra/   # Hydra runtime files preserved
+│       │   ├── activity_ap_scores.csv
+│       │   ├── activity_map_results.csv
+│       │   └── activity_map_plot.png
+│       └── consistency/  # Consistency analysis outputs
+│           ├── .hydra/   # Separate Hydra runtime files
+│           ├── consistency_ap_scores.csv
+│           ├── consistency_map_results.csv
+│           └── consistency_map_plot.png
+└── jump-target2/
+    ├── 2024-01-10/      # JUMP experiment runs
+    │   └── 14-23-45/
+    └── 2024-01-11/
+        └── 09-15-30/
+```
+
+All configs use `chdir: false` to stay in the original directory for easier debugging.
+
+```yaml
+# Required sections
+input:
+  path: "data.csv"  # or .parquet, URLs, S3 paths
+  
+  # For large parquet files - filter BEFORE loading into memory:
+  # use_lazy_filter: true
+  # filter_query: "Metadata_PlateType == 'TARGET2'"  # SQL syntax
+  # columns: ["Metadata_col1", "feature_1", "feature_2"]  # optional
+
+# Optional sections
+preprocessing:
+  steps:
+    # Standard filtering - happens AFTER data is loaded:
+    - type: filter
+      params:
+        query: "Metadata_dose > 0.1"  # pandas query syntax
+
+average_precision:
+  params:
+    pos_sameby: ["Metadata_compound"]
+    pos_diffby: []
+    neg_sameby: []
+    neg_diffby: ["Metadata_compound"]
+
+output:
+  directory: "${hydra:runtime.output_dir}"
+  name: "analysis"  # Base name for outputs
+
+mean_average_precision:
+  params:
+    sameby: ["Metadata_compound"]
+    null_size: 10000  # Typically 10000-100000
+    threshold: 0.05
+    seed: 0
+
+    # Optional: Hierarchical FDR for dose-response data (see copairs docs)
+    # hierarchical_by: ["Metadata_compound"]
+```
+
+## Preprocessing Steps
+
+- `filter`: Filter rows with pandas query
+- `dropna`: Remove rows with NaN
+- `aggregate_replicates`: Median aggregation by group
+- `merge_metadata`: Join external CSV
+- `split_multilabel`: Split pipe-separated values
+- See `copairs_runner.py` docstring for complete list
+
+## Examples
+
+| Config | Question | Output |
+|--------|----------|--------|
+| `example_activity_lincs.yaml` | Do replicates of the same compound look similar? | ![](examples/example_activity_plot.png) |
+| `example_activity_lincs_dose.yaml` | Same, but per dose (flat BH) | ![](examples/activity_dose_map_plot.png) |
+| `example_activity_lincs_hierarchical.yaml` | Same, but per dose (hierarchical FDR) | ![](examples/activity_hierarchical_map_plot.png) |
+| `example_consistency_lincs.yaml` | Do compounds with the same target look similar? | ![](examples/example_consistency_plot.png) |
+
+Run all examples: `./run_examples.sh`
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines on adding preprocessing steps.
