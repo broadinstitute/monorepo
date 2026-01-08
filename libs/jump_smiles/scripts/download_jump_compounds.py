@@ -20,7 +20,7 @@ from pathlib import Path
 
 # Configuration
 CACHE_DIR = Path(__file__).parent.parent / "test/test_data/jump_compounds"
-URL = "https://github.com/jump-cellpainting/datasets/refs/tags/v0.13/metadata/compound.csv.gz"
+URL = "https://raw.githubusercontent.com/jump-cellpainting/datasets/v0.13/metadata/compound.csv.gz"
 OUTPUT_FILE = CACHE_DIR / "smiles_only.csv.gz"
 
 
