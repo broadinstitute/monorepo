@@ -1,6 +1,12 @@
-# JUMP DTI annotations
+# JUMP DTI Annotations Pipeline
 
 Tools to collect and standardize drug-target interaction (DTI) annotations for JUMP compounds from multiple public databases.
+
+> **Using MOTIVE for ML?** See the [MOTIVE wiki](https://github.com/carpenter-singh-lab/2024_Arevalo_NeurIPS_MotiVE/wiki) for dataset documentation and processed data.
+>
+> **Want pre-computed annotations?** See the [Zenodo deposit](https://doi.org/10.5281/zenodo.XXXXXXX) for ready-to-use outputs with full schema documentation.
+
+This repository contains the **pipeline code** to regenerate DTI annotations from scratch or extend to other compound sets.
 
 ## Prerequisites
 
@@ -97,14 +103,7 @@ curated_annotations = curate_annotations(annotations)
 curated_annotations.to_parquet('./outputs/filtered_annotations.parquet')
 ```
 
-This creates three main output files in parquet format:
-- `annotations.parquet`: Drug-gene relationships
-- `compound_interactions.parquet`: Drug-drug interactions  
-- `gene_interactions.parquet`: Gene-gene interactions
-- (optional) `filtered_annotations.parquet`: Curated drug-gene relationships
-
-
-### 3. Export External IDs (Optional)
+### 4. Export External IDs (Optional)
 
 To get plain text files of compound IDs by source:
 
@@ -112,94 +111,70 @@ To get plain text files of compound IDs by source:
 python -m jump_compound_annotator.collect_external_ids ./outputs
 ```
 
+### 5. Prepare Zenodo Deposit (Optional)
+
+To create a structured directory for Zenodo deposit with compressed raw sources:
+
+```bash
+python -m jump_compound_annotator.prepare_zenodo ./outputs ./zenodo_deposit
+```
+
+To regenerate only the README.md (e.g., after updating the template):
+
+```bash
+python -m jump_compound_annotator.prepare_zenodo ./outputs ./zenodo_deposit --readme-only
+```
+
+#### Uploading to Zenodo
+
+1. Create a new deposit at https://zenodo.org/deposit/new
+2. Fill in metadata (title, description, creators, etc.)
+3. Get your deposit ID from the URL (e.g., `zenodo.org/deposit/12345` → ID is `12345`)
+4. Get your access token from https://zenodo.org/account/settings/applications/
+5. Get the bucket URL:
+   ```bash
+   curl -s -H "Authorization: Bearer $TOKEN" \
+     "https://zenodo.org/api/deposit/depositions/$DEPOSIT_ID" | \
+     python3 -c "import sys,json; print(json.load(sys.stdin)['links']['bucket'])"
+   ```
+6. Upload files:
+   ```bash
+   # Upload each file to the bucket
+   curl -H "Authorization: Bearer $TOKEN" -X PUT \
+     -H "Content-Type: application/octet-stream" \
+     --data-binary @zenodo_deposit/README.md \
+     "$BUCKET_URL/README.md"
+   ```
+7. Publish the deposit on the Zenodo web interface
+
 ## Output Files
 
-### Directory Structure
+The pipeline produces these main outputs in `outputs/`:
 
-```
-outputs/
-├── annotations.parquet              # Raw drug-gene annotations
-├── filtered_annotations.parquet     # Curated drug-gene annotations
-├── compound_interactions.parquet    # Drug-drug interactions
-├── gene_interactions.parquet        # Gene-gene interactions
-├── mychem_chembl_mapper.parquet     # MyChem ChEMBL mapper
-├── mychem_drugbank_mapper.parquet   # MyChem DrugBank mapper
-├── mychem_pubchem_mapper.parquet    # MyChem PubChem mapper
-├── unichem_chembl_mapper.parquet    # UniChem ChEMBL mapper
-├── unichem_drugbank_mapper.parquet  # UniChem DrugBank mapper
-├── unichem_pubchem_mapper.parquet   # UniChem PubChem mapper
-├── pointers.csv                     # Compound ID mappings from UniChem
-├── external_ids                     # External IDs for each compound
-│   ├── chembl.txt
-│   ├── drugbank.txt
-│   └── pubchem.txt
-├── ids/                             # UniChem mapping batch files
-│   └── ids_*.csv
-├── errors
-│   └── errors_*.csv                 # UniChem mapping errors
-├── biokg/                           # BioKG data
-│   └── biokg.zip
-├── dgidb/                           # DGIdb data
-│   ├── categories.tsv
-│   ├── drugs.tsv
-│   ├── genes.tsv
-│   └── interactions.tsv
-├── drugrep                          # Drug repurposing data
-│   ├── drugs.txt
-│   └── samples.txt
-├── hetionet/                        # Hetionet data
-│   └── hetionet.zip
-├── hgnc/                            # HGNC gene data
-│   └── complete_set.txt
-├── ncbi/                            # NCBI gene data
-│   └── gene_info.gz
-├── openbiolink/                     # OpenBioLink data
-│   └── HQ_UNDIR.zip
-├── opentargets/                     # OpenTargets data
-│   └── molecule
-├── pharmebinet/                     # PharmeBiNet data
-│   ├── edges.parquet
-│   ├── nodes.parquet
-│   └── pharmebinet.tar.gz
-└── primekg/                         # PrimeKG data
-    └── data.csv
-```
+| File | Description |
+|------|-------------|
+| `annotations.parquet` | Drug-gene annotations from all databases |
+| `filtered_annotations.parquet` | Curated annotations (standardized, hub-filtered) |
+| `compound_interactions.parquet` | Drug-drug interactions |
+| `gene_interactions.parquet` | Gene-gene interactions |
+| `pointers.csv` | UniChem ID mappings (InChIKey → DrugBank/ChEMBL/PubChem) |
+| `*_mapper.parquet` | InChIKey resolution mappers (UniChem + MyChem) |
 
-### Data Sources
-Currently supports annotations from:
-- BioKG
-- DrugRep 
-- DGIdb
-- Hetionet
-- OpenBioLink
-- OpenTargets
-- PharmeBiNet
-- PrimeKG
+Raw database downloads are stored in subdirectories (`biokg/`, `dgidb/`, etc.).
 
-## Output File Details
+For detailed schemas and column descriptions, see the Zenodo README.
 
-### annotations.parquet
-Contains drug-gene relationships with the following columns:
-- `source`: Drug ID from original database
-- `target`: Standardized gene name
-- `rel_type`: Type of relationship
-- `source_id`: Original database ID type (drugbank/chembl/pubchem)
-- `database`: Source database name
-- `inchikey`: Standardized chemical identifier
+## Data Sources
 
-### compound_interactions.parquet
-Contains drug-drug interactions with columns:
-- `source_a`: First drug ID
-- `source_b`: Second drug ID
-- `rel_type`: Interaction type
-- `source_id`: Original database ID type
-- `database`: Source database name
-- `inchikey_a`: First drug's InChIKey
-- `inchikey_b`: Second drug's InChIKey
+Annotations are collected from 8 public databases:
+BioKG, DGIdb, DrugRep, Hetionet, OpenBioLink, OpenTargets, PharmeBiNet, PrimeKG
 
-### gene_interactions.parquet
-Contains gene-gene interactions with columns:
-- `target_a`: First gene name
-- `target_b`: Second gene name
-- `rel_type`: Interaction type
-- `database`: Source database name
+## Adding New Databases
+
+Each database module in `src/jump_compound_annotator/` follows a consistent pattern:
+
+1. Create a new module (e.g., `newdb.py`) with a `get_compound_annotations(output_dir, redownload)` function
+2. Return a DataFrame with columns: `source`, `target`, `rel_type`, `source_id`
+3. Register it in `collate.py`
+
+See existing modules like `dgidb.py` or `hetionet.py` for examples.

@@ -6,3 +6,6 @@ __pycache__
 .ipynb_checkpoints
 x.xml
 uv.lock
+zenodo_deposit/
+.claude/
+CLAUDE.md
