@@ -58,46 +58,18 @@ README_TEMPLATE = """# Supplementary Data for MOTIVE: Drug-Target Interaction An
 
 ## Overview
 
-This is supplementary material for the **MOTIVE** paper, published at NeurIPS 2024.
+This is supplementary material for *Arevalo, Su et al., NeurIPS 2024,* which presents a drug-target interaction graph dataset combining annotations from 8 public databases with Cell Painting image features. 
 
-The MOTIVE paper presents a drug-target interaction graph dataset combining annotations from 8 public databases with Cell Painting image features. 
-The processed dataset is available on the Cell Painting Gallery S3 bucket.
+The processed dataset ("MOTI*VE*") is available on the Cell Painting Gallery S3 bucket.
 
-This Zenodo deposit provides the **raw annotation pipeline outputs** that were used to create the MOTIVE dataset, including:
+This Zenodo deposit provides the raw annotation pipeline outputs that were used to create the dataset, including:
 
-- The raw annotations before filtering to JUMP compounds
-- The ID mapping infrastructure (InChIKey resolution via UniChem/MyChem)
-- The original database downloads
+* The ID mapping infrastructure (InChIKey resolution via UniChem/MyChem)  
+* The original database downloads
 
-This supplementary data enables researchers to:
-1. Reproduce the annotation collection process
-2. Understand how cross-database ID mapping was performed
-3. Apply the same pipeline to different compound sets (e.g., CMap/L1000)
+This supplementary data enables researchers to reproduce the annotation collection process and understand how cross-database ID mapping was performed
 
-**Generated:** {date}
-
-## Relationship to Published MOTIVE Dataset
-
-| Location | Contents |
-|----------|----------|
-| **S3 (Cell Painting Gallery)** | Processed MOTIVE dataset used in the paper, filtered to compounds/genes with Cell Painting profiles |
-| **This Zenodo deposit** | Raw annotation pipeline outputs before filtering, plus mapping infrastructure |
-
-The annotation files here have slightly different row counts than S3 because:
-
-1. S3 contains annotations filtered to JUMP compounds with Cell Painting data
-2. This deposit contains all annotations from source databases
-3. This is a {date} regeneration (databases may have updated since the original 2024-06 run)
-
-**S3 dataset:** https://cellpainting-gallery.s3.amazonaws.com/index.html#cpg0034-arevalo-su-motive/
-
-## File Naming
-
-Annotation files were renamed for consistency with the S3 dataset:
-- `annotations.parquet` -> `compound_gene.parquet`
-- `gene_interactions.parquet` -> `gene_gene.parquet`
-- `compound_interactions.parquet` -> `compound_compound.parquet`
-- `filtered_annotations.parquet` -> `compound_gene_curated.parquet`
+The *annotations* files here have slightly different row counts than the [*annotations*](https://cellpainting-gallery.s3.amazonaws.com/index.html#cpg0034-arevalo-su-motive/broad/workspace/publication_data/2024_MOTIVE/inputs/annotations/) on CPG because this is a 2026-01-09 regeneration, and databases may have updated since the original 2024-06 run.
 
 ## Directory Structure
 
@@ -116,6 +88,8 @@ BioKG, DGIdb, DrugRep, Hetionet, OpenBioLink, OpenTargets, PharmeBiNet, PrimeKG
 | gene_gene.parquet | Gene-gene interactions | {gene_gene_rows:,} |
 | compound_compound.parquet | Drug-drug interactions | {compound_compound_rows:,} |
 | compound_gene_curated.parquet | Curated drug-gene (standardized rel_types, hub compounds removed) | {curated_rows:,} |
+
+Please see the MOTIVE GitHub repo [wiki](https://github.com/carpenter-singh-lab/2024_Arevalo_NeurIPS_MotiVE/wiki) for additional details.
 
 ### Schema: compound_gene.parquet
 
@@ -207,16 +181,20 @@ Compressed raw downloads from each source database. These can also be re-downloa
 The annotation pipeline is available at:
 https://github.com/broadinstitute/monorepo/tree/main/libs/jump_compound_annotator
 
+Note: Annotation files were renamed for consistency with the S3 dataset:
+
+* annotations.parquet \-\> compound\_gene.parquet  
+* gene\_interactions.parquet \-\> gene\_gene.parquet  
+* compound\_interactions.parquet \-\> compound\_compound.parquet  
+* filtered\_annotations.parquet \-\> compound\_gene\_curated.parquet
+
 ## Citation
 
 If you use this data, please cite:
 
-**MOTIVE paper:**
-Arevalo J, Su E, Carpenter AE, Singh S (2024) MOTIVE: A Drug-Target Interaction Graph For Inductive Link Prediction, Proceedings of The Thirty-Eighth Annual Conference on Neural Information Processing Systems, Arxiv. doi: 10.48550/arXiv.2406.08649
+1. **MOTIVE paper:** Arevalo J, Su E, Carpenter AE, Singh S (2024) MOTIVE: A Drug-Target Interaction Graph For Inductive Link Prediction, Proceedings of The Thirty-Eighth Annual Conference on Neural Information Processing Systems, Arxiv. doi: 10.48550/arXiv.2406.08649
 https://github.com/carpenter-singh-lab/2024_Arevalo_NeurIPS_MotiVE
-
-**Original database sources:**
-Please also cite the individual databases as described in the MOTIVE paper.
+2. **Original database sources:** Please also cite the individual databases as described in the MOTIVE paper.
 
 ## License
 
