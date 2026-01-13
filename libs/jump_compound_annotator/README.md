@@ -86,6 +86,8 @@ add_inchikeys('./outputs')
 
 ### 3. Curate Annotations
 
+Curation standardizes relationship type names, removes ambiguous/generic relationships, and filters out hub compounds (promiscuous binders). See `curate.py` for the mapping and thresholds, and `notebooks/Filtering annotations.ipynb` for the exploratory analysis that motivated these choices.
+
 ```python
 from pathlib import Path
 from jump_compound_annotator.curate import curate_annotations
@@ -153,8 +155,8 @@ The pipeline produces these main outputs in `outputs/`:
 
 | File | Description |
 |------|-------------|
-| `annotations.parquet` | Drug-gene annotations from all databases |
-| `filtered_annotations.parquet` | Curated annotations (standardized, hub-filtered) |
+| `annotations.parquet` | Raw drug-gene annotations from all databases |
+| `filtered_annotations.parquet` | Curated annotations (see `curate.py` for details) |
 | `compound_interactions.parquet` | Drug-drug interactions |
 | `gene_interactions.parquet` | Gene-gene interactions |
 | `pointers.csv` | UniChem ID mappings (InChIKey → DrugBank/ChEMBL/PubChem) |
