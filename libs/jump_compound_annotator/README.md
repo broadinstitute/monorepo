@@ -121,12 +121,12 @@ To create a structured directory for Zenodo deposit with compressed raw sources:
 ./src/tools/prepare_zenodo.sh ./outputs ./zenodo_deposit
 ```
 
-Zenodo metadata (for the deposit description) is in `src/tools/zenodo_metadata.md`.
+Zenodo metadata (for the deposit description) is in `src/tools/zenodo_metadata.txt`.
 
 #### Uploading to Zenodo
 
 Upload files from the deposit directory via [Zenodo web UI](https://zenodo.org/deposit/new).
-Use `src/tools/zenodo_metadata.md` as reference for the deposit description.
+Use `src/tools/zenodo_metadata.txt` as reference for the deposit description.
 
 ## Output Files
 
