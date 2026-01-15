@@ -118,36 +118,15 @@ python -m jump_compound_annotator.collect_external_ids ./outputs
 To create a structured directory for Zenodo deposit with compressed raw sources:
 
 ```bash
-python -m jump_compound_annotator.prepare_zenodo ./outputs ./zenodo_deposit
+./src/tools/prepare_zenodo.sh ./outputs ./zenodo_deposit
 ```
 
-To regenerate only the README.md (e.g., after updating the template):
-
-```bash
-python -m jump_compound_annotator.prepare_zenodo ./outputs ./zenodo_deposit --readme-only
-```
+Zenodo metadata (for the deposit description) is in `src/tools/zenodo_metadata.md`.
 
 #### Uploading to Zenodo
 
-1. Create a new deposit at https://zenodo.org/deposit/new
-2. Fill in metadata (title, description, creators, etc.)
-3. Get your deposit ID from the URL (e.g., `zenodo.org/deposit/12345` → ID is `12345`)
-4. Get your access token from https://zenodo.org/account/settings/applications/
-5. Get the bucket URL:
-   ```bash
-   curl -s -H "Authorization: Bearer $TOKEN" \
-     "https://zenodo.org/api/deposit/depositions/$DEPOSIT_ID" | \
-     python3 -c "import sys,json; print(json.load(sys.stdin)['links']['bucket'])"
-   ```
-6. Upload files:
-   ```bash
-   # Upload each file to the bucket
-   curl -H "Authorization: Bearer $TOKEN" -X PUT \
-     -H "Content-Type: application/octet-stream" \
-     --data-binary @zenodo_deposit/README.md \
-     "$BUCKET_URL/README.md"
-   ```
-7. Publish the deposit on the Zenodo web interface
+Upload files from the deposit directory via [Zenodo web UI](https://zenodo.org/deposit/new).
+Use `src/tools/zenodo_metadata.md` as reference for the deposit description.
 
 ## Output Files
 
