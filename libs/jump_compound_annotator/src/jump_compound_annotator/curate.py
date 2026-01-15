@@ -1,40 +1,11 @@
 #!/usr/bin/env python3
 """
-Compound-Target Annotation Curation
+Compound-Target Annotation Analysis and Filtering
 
-This module curates raw drug-target annotations by standardizing relationship
-types and removing noisy data. The curation logic was developed through
-exploratory analysis documented in `notebooks/Filtering annotations.ipynb`.
-
-Curation Steps
---------------
-1. **Standardize relationship types**: Different databases use different names
-   for the same relationship (e.g., "DRUG_BINDING_GENE", "BINDS_CHbG", "CbG"
-   all mean "binds"). We map these to canonical names using
-   RELATIONSHIP_TYPE_MAPPING.
-
-2. **Exclude ambiguous relationships**: Some relationship types like "DPI"
-   (Drug-Protein Interaction) are too generic - they co-occur 100% with more
-   specific types and add no information. These are removed via
-   EXCLUDED_RELATIONSHIPS.
-
-3. **Deduplicate**: After standardization, remove duplicate
-   (inchikey, rel_type, target) tuples that arose from merging databases.
-
-4. **Filter hub compounds**: Some compounds (e.g., ATP, zinc, NAD+) interact
-   with thousands of targets and dominate the dataset. We remove compounds
-   above the 99.9th percentile in annotation count (HUB_COMPOUND_THRESHOLD).
-   This typically removes ~80 compounds but ~290K annotations.
-
-Why These Choices?
-------------------
-The notebook `notebooks/Filtering annotations.ipynb` contains:
-- Co-occurrence analysis showing DPI is redundant with other types
-- Distribution analysis showing hub compounds are outliers
-- Mapping analysis showing which relationship names are synonymous
-
-See the notebook for visualizations and detailed statistics that motivated
-these filtering decisions.
+1. Standardizes relationship types
+2. Removes hub compounds
+3. Analyzes relationship co-occurrences
+4. Generates a filtered dataset for downstream use
 """
 
 import pandas as pd
@@ -100,40 +71,7 @@ def curate_annotations(
     excluded_relationships: list = EXCLUDED_RELATIONSHIPS,
     hub_threshold: float = HUB_COMPOUND_THRESHOLD,
 ) -> pd.DataFrame:
-    """
-    Curate compound-target annotations.
-
-    Applies standardization and filtering to raw annotations. See module
-    docstring for detailed explanation of each step.
-
-    Parameters
-    ----------
-    annotations : pd.DataFrame
-        Raw annotations with columns: source, target, rel_type, source_id,
-        database, inchikey.
-    relationship_mapping : dict, optional
-        Mapping from raw relationship names to standardized names.
-        Default: RELATIONSHIP_TYPE_MAPPING.
-    excluded_relationships : list, optional
-        Relationship types to exclude (too generic/ambiguous).
-        Default: ["DPI", "DRUG_BINDINH_GENE"].
-    hub_threshold : float, optional
-        Quantile threshold for hub compound filtering. Compounds with more
-        annotations than this percentile are removed. Default: 0.999.
-
-    Returns
-    -------
-    pd.DataFrame
-        Curated annotations with added 'link_id' column (target_inchikey).
-
-    Examples
-    --------
-    >>> from jump_compound_annotator.curate import curate_annotations
-    >>> import pandas as pd
-    >>> annotations = pd.read_parquet('outputs/annotations.parquet')
-    >>> curated = curate_annotations(annotations)
-    >>> curated.to_parquet('outputs/filtered_annotations.parquet')
-    """
+    """Curate compound-target annotations by standardizing relationships and filtering hub compounds."""
     initial_rows = len(annotations)
     logger.info(f"Initial number of annotations: {initial_rows}")
 
