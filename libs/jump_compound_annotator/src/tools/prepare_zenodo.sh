@@ -2,8 +2,6 @@
 # Prepare jump_compound_annotator outputs for Zenodo deposit
 # Usage: ./prepare_zenodo.sh <input_dir> <output_dir>
 
-set -e
-
 INPUT_DIR="$1"
 OUTPUT_DIR="$2"
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -21,10 +19,10 @@ echo "Preparing Zenodo deposit: $INPUT_DIR -> $OUTPUT_DIR"
 mkdir -p "$OUTPUT_DIR"/{annotations,mappings,intermediate,raw_sources}
 
 # Copy and rename annotation files
-cp "$INPUT_DIR/annotations.parquet" "$OUTPUT_DIR/annotations/compound_gene.parquet" 2>/dev/null || true
-cp "$INPUT_DIR/gene_interactions.parquet" "$OUTPUT_DIR/annotations/gene_gene.parquet" 2>/dev/null || true
-cp "$INPUT_DIR/compound_interactions.parquet" "$OUTPUT_DIR/annotations/compound_compound.parquet" 2>/dev/null || true
-cp "$INPUT_DIR/filtered_annotations.parquet" "$OUTPUT_DIR/annotations/compound_gene_curated.parquet" 2>/dev/null || true
+cp "$INPUT_DIR/annotations.parquet" "$OUTPUT_DIR/annotations/compound_gene.parquet"
+cp "$INPUT_DIR/gene_interactions.parquet" "$OUTPUT_DIR/annotations/gene_gene.parquet"
+cp "$INPUT_DIR/compound_interactions.parquet" "$OUTPUT_DIR/annotations/compound_compound.parquet"
+cp "$INPUT_DIR/filtered_annotations.parquet" "$OUTPUT_DIR/annotations/compound_gene_curated.parquet"
 
 # Copy mapper files
 for f in pointers.csv unichem_{chembl,drugbank,pubchem}_mapper.parquet mychem_{chembl,drugbank,pubchem}_mapper.parquet; do

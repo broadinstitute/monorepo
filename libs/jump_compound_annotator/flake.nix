@@ -14,7 +14,7 @@
       {
         devShells.default = pkgs.mkShell {
           packages = with pkgs; [
-            python312
+            python3
             uv
             git
             # System dependencies for binary wheels
