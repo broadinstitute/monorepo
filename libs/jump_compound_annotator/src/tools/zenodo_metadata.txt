@@ -1,0 +1,73 @@
+Supplementary Data for MOTIVE: Drug-Target Interaction Annotations
+
+OVERVIEW
+
+Supplementary material for Arevalo, Su et al., NeurIPS 2024 - a drug-target interaction graph dataset combining annotations from 8 public databases with Cell Painting image features.
+
+The processed MOTIVE dataset is on the Cell Painting Gallery S3 bucket. This Zenodo deposit provides raw annotation pipeline outputs including ID mapping infrastructure and original database downloads.
+
+Note: Row counts may differ slightly from S3 annotations due to database updates since original 2024-06 run.
+
+
+DIRECTORY STRUCTURE
+
+- annotations/ - Drug-target interaction parquet files
+- mappings/ - ID mapping files (pointers.csv, UniChem/MyChem mappers)
+- intermediate/ - Compressed UniChem API query outputs
+- raw_sources/ - Compressed raw database downloads
+
+
+ANNOTATIONS
+
+Drug-target annotations from 8 databases: BioKG, DGIdb, DrugRep, Hetionet, OpenBioLink, OpenTargets, PharmeBiNet, PrimeKG
+
+- compound_gene.parquet - Drug-gene annotations
+- gene_gene.parquet - Gene-gene interactions
+- compound_compound.parquet - Drug-drug interactions
+- compound_gene_curated.parquet - Curated drug-gene (standardized rel_types, hub compounds removed)
+
+See MOTIVE wiki for schema details: https://github.com/carpenter-singh-lab/2024_Arevalo_NeurIPS_MotiVE/wiki
+
+
+MAPPINGS
+
+- pointers.csv - UniChem mappings (InChIKey to DrugBank/ChEMBL/PubChem)
+- unichem_*_mapper.parquet - InChIKey resolution via UniChem API
+- mychem_*_mapper.parquet - InChIKey resolution via MyChem API
+
+
+INTERMEDIATE
+
+- ids.tar.gz - Batch results from UniChem API queries
+- errors.tar.gz - Failed lookups
+- external_ids.tar.gz - Exported external IDs by database
+
+
+RAW SOURCES
+
+Compressed downloads from each source database (can be re-downloaded via pipeline):
+biokg, dgidb, drugrep, hetionet, hgnc, ncbi, openbiolink, opentargets, pharmebinet, primekg
+
+
+CODE
+
+Pipeline: https://github.com/broadinstitute/monorepo/tree/main/libs/jump_compound_annotator
+
+File renames for S3 consistency:
+- annotations.parquet -> compound_gene.parquet
+- gene_interactions.parquet -> gene_gene.parquet
+- compound_interactions.parquet -> compound_compound.parquet
+- filtered_annotations.parquet -> compound_gene_curated.parquet
+
+
+CITATION
+
+1. MOTIVE paper: Arevalo J, Su E, Carpenter AE, Singh S (2024) MOTIVE: A Drug-Target Interaction Graph For Inductive Link Prediction. NeurIPS 2024. doi: 10.48550/arXiv.2406.08649
+   https://github.com/carpenter-singh-lab/2024_Arevalo_NeurIPS_MotiVE
+
+2. Please also cite individual databases as described in the MOTIVE paper.
+
+
+LICENSE
+
+Derived from multiple public databases. See MOTIVE paper for data sources and terms of use.
