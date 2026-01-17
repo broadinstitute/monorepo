@@ -9,11 +9,10 @@ dynamic = ["version"]
 readme = "README.md"
 requires-python = ">=3.9,<3.13"
 # Dependencies must be kept in sync with PEP 723 inline deps in src/copairs_runner/copairs_runner.py
-# TODO: switch copairs to main once hierarchical-fdr is merged (using median branch to avoid combined branch)
 dependencies = [
     "pandas",
     "numpy",
-    "copairs @ git+https://github.com/cytomining/copairs.git@feat/median-average-precision",
+    "copairs @ git+https://github.com/cytomining/copairs.git@hierarchical-fdr",
     "omegaconf",
     "hydra-core",
     "pyarrow",
