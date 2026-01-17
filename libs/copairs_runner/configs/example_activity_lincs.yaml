@@ -1,0 +1,39 @@
+hydra:
+  run:
+    # Project-specific shared directory for LINCS analyses
+    # IMPORTANT: The nested 'activity' subdirectory prevents overwriting Hydra runtime files
+    # when running the consistency analysis. Without this, both analyses would write to
+    # the same directory, causing the second run to overwrite .hydra/ files from the first.
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/lincs/shared/activity
+  job:
+    chdir: false  # Stay in original working directory for clarity
+
+input:
+  path: "${oc.env:COPAIRS_DATA,.}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
+
+preprocessing:
+  steps:  # Force negcons not to have activity calculated
+    - type: apply_assign_reference
+      params:
+        condition: "Metadata_broad_sample == 'DMSO'"
+        reference_col: "Metadata_reference_index"
+        default_value: -1
+
+average_precision:
+  params:
+    pos_sameby: ["Metadata_broad_sample", "Metadata_reference_index"]
+    pos_diffby: []
+    
+    neg_sameby: []
+    neg_diffby: ["Metadata_broad_sample", "Metadata_reference_index"]
+    
+mean_average_precision:
+  params:
+    sameby: ["Metadata_broad_sample"]
+    null_size: 1000000
+    threshold: 0.05
+    seed: 0
+
+output:
+  directory: "${hydra:runtime.output_dir}"
+  name: "activity"
