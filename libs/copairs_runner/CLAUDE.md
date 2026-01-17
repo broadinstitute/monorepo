@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Overview
 
-copairs_runner is a configurable Python script for running copairs analyses on cell painting data. It's part of a larger monorepo focused on morphological profiling and drug discovery through cellular imaging.
+copairs_runner is a configurable Python script for running copairs analyses. It's part of a larger monorepo focused on morphological profiling and drug discovery through cellular imaging.
 
 **For usage, configuration, and examples, see [README.md](README.md).**
 
