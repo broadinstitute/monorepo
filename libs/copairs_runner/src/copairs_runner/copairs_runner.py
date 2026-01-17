@@ -3,7 +3,8 @@
 # dependencies = [
 #     "pandas",
 #     "numpy",
-#     "copairs @ git+https://github.com/cytomining/copairs.git@hierarchical-fdr",
+#     # TODO: switch to main once hierarchical-fdr merged
+#     "copairs @ git+https://github.com/cytomining/copairs.git@feat/median-average-precision",
 #     "omegaconf",
 #     "hydra-core",
 #     "pyarrow",
@@ -32,6 +33,21 @@ import duckdb
 
 from copairs import map
 from copairs.matching import assign_reference_index
+
+# Check for optional copairs features (can remove when branches merged to main)
+try:
+    from copairs.map import median_average_precision as _median_ap
+
+    HAS_MEDIAN_AP = True
+except ImportError:
+    HAS_MEDIAN_AP = False
+
+try:
+    from copairs.map import mean_average_precision_hierarchical as _hierarchical_map
+
+    HAS_HIERARCHICAL = True
+except ImportError:
+    HAS_HIERARCHICAL = False
 
 logger = logging.getLogger(__name__)
 
@@ -193,8 +209,16 @@ class CopairsRunner:
             "map_results": map_results,
         }
 
-        # 5. Create plot if mAP results exist
-        if "mean_average_precision" in map_results.columns:
+        # 5. Create plot if mAP results exist (either mean or median)
+        map_col = next(
+            (
+                c
+                for c in ["mean_average_precision", "median_average_precision"]
+                if c in map_results.columns
+            ),
+            None,
+        )
+        if map_col:
             # Get threshold from config if available, default to 0.05
             threshold = 0.05
             if "mean_average_precision" in self.config:
@@ -241,7 +265,7 @@ class CopairsRunner:
         return results
 
     def run_mean_average_precision(self, ap_results: pd.DataFrame) -> pd.DataFrame:
-        """Run mean average precision if configured.
+        """Run mean or median average precision if configured.
 
         Parameters
         ----------
@@ -251,7 +275,7 @@ class CopairsRunner:
         Returns
         -------
         pd.DataFrame
-            Mean average precision results with p-values
+            Mean/median average precision results with p-values
         """
         if "mean_average_precision" not in self.config:
             return ap_results
@@ -260,10 +284,21 @@ class CopairsRunner:
         # Convert OmegaConf to regular dict to avoid ListConfig issues
         params = OmegaConf.to_container(map_config["params"], resolve=True)
 
-        # Use hierarchical version if hierarchical_by is specified
-        if "hierarchical_by" in params:
+        # Check aggregation method (default to mean)
+        aggregation = params.pop("aggregation", "mean")
+
+        if aggregation == "median":
+            if not HAS_MEDIAN_AP:
+                raise ValueError("median_average_precision not available in copairs")
+            logger.info("Running median average precision")
+            map_results = _median_ap(ap_results, **params)
+        elif "hierarchical_by" in params:
+            if not HAS_HIERARCHICAL:
+                raise ValueError(
+                    "mean_average_precision_hierarchical not available in copairs"
+                )
             logger.info("Running hierarchical mean average precision")
-            map_results = map.mean_average_precision_hierarchical(ap_results, **params)
+            map_results = _hierarchical_map(ap_results, **params)
         else:
             logger.info("Running mean average precision")
             map_results = map.mean_average_precision(ap_results, **params)
@@ -317,12 +352,12 @@ class CopairsRunner:
     def create_map_plot(
         self, map_results: pd.DataFrame, threshold: float = 0.05
     ) -> plt.Figure:
-        """Create scatter plot of mean average precision vs -log10(p-value).
+        """Create scatter plot of average precision vs -log10(p-value).
 
         Parameters
         ----------
         map_results : pd.DataFrame
-            Results from mean_average_precision containing 'mean_average_precision',
+            Results containing average precision columns (mean or median),
             'corrected_p_value', and 'below_corrected_p' columns
         threshold : float, optional
             P-value threshold for significance line, by default 0.05
@@ -332,6 +367,16 @@ class CopairsRunner:
         plt.Figure
             The matplotlib figure object
         """
+        # Detect column names (mean vs median)
+        if "median_average_precision" in map_results.columns:
+            map_col = "median_average_precision"
+            norm_col = "median_normalized_average_precision"
+            agg_label = "Median"
+        else:
+            map_col = "mean_average_precision"
+            norm_col = "mean_normalized_average_precision"
+            agg_label = "Mean"
+
         # Fixed settings for consistency
         sns.set_style("whitegrid", {"axes.grid": False})
         fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6), dpi=100)
@@ -344,10 +389,10 @@ class CopairsRunner:
             {True: "#2166ac", False: "#969696"}
         )
 
-        # Left plot: mean_average_precision
+        # Left plot: average_precision
         ax1.scatter(
             data=map_results,
-            x="mean_average_precision",
+            x=map_col,
             y="-log10(p-value)",
             c=colors,
             s=40,
@@ -355,15 +400,15 @@ class CopairsRunner:
             edgecolors="none",
         )
 
-        # Right plot: mean_normalized_average_precision
+        # Right plot: normalized_average_precision
         # Handle negative values by clipping and using different markers
-        negative_mask = map_results["mean_normalized_average_precision"] < 0
+        negative_mask = map_results[norm_col] < 0
 
         # Plot normal (non-negative) values
         if (~negative_mask).any():
             ax2.scatter(
                 data=map_results[~negative_mask],
-                x="mean_normalized_average_precision",
+                x=norm_col,
                 y="-log10(p-value)",
                 c=colors[~negative_mask],
                 s=40,
@@ -373,9 +418,7 @@ class CopairsRunner:
 
         # Plot clipped negative values with different marker
         if negative_mask.any():
-            clipped_x = map_results.loc[
-                negative_mask, "mean_normalized_average_precision"
-            ].clip(lower=0)
+            clipped_x = map_results.loc[negative_mask, norm_col].clip(lower=0)
             ax2.scatter(
                 x=clipped_x,
                 y=map_results.loc[negative_mask, "-log10(p-value)"],
@@ -410,7 +453,7 @@ class CopairsRunner:
         )
 
         # For ax2, add note about clipped values if any
-        negative_count = (map_results["mean_normalized_average_precision"] < 0).sum()
+        negative_count = (map_results[norm_col] < 0).sum()
         if negative_count > 0:
             annotation_text = f"Significant: {100 * significant_ratio:.1f}%\n{negative_count} values clipped (< 0)"
         else:
@@ -445,14 +488,14 @@ class CopairsRunner:
             ax.set_ylim(0, ymax)
             ax.grid(True, alpha=0.2, linestyle="-", linewidth=0.5)
 
-        # Set labels with fixed formatting
-        ax1.set_xlabel("Mean Average Precision (mAP)", fontsize=12)
+        # Set labels with dynamic formatting
+        ax1.set_xlabel(f"{agg_label} Average Precision (mAP)", fontsize=12)
         ax1.set_ylabel("-log10(p-value)", fontsize=12)
-        ax1.set_title("Mean Average Precision", fontsize=13)
+        ax1.set_title(f"{agg_label} Average Precision", fontsize=13)
 
-        ax2.set_xlabel("Mean Normalized Average Precision", fontsize=12)
+        ax2.set_xlabel(f"{agg_label} Normalized Average Precision", fontsize=12)
         ax2.set_ylabel("-log10(p-value)", fontsize=12)
-        ax2.set_title("Normalized Mean Average Precision", fontsize=13)
+        ax2.set_title(f"Normalized {agg_label} Average Precision", fontsize=13)
 
         # Overall title
         fig.suptitle("Phenotypic Assessment", fontsize=14, y=1.02)

@@ -81,13 +81,17 @@ CONS_HASH=$(tail -n +2 output/lincs/shared/consistency/consistency_ap_scores.csv
 echo "  Consistency hash: $CONS_HASH"
 [ "$CONS_HASH" = "ee5ff2b3" ] || echo "  WARNING: Output changed! Expected: ee5ff2b3, got: $CONS_HASH"
 
-echo -e "\n3. Dose-response activity analysis (4 plates, flat BH)..."
+echo -e "\n3. Phenotypic consistency analysis (median aggregation)..."
+uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_consistency_lincs_median
+test -f output/lincs/shared/consistency_median/consistency_median_map_results.csv && echo "  ✓ consistency_median_map_results.csv"
+
+echo -e "\n4. Dose-response activity analysis (4 plates, flat BH)..."
 uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_activity_lincs_dose
 
 # Check dose outputs
 test -f output/lincs/shared/activity_dose/activity_dose_map_results.csv && echo "  ✓ activity_dose_map_results.csv"
 
-echo -e "\n4. Dose-response activity analysis (4 plates, hierarchical FDR)..."
+echo -e "\n5. Dose-response activity analysis (4 plates, hierarchical FDR)..."
 uv run src/copairs_runner/copairs_runner.py --config-dir configs --config-name example_activity_lincs_hierarchical
 
 # Check hierarchical outputs
