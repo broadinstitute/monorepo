@@ -260,8 +260,13 @@ class CopairsRunner:
         # Convert OmegaConf to regular dict to avoid ListConfig issues
         params = OmegaConf.to_container(map_config["params"], resolve=True)
 
-        logger.info("Running mean average precision")
-        map_results = map.mean_average_precision(ap_results, **params)
+        # Use hierarchical version if hierarchical_by is specified
+        if "hierarchical_by" in params:
+            logger.info("Running hierarchical mean average precision")
+            map_results = map.mean_average_precision_hierarchical(ap_results, **params)
+        else:
+            logger.info("Running mean average precision")
+            map_results = map.mean_average_precision(ap_results, **params)
 
         # Add -log10(p-value) column if not present
         if "corrected_p_value" in map_results.columns:
@@ -483,7 +488,7 @@ class CopairsRunner:
         - remove_nan_features: Remove feature columns containing NaN
         - split_multilabel: Split pipe-separated values into lists
         - add_column: Add boolean column based on query expression
-        - filter_active: Filter based on activity CSV with below_corrected_p column
+        - filter_active: Filter based on activity CSV (supports custom threshold param)
         - aggregate_replicates: Aggregate by taking median of features
         - merge_metadata: Merge external CSV or DuckDB metadata (requires 'table' param for DuckDB)
         - filter_single_replicates: Remove groups with < min_replicates members
@@ -622,10 +627,11 @@ class CopairsRunner:
     def _preprocess_filter_active(
         self, df: pd.DataFrame, params: Dict[str, Any]
     ) -> pd.DataFrame:
-        """Filter to active perturbations based on below_corrected_p column."""
+        """Filter to active perturbations based on activity results."""
         activity_file = self.resolve_path(params["activity_file"])
         on_columns = params["on_columns"]
-        filter_column = params.get("filter_column", "below_corrected_p")
+        # Optional: custom p-value threshold
+        threshold = params.get("threshold")
 
         # Load activity data - support both CSV and Parquet
         if str(activity_file).endswith(".parquet"):
@@ -634,9 +640,18 @@ class CopairsRunner:
             # Default to CSV for backward compatibility
             activity_df = pd.read_csv(activity_file)
 
-        # Get active perturbations
-        active_values = activity_df[activity_df[filter_column]][on_columns].unique()
+        # Determine active perturbations
+        if threshold is not None:
+            # With threshold: filter_column is numeric (default: corrected_p_value)
+            filter_column = params.get("filter_column", "corrected_p_value")
+            active_mask = activity_df[filter_column] < threshold
+            logger.info(f"Using custom threshold: {filter_column} < {threshold}")
+        else:
+            # Without threshold: filter_column is boolean (default: below_corrected_p)
+            filter_column = params.get("filter_column", "below_corrected_p")
+            active_mask = activity_df[filter_column]
 
+        active_values = activity_df[active_mask][on_columns].unique()
         df = df[df[on_columns].isin(active_values)]
 
         logger.info(

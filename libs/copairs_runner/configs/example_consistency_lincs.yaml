@@ -19,6 +19,9 @@ preprocessing:
       params:
         activity_file: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
         on_columns: "Metadata_broad_sample"
+        # Optional: override the activity threshold by filtering on corrected_p_value directly
+        # If omitted, uses the pre-computed below_corrected_p column from activity results
+        threshold: 0.05
     
     # Remove rows with missing targets (implicit in notebook via query)
     - type: dropna
