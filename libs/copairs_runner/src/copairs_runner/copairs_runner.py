@@ -3,7 +3,7 @@
 # dependencies = [
 #     "pandas",
 #     "numpy",
-#     "copairs @ git+https://github.com/cytomining/copairs.git@hierarchical-fdr",
+#     "copairs @ git+https://github.com/cytomining/copairs.git@main",
 #     "omegaconf",
 #     "hydra-core",
 #     "pyarrow",

@@ -177,8 +177,8 @@ wheels = [
 
 [[package]]
 name = "copairs"
-version = "0.5.3"
-source = { git = "https://github.com/cytomining/copairs.git?rev=hierarchical-fdr#4ff3f2c7bfd7ade8140b3252563d34c1a22d7cf1" }
+version = "0.5.5.dev0"
+source = { git = "https://github.com/cytomining/copairs.git?rev=main#201b404ee1d7cd845689c44d8262fcf19717e8c8" }
 dependencies = [
     { name = "duckdb" },
     { name = "pandas" },
@@ -208,7 +208,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "copairs", git = "https://github.com/cytomining/copairs.git?rev=hierarchical-fdr" },
+    { name = "copairs", git = "https://github.com/cytomining/copairs.git?rev=main" },
     { name = "hydra-core" },
     { name = "matplotlib" },
     { name = "numpy" },
