@@ -1,0 +1,51 @@
+# LINCS Dose-Response Activity Analysis (Flat BH Correction)
+#
+# This example calculates per-dose mAP scores using standard flat BH correction.
+# Compare with example_activity_lincs_hierarchical.yaml to see the benefit of
+# hierarchical FDR when testing multiple doses per compound.
+
+hydra:
+  run:
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/lincs/shared/activity_dose
+  job:
+    chdir: false
+
+input:
+  # Combined 4-plate file provides 4 replicates per compound×dose
+  path: "${oc.env:COPAIRS_DATA,.}/input/2016_04_01_a549_48hr_batch1_4plates.csv"
+
+preprocessing:
+  steps:
+    # Remove features with NaN values (can occur when combining plates)
+    - type: remove_nan_features
+
+    # Exclude DMSO controls from activity calculation
+    - type: apply_assign_reference
+      params:
+        condition: "Metadata_broad_sample == 'DMSO'"
+        reference_col: "Metadata_reference_index"
+        default_value: -1
+
+average_precision:
+  params:
+    # Group by compound, dose, AND reference index for positive pairs
+    pos_sameby: ["Metadata_broad_sample", "Metadata_mmoles_per_liter", "Metadata_reference_index"]
+    pos_diffby: []
+
+    neg_sameby: []
+    neg_diffby: ["Metadata_broad_sample", "Metadata_mmoles_per_liter", "Metadata_reference_index"]
+
+mean_average_precision:
+  params:
+    # Calculate mAP per compound×dose combination
+    sameby: ["Metadata_broad_sample", "Metadata_mmoles_per_liter"]
+
+    # No hierarchical_by = standard flat BH correction across all tests
+
+    null_size: 1000000
+    threshold: 0.05
+    seed: 0
+
+output:
+  directory: "${hydra:runtime.output_dir}"
+  name: "activity_dose"
