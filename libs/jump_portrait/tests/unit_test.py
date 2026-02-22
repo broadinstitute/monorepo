@@ -4,11 +4,11 @@
 from itertools import groupby, product, starmap
 
 import numpy as np
-import polars as pl
+import pyarrow
 import pytest
 
 from jump_portrait.fetch import (
-    get_item_location_info,
+    get_item_location_metadata,
     get_jump_image,
     get_jump_image_batch,
 )
@@ -21,7 +21,7 @@ from jump_portrait.s3 import get_image_from_s3uri
 )
 def test_get_item_location(pert: str) -> None:
     """Check that finding image locations from pert."""
-    result_shape = get_item_location_info(pert).shape
+    result_shape = get_item_location_metadata(pert).shape
     assert result_shape[0] > 1
 
 
@@ -39,35 +39,28 @@ def test_get_image(s3_image_uri: str) -> None:
 
 
 @pytest.fixture
-def get_sample_location(item: str = "MYT1") -> pl.DataFrame:
-    metadata = get_item_location_info(item)
-    return metadata.select([
-        "Metadata_Source",
-        "Metadata_Batch",
-        "Metadata_Plate",
-        "Metadata_Well",
-    ]).unique()
+def get_sample_location(item: str = "MYT1") -> pyarrow.lib.RecordBatch:
+    metadata = get_item_location_metadata(item)
+    return metadata.to_batches()[0]
 
 
 @pytest.mark.parametrize(
-    "channel,site,correction,lazy",
+    "channel,site",
     product(
         ["DNA", "AGP", "Mito", "ER", "RNA"],
         (1, 5, 8),
-        ["Orig", "Illum"],
-        [True, False],
     ),
 )
 def test_get_jump_image(
     get_sample_location: dict[str, str],
     channel: str,
     site: str,
-    correction: str,
-    lazy: bool,
 ) -> None:
-    image = get_jump_image(
-        *get_sample_location.rows()[0], channel, site, correction, lazy
-    )
+    unique_sample_location = [
+        get_sample_location.to_pylist()[0][f"Metadata_{x}"]
+        for x in ("Source", "Batch", "Plate", "Well")
+    ]
+    image = get_jump_image(*unique_sample_location, channel, site)
     x, y = image.shape
 
     assert x == 1080, "Wrong x axis size"
@@ -75,16 +68,13 @@ def test_get_jump_image(
 
 
 @pytest.mark.parametrize(
-    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [str(x) for x in (1, 5, 8)])]
+    "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [x for x in (1, 5, 8)])]
 )
-@pytest.mark.parametrize("correction", ["Orig", "Illum"])
 def test_get_jump_image_batch(
-    get_sample_location: dict[str, str], channel: str, site: str, correction: str
+    get_sample_location: dict[str, str], channel: str, site: str
 ) -> None:
     """Test pulling images in batches and dealing with potentially missing values."""
-    iterable, img_list = get_jump_image_batch(
-        get_sample_location, channel, site, correction, verbose=False
-    )
+    iterable, img_list = get_jump_image_batch(get_sample_location, channel, site)
 
     mask = [x is not None for x in img_list]
     # verify that there is an output for every input parameter stored in iterable
@@ -102,9 +92,10 @@ def test_get_jump_image_batch(
     # it might be too restrictive as there could be one channel missing
     # Though in theory this should not happen
     # stack img per channel and assert img.shape[0] == len(channel)
+    identifiers = ("Source", "Batch", "Plate", "Well", "Site")
     zip_iter_img = sorted(
         zip(iterable_filt, img_list_filt),
-        key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5], x[0][4]),
+        key=lambda x: (*[x[0][f"Metadata_{k}"] for k in identifiers],),
     )
     iterable_stack, img_stack = map(
         lambda tup: list(tup),
@@ -117,7 +108,7 @@ def test_get_jump_image_batch(
                 # grouped images are returned as the common key, and then the zip of param and img, so we retrieve the img then we stack
                 groupby(
                     zip_iter_img,
-                    key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5]),
+                    key=lambda x: (*[x[0][f"Metadata_{k}"] for k in identifiers],),
                 ),
             )
         ),
@@ -127,5 +118,5 @@ def test_get_jump_image_batch(
         iterable_stack
     )
 
-    # NB: no test is done on the number of image retrieved per sample to assess if it is equal
-    # to the number of site as this is not always the case.
+    # NB: no test is done on the number of image retrieved per sample to assess if it is
+    # equal to the number of site as this is not always the case.

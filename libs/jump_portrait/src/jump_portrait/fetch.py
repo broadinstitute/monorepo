@@ -13,6 +13,7 @@ img = get_jump_image("source_4", "2021_04_26_Batch1", "BR00121565", "A01", "DNA"
 # Fetch or download all the images of a given perturbation
 # Pull the s3 locations of a perturbation
 metadata = get_item_location_metadata("MYT1")
+metadata = get_item_location_metadata("CLETVKMYAXARPO-UHFFFAOYSA-N")
 
 # Load into memory
 metadata_dicts, result = get_jump_image_batch(metadata)
@@ -39,12 +40,12 @@ from jump_portrait.s3 import download_s3uri, get_image_from_s3uri
 @cache
 def get_index_file() -> Path:
     JUMP_INDEX = (
-        "https://zenodo.org/api/records/18705140/files/jump_index.parquet/content"
+        "https://zenodo.org/api/records/18729301/files/jump_index.parquet/content"
     )
 
     return retrieve(
         JUMP_INDEX,
-        known_hash="b020c82b2603016ecc1eb12e4b0646af3607f14abf3b727919eff71ff979206a",
+        known_hash="6dddbda730650a079005565ce7f1418555cbb0ac77f0e3ecbf9a538f11c9a156",
     )
 
 
