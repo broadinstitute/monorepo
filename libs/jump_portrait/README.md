@@ -1,146 +1,81 @@
-# Table of Contents
+# JUMP-portrait
 
-Fetch, visualize and.or download images from the JUMP dataset (cpg0016 in the [Cell Painting Gallery](https://github.com/broadinstitute/cellpainting-gallery)). 
+Utilities for interacting with the JUMP-Cell Painting Gallery dataset on AWS S3. We facilitate querying the JUMP-CP dataset index, retrieving metadata for specific perturbations, and loading microscopy images directly into memory or downloading them to local storage.
 
-## Workflow
+## Main Functions
 
-### Workflow 1: Download all images for a given item and their controls
+### Metadata Retrieval
 
-```python
-from jump_portrait.save import download_item_images
-
-item_name = "MYT1"  # Item or Compound of interest - (GC)OI
-channels = ["DNA"]  # Standard channels are ER, AGP, Mito, DNA, RNA and (for most plates) Brightfield
-corrections = ["Orig"]  # Can also be "Illum"
-controls = True  # Fetch controls in plates alongside (GC)OI?
-
-download_item_images(item_name, channels, corrections=corrections, controls=controls)
-```
-
-### Workflow 2: get images from explicit metadata
-
-Fetch one image for a given item.
-```python
-import polars as pl
-from jump_portrait.fetch import get_jump_image, get_sample
-
-sample = get_sample()
-
-source, batch, plate, well, site = sample.select(pl.col(f"Metadata_{x}" for x in ("Source", "Batch", "Plate", "Well", "Site"))).row(0)
-channel = "DNA"
-correction = None # or "Illum"
-
-img = get_jump_image(source, batch, plate, well, channel, site, correction)
-```
-
-### Developer
-First, we Locate the images produced to a given perturbation.
-
-```python 
-from jump_portrait.fetch import get_item_location_info
-
-gene = "MYT1"
-
-location_df = get_item_location_info(gene)
-
-```
-
-Returns a polars dataframe whose columns contain the metadata 
-alongside path and file locations
-
-``` python
-
-#┌───────────┬───────────┬───────────┬───────────┬───┬───────────┬───────────┬───────────┬──────────┐
-#│ Metadata_ ┆ Metadata_ ┆ Metadata_ ┆ Metadata_ ┆ … ┆ PathName_ ┆ Metadata_ ┆ Metadata_ ┆ standard │
-#│ Source    ┆ Batch     ┆ Plate     ┆ Well      ┆   ┆ OrigRNA   ┆ PlateType ┆ JCP2022   ┆ _key     │
-#│ ---       ┆ ---       ┆ ---       ┆ ---       ┆   ┆ ---       ┆ ---       ┆ ---       ┆ ---      │
-#│ str       ┆ str       ┆ str       ┆ str       ┆   ┆ str       ┆ str       ┆ str       ┆ str      │
-#╞═══════════╪═══════════╪═══════════╪═══════════╪═══╪═══════════╪═══════════╪═══════════╪══════════╡
-#│ source_13 ┆ 20220914_ ┆ CP-CC9-R1 ┆ B05       ┆ … ┆ s3://cell ┆ CRISPR    ┆ JCP2022_8 ┆ MYT1     │
-#│           ┆ Run1      ┆ -20       ┆           ┆   ┆ painting- ┆           ┆ 04400     ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ gallery/c ┆           ┆           ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ pg001…    ┆           ┆           ┆          │
-#│ source_13 ┆ 20220914_ ┆ CP-CC9-R1 ┆ B05       ┆ … ┆ s3://cell ┆ CRISPR    ┆ JCP2022_8 ┆ MYT1     │
-#│           ┆ Run1      ┆ -20       ┆           ┆   ┆ painting- ┆           ┆ 04400     ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ gallery/c ┆           ┆           ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ pg001…    ┆           ┆           ┆          │
-#│ source_13 ┆ 20220914_ ┆ CP-CC9-R1 ┆ B05       ┆ … ┆ s3://cell ┆ CRISPR    ┆ JCP2022_8 ┆ MYT1     │
-#│           ┆ Run1      ┆ -20       ┆           ┆   ┆ painting- ┆           ┆ 04400     ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ gallery/c ┆           ┆           ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ pg001…    ┆           ┆           ┆          │
-#│ source_13 ┆ 20220914_ ┆ CP-CC9-R1 ┆ B05       ┆ … ┆ s3://cell ┆ CRISPR    ┆ JCP2022_8 ┆ MYT1     │
-#│           ┆ Run1      ┆ -20       ┆           ┆   ┆ painting- ┆           ┆ 04400     ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ gallery/c ┆           ┆           ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ pg001…    ┆           ┆           ┆          │
-#│ source_13 ┆ 20220914_ ┆ CP-CC9-R1 ┆ B05       ┆ … ┆ s3://cell ┆ CRISPR    ┆ JCP2022_8 ┆ MYT1     │
-#│           ┆ Run1      ┆ -20       ┆           ┆   ┆ painting- ┆           ┆ 04400     ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ gallery/c ┆           ┆           ┆          │
-#│           ┆           ┆           ┆           ┆   ┆ pg001…    ┆           ┆           ┆          │
-#└───────────┴───────────┴───────────┴───────────┴───┴───────────┴───────────┴───────────┴──────────┘
-```
-
-The columns of these dataframes are:
-
-```
-Metadata_[Source/Batch/Plate/Well/Site]:
- - Source: Source in the range 0-14.
- - Plate: Plate containing a multitude of wells. It is a string.
- - Batch: Collection of plates imaged at around the same time. It is a string.
- - Well: Physical location wherein the experiment was performed and imaged. It is a string with format [SNN] where S={A-P} and NN={00-24}.
- - Site: Foci or frame taken in a the well, these are 0-9 for the ORF and CRISPR datasets and 1-6 for the compounds dataset.
-[File/Path]name_[Illum/Orig][Channel] 
-    
- - Illum: Illumination correction 
- - Orig: Original File
- Also, markers can be:
-   - DNA: Dna channel, generally Hoecsht.
-   - ER: Endoplasmatic Reticulum channel.
-   - Mito: Mitochondrial channel.
-   - RNA: RNA channel.
-standard_key: Gene or compound queried
-
-```
-
-We can then feed this information to `jump_portrait.fetch.get_jump_image` to fetch the available images as in workflow 2.
-
-Or we can feed this information straight to `jump_portrait.fetch.get_jump_image_batch` to fetch the available images in batches with desired channel and sites.
+#### `get_item_location_metadata`
+Search for a specific gene or compound by name or JCP ID to retrieve its location metadata (Source, Batch, Plate, Well, Site) and corresponding S3 URIs.
 
 ```python
-from jump_portrait.fetch import get_jump_image_batch
-sub_location_df = location_df.select(["Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"]).unique()
-channel = ["DNA", "AGP", "Mito", "ER", "RNA"] # example
-site = [str(i) for i in range(10)] # every site from 0 to 9 (as this is a CRISPR plate) 
-correction = "Orig" # or "Illum"
-verbose = False # whether to have tqdm loading bar
+from jump_portrait.fetch import get_item_location_metadata
 
-iterable, img_list = get_jump_image_batch(sub_location_df, channel, site, correction, verbose)
+# Search for a gene by standard key
+metadata = get_item_location_metadata("MYT1")
+
+# Search for a compound by JCP ID
+metadata = get_item_location_metadata("JCP2022_000001", input_column="JCP2022")
 ```
 
-Returns: 
-- iterable (list of tuple) > list containing the metadata, channel, site and correction
-- img_list (list of array) > list containing the images. NB, if no image has been retrieved for a specific site (this might happen), array object is replaced by a None
+### Image Retrieval
 
-From there, current processing will include:
-1. Filter out images where no image has been retrieved (remove None values) 
-2. Stack images along a channel axis
+#### `get_jump_image`
+Fetch a single image directly as a NumPy array using specific coordinate identifiers.
 
 ```python
-# first, filter out img / param where no img has been retrieved
-mask = [x is not None for x in img_list]
-iterable_filt = [param for i, param in enumerate(iterable) if mask[i]]
-img_list_filt = [param for i, param in enumerate(img_list) if mask[i]]
+from jump_portrait.fetch import get_jump_image
+
+img = get_jump_image(
+    source="source_4",
+    batch="2021_04_26_Batch1",
+    plate="BR00121565",
+    well="A01",
+    channel="DNA",
+    site=1
+)
 ```
 
-``` python
-# second, group image per source, batch, well, site > to stack on channel
-from itertools import groupby, starmap
-import numpy as np
-zip_iter_img = sorted(zip(iterable_filt, img_list_filt),
-                      key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5], x[0][4]))
-iterable_stack, img_stack = map(lambda tup: list(tup),
-        zip(*starmap(
-            lambda key, param_img: (key, np.stack(list(map(lambda x: x[1], param_img)))),
-            # grouped image are returned as the common key, and then the zip of param and img, so we retrieve the img then we stack
-            groupby(zip_iter_img,
-                    key=lambda x: (x[0][0], x[0][1], x[0][2], x[0][3], x[0][5])))))
+#### `get_jump_image_batch`
+Load multiple images into memory in parallel based on a metadata table.
+
+```python
+from jump_portrait.fetch import get_item_location_metadata, get_jump_image_batch
+
+# Get metadata for a perturbation
+metadata = get_item_location_metadata("MYT1")
+
+# Load all DNA and Mito images for this perturbation into memory
+meta_dicts, images = get_jump_image_batch(
+    metadata, 
+    channels=["DNA", "Mito"],
+    site=[1, 2]
+)
 ```
+
+### File Operations
+
+#### `download_jump_image_batch`
+Download a batch of images from S3 to a local directory in a structured or flattened format.
+
+```python
+from jump_portrait.fetch import get_item_location_metadata, download_jump_image_batch
+
+metadata = get_item_location_metadata("CLETVKMYAXARPO-UHFFFAOYSA-N")
+
+# Download images to a local folder
+download_jump_image_batch(
+    metadata, 
+    output_dir="./data/images", 
+    channels=["DNA", "RNA"]
+)
+```
+
+## S3 Utilities
+
+The `jump_portrait.s3` module provides lower-level utilities for interacting with the Cell Painting Gallery:
+
+- **`get_image_from_s3uri(uri)`**: Retrieves an image from a specific S3 URI and returns it as a NumPy array. Supports `.tif`, `.tiff`, `.png`, and `.npy` formats.
+- **`s3client(use_credentials=False)`**: Creates a `boto3` client configured for the gallery. By default, it uses unsigned requests (no AWS account required for public data).
+- **`download_s3uri(meta, output_dir)`**: Downloads a specific file from the gallery based on metadata components.
