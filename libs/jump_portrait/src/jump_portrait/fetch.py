@@ -8,8 +8,7 @@ directly from S3 storage using DuckDB and PyArrow.
 
 Use cases:
 # Fetch single image into python
-img = get_jump_image("source_4", "2021_04_26_Batch1", "BR00121565", "A01", "DNA", 1) #
-
+img = get_jump_image("source_4", "2021_04_26_Batch1", "BR00121565", "A01", "DNA", 1)
 # Fetch or download all the images of a given perturbation
 # Pull the s3 locations of a perturbation
 metadata = get_item_location_metadata("MYT1")
