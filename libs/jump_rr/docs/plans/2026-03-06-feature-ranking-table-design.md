@@ -28,10 +28,24 @@ This is the **inverse** of the existing Feature Ranking table:
 | Full cosine sim | `{dset}_cosinesim_full.parquet` | Complete pairwise similarity matrix |
 | Full significance | `{dset_type}_significance_full.parquet` | Complete significance results |
 
-### Pipeline characteristics
-- No CI/CD automation - fully manual process
-- Requires CUDA GPU for `calculate_matches.py` and parts of `calculate_features.py`
-- The new feature-ranking table should NOT require GPU
+### Pipeline mechanics (entirely manual, no automation)
+
+**Step 1: Generate** — Run `generate_databases.sh` from `src/tools/` on a CUDA GPU server. It calls three Python scripts sequentially. Output parquets land in a local `./databases/` directory.
+
+**Step 2: Upload** — Run `upload_parquets.sh <directory>` with a `ZENODO_TOKEN` env variable. This script:
+1. Finds the latest version of Zenodo record `12775236`
+2. Creates a new version via the Zenodo API
+3. Uploads all `.parquet` files from the given directory
+4. Attaches metadata from `metadata/jump_rr.json`
+5. The publish step (line 63) is **commented out** — must uncomment or publish manually on Zenodo's web UI
+
+**What's missing from the pipeline:**
+- No CI/CD (no GitHub Actions, no Makefile)
+- No shebang or comments in `generate_databases.sh`
+- No versioning strategy linking profile versions to output parquets
+- The `db_mapper/` sub-pipeline (compound->PubChem->ChEMBL mapping) is documented only in an Org-mode literate file and has its own Zenodo record (`15644588`)
+
+**Implications for new tables:** Adding a new table type means modifying `generate_databases.sh` and the upload script, then manually re-running on a GPU server. The new feature-ranking table itself should NOT require GPU.
 
 ### Key data patterns
 - Profiles use `Metadata_` prefix convention for metadata columns
