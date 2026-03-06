@@ -17,7 +17,7 @@ This is the **inverse** of the existing Feature Ranking table:
 2. `src/tools/generate_databases.sh` runs 3 scripts sequentially: `galleries.py`, `calculate_matches.py`, `calculate_features.py`
 3. `src/tools/upload_parquets.sh` manually uploads parquets to Zenodo (record `12775236`)
 4. Tables are served via datasette-lite, which loads parquets from Zenodo URLs in the browser
-5. Documentation lives in the jump_hub repo at `/Users/shsingh/Documents/GitHub/jump/jump_hub/`
+5. Documentation lives in the [jump_hub repo](https://github.com/broadinstitute/jump_hub)
 
 ### Existing tables (per dataset: crispr, orf, compound)
 | Table | File | Purpose |
