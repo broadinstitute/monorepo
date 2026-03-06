@@ -80,9 +80,9 @@ def add_pert_type(
 
 def pvals_from_profile(
     profile: pl.DataFrame or duckdb.DuckDBPyRelation,
-) -> da.Array:
+) -> tuple[da.Array, da.Array]:
     """
-    Compute p-values for every feature in a given profile.
+    Compute p-values and t-statistics for every feature in a given profile.
 
     Parameters
     ----------
@@ -91,8 +91,10 @@ def pvals_from_profile(
 
     Returns
     -------
-    corrected_p_values : array_like
+    corrected_p_values : da.Array
         Array of p-values corrected for multiple testing using FDR.
+    t_statistics : da.Array
+        Array of t-statistics from the plate-matched t-tests.
 
     """
     metrics = get_metrics_for_ttest(profile)
@@ -113,7 +115,7 @@ def pvals_from_profile(
     corrected_p_values = correct_multitest_threaded(p_value)
 
     # Back to dask to find the significant values
-    return da.asarray(corrected_p_values).T
+    return da.asarray(corrected_p_values).T, da.asarray(t_)
 
 
 def correct_multitest_threaded(p_values: np.ndarray) -> list[np.ndarray]:

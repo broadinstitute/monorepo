@@ -87,7 +87,7 @@ for dset, n_vals_used in datasets_nvals:
     precor = pl.read_parquet(get_dataset(dset))
     dset_type = dset.removesuffix("_interpretable")
     precor = add_pert_type(precor, dataset=dset_type)
-    featstat = pvals_from_profile(precor)
+    featstat, t_statistics = pvals_from_profile(precor)
 
     # %% Split data into med (consensus), meta and urls
     # Note that we remove the negcons from these analysis, as they are used to produce p-values on significance.py
@@ -241,3 +241,11 @@ for dset, n_vals_used in datasets_nvals:
         schema=filtered_med.select(pl.exclude("^Metadata.*$")).columns,
     ).with_columns(filtered_med.get_column("Metadata_JCP2022"))
     out_df.write_parquet(output_dir / f"{dset_type}_significance_full.parquet")
+
+    # Save t-statistic matrix for effect-size ranking
+    feature_cols = filtered_med.select(pl.exclude("^Metadata.*$")).columns
+    t_df = pl.DataFrame(
+        data=t_statistics.compute(),
+        schema=feature_cols,
+    ).with_columns(filtered_med.get_column("Metadata_JCP2022"))
+    t_df.write_parquet(output_dir / f"{dset_type}_tstat_full.parquet")

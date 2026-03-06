@@ -57,7 +57,8 @@ def test_pvalue() -> None:
     assert all(np.isclose(t, gt.statistic) for t, gt in zip(tstat, tpvals_scipy))
 
     # Test corrected p-value calculation.
-    corrected_pvalue = pvals_from_profile(test_df).compute()
+    corrected_pvalue, _ = pvals_from_profile(test_df)
+    corrected_pvalue = corrected_pvalue.compute()
     # Correct scipy p values
     corrected_pvals_scipy = correct_multitest_threaded(
         [[gt.pvalue for gt in tpvals_scipy]]

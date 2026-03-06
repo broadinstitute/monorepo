@@ -10,7 +10,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ```bash
 # Install (dev)
-uv sync --all-extras
+uv sync --all-extras --group test
 
 # Run tests (fast only)
 uv run pytest tests/
@@ -48,7 +48,7 @@ All three output zstd-compressed parquet files to `./databases/` and write JSON 
 |---|---|
 | `consensus.py` | Aggregates well-level profiles to perturbation-level medians; adds sample images |
 | `datasets.py` | Fetches JUMP profiles from GitHub manifest + Pooch caching |
-| `significance.py` | T-test pipeline: DuckDB groups plate-matched controls, Dask/NumPy computes t-stats, statsmodels corrects p-values |
+| `significance.py` | T-test pipeline: DuckDB groups plate-matched controls, Dask/NumPy computes t-stats, statsmodels corrects p-values. `pvals_from_profile()` returns `(corrected_p_values, t_statistics)` |
 | `index_selection.py` | GPU-based top-k/bottom-k index selection using `da.argtopk` |
 | `mappers.py` | Translates JCP2022 IDs to gene names, NCBI/OMIM/Ensembl IDs, and compound database IDs via `broad-babel` |
 | `formatters.py` | Builds JSON-encoded HTML links/images for datasette rendering |
@@ -70,6 +70,13 @@ All three output zstd-compressed parquet files to `./databases/` and write JSON 
 - **Dask + CuPy**: GPU-accelerated array operations for distance matrices
 - **broad-babel**: Maps JCP2022 IDs to standard gene/compound identifiers
 - **Pooch**: Downloads and caches remote datasets with hash verification
+
+## Data Exploration
+
+- **DuckDB CLI**: Available for SQL-based parquet exploration (e.g., `duckdb -c "SELECT ... FROM 'databases/file.parquet'"`)
+- **S3 uploads**: Use `aws s3 cp <file> s3://cellpainting-gallery/cpg0042-chandrasekaran-jump/source_all/workspace/publication_data/ --profile cpg`
+- **Zenodo record**: Published parquets are on Zenodo record `12775236` (upload script) / `15660683` (latest data)
+- **Local parquets**: Generated files go to `./databases/` (gitignored)
 
 ## Ruff Configuration
 
