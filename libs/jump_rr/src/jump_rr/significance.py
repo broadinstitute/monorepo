@@ -79,7 +79,7 @@ def add_pert_type(
 
 
 def pvals_from_profile(
-    profile: pl.DataFrame or duckdb.duckdb.DuckDBPyRelation,
+    profile: pl.DataFrame or duckdb.DuckDBPyRelation,
 ) -> da.Array:
     """
     Compute p-values for every feature in a given profile.
@@ -197,14 +197,14 @@ def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelatio
 
 
 def t_from_metrics(
-    metrics: duckdb.duckdb.DuckDBPyRelation,
-) -> duckdb.duckdb.DuckDBPyRelation:
+    metrics: duckdb.DuckDBPyRelation,
+) -> duckdb.DuckDBPyRelation:
     """
     Compute the t statistic from the mean, count and variance of two distributions.
 
     Parameters
     ----------
-    metrics : duckdb.duckdb.DuckDBPyRelation
+    metrics : duckdb.DuckDBPyRelation
         A DuckDB table containing the mean, count and variance of two distributions.
 
     Returns
