@@ -44,6 +44,7 @@ _DESCRIPTIONS = {
     "Feature Rank": "The rank of feature significance when compared to all the features for a given perturbation.",
     "Perturbation Rank": "Rank of this perturbation among all perturbations for a given feature, ordered by effect size (1 = strongest effect).",
     "Effect size (t)": "T-statistic from plate-matched t-test (treatment vs. negative control). Positive = treatment > control. Larger absolute value = stronger effect.",
+    "|Effect size (t)|": "Absolute value of the t-statistic. Sort by this column descending to find the strongest effects regardless of direction.",
     "Source": "Identifier of the partner that produced the data numbered between 1 and 15.",
     "Plate": "Identifier of the plate.",
     "Well": "Identifier of the well. Generally 384-well plates, ranging from A01 to P24.",

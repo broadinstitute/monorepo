@@ -74,6 +74,7 @@ stat_col = "Feature significance"
 rank_feat_col = "Feature Rank"
 rank_gene_col = "Perturbation Rank"
 tstat_col = "Effect size (t)"
+abs_tstat_col = "|Effect size (t)|"
 replicability_cols = {
     "corrected_p_value": "Corrected p-value",
     "mean_average_precision": "Phenotypic activity",
@@ -159,6 +160,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         },
         stat_col: featstat_computed[xs, ys],
         tstat_col: tstat_computed[xs, ys],
+        abs_tstat_col: abs(tstat_computed[xs, ys]),
         val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
         jcp_short: filtered_med[jcp_col][xs],
         rank_gene_col: rankg,
@@ -185,6 +187,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         *decomposed_feats.columns,
         stat_col,
         tstat_col,
+        abs_tstat_col,
         std_outname,
         img_col,
         val_col,
