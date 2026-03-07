@@ -1,6 +1,6 @@
 # Feature Ranking Table Design
 
-Status: **Done (v1) -- data on S3, enrichments pending (v2)**
+Status: **Pivoted — integrated into existing feature table (see below)**
 
 ## Goal
 
@@ -179,4 +179,31 @@ The existing `compound_interpretable_features.parquet` already contains per-feat
 - [x] Re-run pipeline on GPU server to generate `compound_tstat_full.parquet` (4x H100 NVL, ~11 min)
 - [x] Generate final `compound_perturbation_ranking.parquet` from t-stat matrix via SQL (159,000 rows, no ties)
 - [x] Upload to S3 (`compound_tstat_full.parquet` + `compound_perturbation_ranking.parquet`)
+- [x] **Pivoted**: integrated per-feature ranking into existing feature table instead of standalone table
+- [x] Cleaned up superseded standalone artifacts (SQL script, metadata JSON, shortlink)
 - [ ] Add enrichments (perturbation names, images, links) -- v2
+- [ ] Full pipeline re-run on GPU to regenerate all three dataset tables with new columns
+
+## Pivot: Integration into Existing Feature Table
+
+**Decision (2026-03-06):** Instead of maintaining a separate `compound_perturbation_ranking.parquet` table, the per-feature ranking was integrated directly into the existing feature table (`{dset}_features.parquet`).
+
+### Why we pivoted
+
+1. **One table, two queries.** The existing feature table already selects rows from both axes (per-compound and per-feature). Adding effect-size ranking to the per-feature axis means the same table answers both "What features matter for compound X?" and "What compounds affect feature X?" — no need for a separate artifact.
+2. **Less maintenance.** A standalone table needs its own datasette metadata, shortlink, upload workflow, and documentation. Integrating avoids all of that.
+3. **Richer rows.** The existing table already carries enrichments (compound names, images, external links, replicability scores). The standalone table would have needed all of those added separately (the planned "v2" enrichments).
+
+### What changed in the code
+
+- `get_ranks()` split into `get_ranks_per_compound()` (unchanged, ranks by p-value, top 10) and `get_ranks_per_feature()` (ranks by |t-statistic|, top 50).
+- "Gene Rank" renamed to "Perturbation Rank" everywhere.
+- "Effect size (t)" column added to the output.
+- All three datasette metadata JSONs updated with new column descriptions.
+
+### Superseded artifacts (removed)
+
+- `src/tools/generate_perturbation_ranking.sql` — standalone SQL script
+- `metadata/compound_perturbation_ranking.json` — standalone datasette metadata
+- `metadata/shortlinks.org` entry for `compound_perturbation_ranking`
+- `compound_perturbation_ranking.parquet` on S3 — still exists but is no longer the canonical source; the feature table subsumes it
