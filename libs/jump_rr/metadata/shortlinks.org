@@ -20,3 +20,5 @@ compound
 https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_matches.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/15660683/files/compound.parquet/content#/data/content
 compound_feature
 https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_feature.json&install=datasette-json-html&parquet=https://zenodo.org/api/records/15660683/files/compound_interpretable_features.parquet/content#/data/content
+compound_perturbation_ranking
+https://lite.datasette.io/?metadata=https://raw.githubusercontent.com/broadinstitute/monorepo/main/libs/jump_rr/metadata/compound_perturbation_ranking.json&install=datasette-json-html&parquet=https://cellpainting-gallery.s3.amazonaws.com/cpg0042-chandrasekaran-jump/source_all/workspace/publication_data/compound_perturbation_ranking.parquet#/data/content

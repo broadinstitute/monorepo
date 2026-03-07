@@ -1,6 +1,6 @@
 # Feature Ranking Table Design
 
-Status: **In progress -- building new perturbation ranking table**
+Status: **Done (v1) -- data on S3, enrichments pending (v2)**
 
 ## Goal
 
@@ -95,8 +95,10 @@ Updated to unpack the tuple from `pvals_from_profile`. Test verified passing via
 
 ## Data uploaded
 
-- `compound_significance_full.parquet` uploaded to `s3://cellpainting-gallery/cpg0042-chandrasekaran-jump/source_all/workspace/publication_data/`
-- Same file also on Zenodo record 15660683
+All files on `s3://cellpainting-gallery/cpg0042-chandrasekaran-jump/source_all/workspace/publication_data/`:
+- `compound_significance_full.parquet` (1.2G) — also on Zenodo record 15660683
+- `compound_tstat_full.parquet` (2.7G) — 115,794 compounds × 3,180 features
+- `compound_perturbation_ranking.parquet` (1.6M) — top 50 compounds per feature by |t-statistic|, p < 0.05
 
 ## Key Finding: The Existing Table Partially Does This
 
@@ -168,7 +170,7 @@ The existing `compound_interpretable_features.parquet` already contains per-feat
 - [x] Updated test to match new return signature (test passes via `uv run pytest`)
 - [x] Uploaded `compound_significance_full.parquet` to S3
 - [x] Verified dev env works: `uv sync --group test` installs all deps including GPU packages on Linux server
-- [ ] Re-run pipeline on GPU server to generate `compound_tstat_full.parquet`
-- [ ] Generate final `compound_perturbation_ranking.parquet` from t-stat matrix via SQL
-- [ ] Upload to S3 / Zenodo
+- [x] Re-run pipeline on GPU server to generate `compound_tstat_full.parquet` (4x H100 NVL, ~11 min)
+- [x] Generate final `compound_perturbation_ranking.parquet` from t-stat matrix via SQL (159,000 rows, no ties)
+- [x] Upload to S3 (`compound_tstat_full.parquet` + `compound_perturbation_ranking.parquet`)
 - [ ] Add enrichments (perturbation names, images, links) -- v2
