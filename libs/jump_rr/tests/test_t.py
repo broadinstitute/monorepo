@@ -51,10 +51,20 @@ def test_pvalue() -> None:
     tpvals_scipy = [ttest_ind(x, y, alternative="two-sided") for x, y in vals]
     metrics = get_metrics_for_ttest(test_df)
 
-    # Test t-statistic calculation.
-    t_, df_, d_ = t_from_metrics(metrics)
+    # Test t-statistic and Cohen's d calculation.
+    t_, _, d_ = t_from_metrics(metrics)
     tstat = t_.flatten()
     assert all(np.isclose(t, gt.statistic) for t, gt in zip(tstat, tpvals_scipy))
+
+    # Test Cohen's d: (mean_trt - mean_ctrl) / sqrt(pooled_variance)
+    cohens_d = d_.flatten()
+    for d, (trt, ctrl) in zip(cohens_d, vals):
+        trt, ctrl = np.array(trt, dtype=float), np.array(ctrl, dtype=float)
+        n1, n2 = len(trt), len(ctrl)
+        df = n1 + n2 - 2
+        sv = ((n1 - 1) * np.var(trt, ddof=1) + (n2 - 1) * np.var(ctrl, ddof=1)) / df
+        expected_d = (np.mean(trt) - np.mean(ctrl)) / np.sqrt(sv)
+        assert np.isclose(d, expected_d)
 
     # Test corrected p-value calculation.
     corrected_pvalue, _ = pvals_from_profile(test_df)

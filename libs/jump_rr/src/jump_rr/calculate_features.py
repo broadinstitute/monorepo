@@ -31,7 +31,9 @@ from time import perf_counter
 
 import dask.array as da
 import duckdb
+import numpy as np
 import polars as pl
+
 from jump_rr.consensus import (
     add_sample_images,
     get_consensus_meta_urls,
@@ -39,7 +41,7 @@ from jump_rr.consensus import (
 )
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites
-from jump_rr.index_selection import get_ranks_per_perturbation, get_ranks_per_feature
+from jump_rr.index_selection import get_ranks_per_feature, get_ranks_per_perturbation
 from jump_rr.mappers import (
     get_compound_mappers,
     get_external_mappers,
@@ -150,7 +152,8 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         feat_decomposition,
     )
     featstat_computed = da.around(featstat, ndecimals).compute()
-    cohens_d_computed = da.around(cohens_d, 3).compute()
+    cohens_d_full = cohens_d.compute()
+    cohens_d_computed = np.around(cohens_d_full, 3)
 
     # %% Build Data Frame
     df = pl.DataFrame({
@@ -251,7 +254,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     jcp_col_data = filtered_med.get_column("Metadata_JCP2022")
     for data, suffix in [
         (featstat_computed, "significance_full"),
-        (cohens_d.compute(), "cohens_d_full"),
+        (cohens_d_full, "cohens_d_full"),
     ]:
         pl.DataFrame(data=data, schema=feature_cols).with_columns(
             jcp_col_data

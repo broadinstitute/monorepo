@@ -279,7 +279,8 @@ def t_from_stats(
     df = n1 + n2 - 2
     # pooled variance
     sv = ((n1 - 1) * v1 + (n2 - 1) * v2) / df
+    diff = m1 - m2
     denom = da.sqrt(sv * (1 / n1 + 1 / n2))
-    t = (m1 - m2) / denom
-    d = (m1 - m2) / da.sqrt(sv)
+    t = diff / denom
+    d = diff / da.sqrt(sv)
     return t, df, d
