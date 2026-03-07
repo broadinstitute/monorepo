@@ -60,7 +60,7 @@ def get_ranks_per_feature(
     return da.argtopk(mat, n, axis=0)
 
 
-def get_ranks_per_compound(
+def get_ranks_per_perturbation(
     mat: da.Array, n: int = 10
 ) -> da.Array:
     """Return the top `n` indices per compound (row), ranked by smallest value."""

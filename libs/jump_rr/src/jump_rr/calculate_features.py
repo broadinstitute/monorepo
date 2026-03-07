@@ -39,7 +39,7 @@ from jump_rr.consensus import (
 )
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites
-from jump_rr.index_selection import get_ranks_per_compound, get_ranks_per_feature
+from jump_rr.index_selection import get_ranks_per_perturbation, get_ranks_per_feature
 from jump_rr.mappers import (
     get_compound_mappers,
     get_external_mappers,
@@ -103,7 +103,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     median_vals = filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy()
 
     # Per-compound: top features by lowest p-value
-    lowest_x = get_ranks_per_compound(featstat, n_feat_per_compound)
+    lowest_x = get_ranks_per_perturbation(featstat, n_feat_per_compound)
     index_lowest_rank_x = da.vstack(
         (
             da.indices((len(lowest_x), n_feat_per_compound)).reshape((2, -1)),
