@@ -181,7 +181,7 @@ The existing `compound_interpretable_features.parquet` already contains per-feat
 - [x] Upload to S3 (`compound_tstat_full.parquet` + `compound_perturbation_ranking.parquet`)
 - [x] **Pivoted**: integrated per-feature ranking into existing feature table instead of standalone table
 - [x] Cleaned up superseded standalone artifacts (SQL script, metadata JSON, shortlink)
-- [ ] Add enrichments (perturbation names, images, links) -- v2
+- [x] ~~Add enrichments (perturbation names, images, links)~~ — no longer needed; the existing feature table already carries these
 - [ ] Full pipeline re-run on GPU to regenerate all three dataset tables with new columns
 
 ## Pivot: Integration into Existing Feature Table
