@@ -39,7 +39,7 @@ from jump_rr.consensus import (
 )
 from jump_rr.datasets import get_dataset
 from jump_rr.formatters import add_external_sites
-from jump_rr.index_selection import get_ranks
+from jump_rr.index_selection import get_ranks_per_compound, get_ranks_per_feature
 from jump_rr.mappers import (
     get_compound_mappers,
     get_external_mappers,
@@ -54,9 +54,9 @@ from jump_rr.significance import add_pert_type, pvals_from_profile
 ## Paths
 output_dir = Path("./databases")
 datasets_nvals = (
-    ("crispr_interpretable", 30),
-    ("orf_interpretable", 30),
-    ("compound_interpretable", 10),
+    ("crispr_interpretable", 30, 50),
+    ("orf_interpretable", 30, 50),
+    ("compound_interpretable", 10, 50),
 )
 
 ## Parameters
@@ -72,14 +72,15 @@ rep_col = "Phenotypic activity"  # Column containing val
 val_col = "Median"  # Value col
 stat_col = "Feature significance"
 rank_feat_col = "Feature Rank"
-rank_gene_col = "Gene Rank"
+rank_gene_col = "Perturbation Rank"
+tstat_col = "Effect size (t)"
 replicability_cols = {
     "corrected_p_value": "Corrected p-value",
     "mean_average_precision": "Phenotypic activity",
 }
 ndecimals = 5
 
-for dset, n_vals_used in datasets_nvals:
+for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     print(f"Processing features for {dset} dataset")
     t0 = perf_counter()
 
@@ -101,23 +102,27 @@ for dset, n_vals_used in datasets_nvals:
     )  # To match the ouptut of pvals_from_profile
     median_vals = filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy()
 
-    lowest_x, lowest_y = get_ranks(featstat, n_vals_used)
+    # Per-compound: top features by lowest p-value
+    lowest_x = get_ranks_per_compound(featstat, n_feat_per_compound)
     index_lowest_rank_x = da.vstack(
         (
-            da.indices((len(lowest_x), n_vals_used)).reshape((2, -1)),
+            da.indices((len(lowest_x), n_feat_per_compound)).reshape((2, -1)),
             lowest_x.flatten(),
         ),
     ).compute()
+
+    # Per-feature: top compounds by largest |t-statistic|
+    lowest_y = get_ranks_per_feature(da.abs(t_statistics), n_compounds_per_feat)
     index_lowest_rank_y = da.vstack(
         (
-            da.indices((lowest_y.shape[1], n_vals_used)).reshape((2, -1)),
+            da.indices((lowest_y.shape[1], n_compounds_per_feat)).reshape((2, -1)),
             lowest_y.T.flatten(),  # We need to transpose
         ),
     ).compute()
 
-    # Unify Gene and Feature ranks
-    # If an (x,y) cell is selected as a top feature and column get both,
-    # otherwise get one and null for the other one
+    # Unify Perturbation and Feature ranks
+    # If an (x,y) cell is selected by both axes it gets both ranks,
+    # otherwise it gets one and null for the other
     tbl = duckdb.sql(
         "SELECT x,y,"
         "any_value(rankf) AS rankf,"
@@ -144,6 +149,7 @@ for dset, n_vals_used in datasets_nvals:
         feat_decomposition,
     )
     featstat_computed = da.around(featstat, ndecimals).compute()
+    tstat_computed = da.around(t_statistics, 3).compute()
 
     # %% Build Data Frame
     df = pl.DataFrame({
@@ -152,6 +158,7 @@ for dset, n_vals_used in datasets_nvals:
             for k, v in zip(decomposed_feats.columns, decomposed_feats.to_numpy()[ys].T)
         },
         stat_col: featstat_computed[xs, ys],
+        tstat_col: tstat_computed[xs, ys],
         val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
         jcp_short: med[jcp_col][xs],
         rank_gene_col: rankg,
@@ -177,6 +184,7 @@ for dset, n_vals_used in datasets_nvals:
     order = [
         *decomposed_feats.columns,
         stat_col,
+        tstat_col,
         std_outname,
         img_col,
         val_col,

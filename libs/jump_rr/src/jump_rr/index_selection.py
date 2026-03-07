@@ -51,3 +51,17 @@ def get_ranks(
         bottom_on_x,
         bottom_on_y,
     )
+
+
+def get_ranks_per_feature(
+    mat: da.Array, n: int = 50
+) -> da.Array:
+    """Return the top `n` indices per feature (column), ranked by largest value."""
+    return da.argtopk(mat, n, axis=0)
+
+
+def get_ranks_per_compound(
+    mat: da.Array, n: int = 10
+) -> da.Array:
+    """Return the top `n` indices per compound (row), ranked by smallest value."""
+    return da.argtopk(mat, -n, axis=1)
