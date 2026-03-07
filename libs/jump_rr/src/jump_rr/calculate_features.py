@@ -138,7 +138,10 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     unified = (
         pl.concat([df_x, df_y], how="diagonal")
         .group_by("x", "y")
-        .agg(pl.col("rankf").first(), pl.col("rankg").first())
+        .agg(
+            pl.col("rankf").drop_nulls().first().alias("rankf"),
+            pl.col("rankg").drop_nulls().first().alias("rankg"),
+        )
         .sort("y", "x", "rankf")
     )
     xs = unified["x"].to_numpy()
