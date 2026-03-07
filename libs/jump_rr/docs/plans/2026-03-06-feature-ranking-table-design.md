@@ -127,12 +127,18 @@ The existing `compound_interpretable_features.parquet` already contains per-feat
 | Rows from per-compound axis (Feature Rank 0-9) | 1,157,940 (exactly 10 per compound) |
 | Perturbations per feature: min / median / mean / max | 10 / 99 / 374 / 35,897 |
 
-### Why the existing table is not sufficient
+### Why the existing table is not sufficient for the per-feature use case
 
 1. **Only 10 compounds per feature are specifically selected** via Gene Rank. The rest (up to 35,897) appear incidentally from the compound-side selection, making counts per feature wildly variable and unpredictable.
 2. **P-value ties**: The top 10 are all p=0 for most features due to 5-decimal rounding, so Gene Rank 1-10 is effectively arbitrary.
 3. **The 999999 sentinel value** for Gene Rank / Feature Rank is confusing -- it means "not ranked on this axis" but displays as an integer.
 4. **No effect size**: The table has p-values and medians but not t-statistics, so you can't rank by how strongly a compound affects a feature.
+
+### Why a new table instead of fixing the existing one
+
+1. **The ranking metric is fundamentally different.** The existing table ranks by p-value; the new table ranks by t-statistic. Swapping the metric in the existing table would change its meaning for the per-compound axis too, and existing users expect p-values there.
+2. **The selection logic is coupled.** The existing table's 1.2M rows come from a UNION of two selection axes (per-compound and per-feature). You can't cleanly separate the per-feature view because rows leak between axes via the UNION, producing wildly variable counts per feature (10 to 35,897). The new table is a clean single-axis selection: exactly 50 per feature.
+3. **Different audiences.** The existing table is optimized for "I have a compound, show me what it does" (per-compound workflow). The new table is optimized for "I care about cell area, show me what affects it" (per-feature workflow). Combining both into one table would make neither work well.
 
 ## Context
 
