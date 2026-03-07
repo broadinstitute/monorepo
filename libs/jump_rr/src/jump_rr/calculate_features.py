@@ -235,17 +235,13 @@ for dset, n_vals_used in datasets_nvals:
     # Update metadata
     write_metadata(dset_type, "feature", sorted_df.columns)
 
-    # Save phenotypic activity matrix in case it is of use to others
-    out_df = pl.DataFrame(
-        data=featstat_computed,
-        schema=filtered_med.select(pl.exclude("^Metadata.*$")).columns,
-    ).with_columns(filtered_med.get_column("Metadata_JCP2022"))
-    out_df.write_parquet(output_dir / f"{dset_type}_significance_full.parquet")
-
-    # Save t-statistic matrix for effect-size ranking
+    # Save full matrices for downstream use
     feature_cols = filtered_med.select(pl.exclude("^Metadata.*$")).columns
-    t_df = pl.DataFrame(
-        data=t_statistics.compute(),
-        schema=feature_cols,
-    ).with_columns(filtered_med.get_column("Metadata_JCP2022"))
-    t_df.write_parquet(output_dir / f"{dset_type}_tstat_full.parquet")
+    jcp_col_data = filtered_med.get_column("Metadata_JCP2022")
+    for data, suffix in [
+        (featstat_computed, "significance_full"),
+        (t_statistics.compute(), "tstat_full"),
+    ]:
+        pl.DataFrame(data=data, schema=feature_cols).with_columns(
+            jcp_col_data
+        ).write_parquet(output_dir / f"{dset_type}_{suffix}.parquet")

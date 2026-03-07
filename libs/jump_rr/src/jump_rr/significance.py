@@ -79,7 +79,7 @@ def add_pert_type(
 
 
 def pvals_from_profile(
-    profile: pl.DataFrame or duckdb.DuckDBPyRelation,
+    profile: pl.DataFrame | duckdb.DuckDBPyRelation,
 ) -> tuple[da.Array, da.Array]:
     """
     Compute p-values and t-statistics for every feature in a given profile.
