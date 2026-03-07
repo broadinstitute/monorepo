@@ -52,8 +52,8 @@ def test_pvalue() -> None:
     metrics = get_metrics_for_ttest(test_df)
 
     # Test t-statistic calculation.
-    tstats = da.array(t_from_metrics(metrics)).compute()
-    tstat = tstats[0].flatten()
+    t_, df_, d_ = t_from_metrics(metrics)
+    tstat = t_.flatten()
     assert all(np.isclose(t, gt.statistic) for t, gt in zip(tstat, tpvals_scipy))
 
     # Test corrected p-value calculation.

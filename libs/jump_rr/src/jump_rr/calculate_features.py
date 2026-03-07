@@ -73,8 +73,8 @@ val_col = "Median"  # Value col
 stat_col = "Feature significance"
 rank_feat_col = "Feature Rank"
 rank_gene_col = "Perturbation Rank"
-tstat_col = "Effect size (t)"
-abs_tstat_col = "|Effect size (t)|"
+effect_col = "Cohen's d"
+abs_effect_col = "|Cohen's d|"
 replicability_cols = {
     "corrected_p_value": "Corrected p-value",
     "mean_average_precision": "Phenotypic activity",
@@ -89,7 +89,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     precor = pl.read_parquet(get_dataset(dset))
     dset_type = dset.removesuffix("_interpretable")
     precor = add_pert_type(precor, dataset=dset_type)
-    featstat, t_statistics = pvals_from_profile(precor)
+    featstat, cohens_d = pvals_from_profile(precor)
 
     # %% Split data into med (consensus), meta and urls
     # Note that we remove the negcons from these analysis, as they are used to produce p-values on significance.py
@@ -112,8 +112,8 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         ),
     ).compute()
 
-    # Per-feature: top compounds by largest |t-statistic|
-    lowest_y = get_ranks_per_feature(da.abs(t_statistics), n_compounds_per_feat)
+    # Per-feature: top compounds by largest |Cohen's d|
+    lowest_y = get_ranks_per_feature(da.abs(cohens_d), n_compounds_per_feat)
     index_lowest_rank_y = da.vstack(
         (
             da.indices((lowest_y.shape[1], n_compounds_per_feat)).reshape((2, -1)),
@@ -150,7 +150,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         feat_decomposition,
     )
     featstat_computed = da.around(featstat, ndecimals).compute()
-    tstat_computed = da.around(t_statistics, 3).compute()
+    cohens_d_computed = da.around(cohens_d, 3).compute()
 
     # %% Build Data Frame
     df = pl.DataFrame({
@@ -159,8 +159,8 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
             for k, v in zip(decomposed_feats.columns, decomposed_feats.to_numpy()[ys].T)
         },
         stat_col: featstat_computed[xs, ys],
-        tstat_col: tstat_computed[xs, ys],
-        abs_tstat_col: abs(tstat_computed[xs, ys]),
+        effect_col: cohens_d_computed[xs, ys],
+        abs_effect_col: abs(cohens_d_computed[xs, ys]),
         val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
         jcp_short: filtered_med[jcp_col][xs],
         rank_gene_col: rankg,
@@ -186,8 +186,8 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     order = [
         *decomposed_feats.columns,
         stat_col,
-        tstat_col,
-        abs_tstat_col,
+        effect_col,
+        abs_effect_col,
         std_outname,
         img_col,
         val_col,
@@ -251,7 +251,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     jcp_col_data = filtered_med.get_column("Metadata_JCP2022")
     for data, suffix in [
         (featstat_computed, "significance_full"),
-        (t_statistics.compute(), "tstat_full"),
+        (cohens_d.compute(), "cohens_d_full"),
     ]:
         pl.DataFrame(data=data, schema=feature_cols).with_columns(
             jcp_col_data
