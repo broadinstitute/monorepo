@@ -1,6 +1,6 @@
 # Feature Ranking Table Design
 
-Status: **Pivoted — integrated into existing feature table (see below)**
+Status: **Done — integrated into existing feature table, deployed to S3**
 
 ## Goal
 
@@ -93,12 +93,14 @@ Later enrichments (v2): perturbation names, sample images, external links, repli
 
 Updated to unpack the tuple from `pvals_from_profile`. Test verified passing via `uv run pytest tests/test_t.py`.
 
-## Data uploaded
+## Data uploaded (initial, before pivot)
 
-All files on `s3://cellpainting-gallery/cpg0042-chandrasekaran-jump/source_all/workspace/publication_data/`:
+Initial uploads to `s3://cellpainting-gallery/cpg0042-chandrasekaran-jump/source_all/workspace/publication_data/`:
 - `compound_significance_full.parquet` (1.2G) — also on Zenodo record 15660683
 - `compound_tstat_full.parquet` (2.7G) — 115,794 compounds × 3,180 features
-- `compound_perturbation_ranking.parquet` (1.6M) — top 50 compounds per feature by |t-statistic|, p < 0.05
+- ~~`compound_perturbation_ranking.parquet` (1.6M)~~ — removed after pivot to integration
+
+See "Final state on S3" section below for current contents.
 
 ## Key Finding: The Existing Table Partially Does This
 
@@ -182,7 +184,12 @@ The existing `compound_interpretable_features.parquet` already contains per-feat
 - [x] **Pivoted**: integrated per-feature ranking into existing feature table instead of standalone table
 - [x] Cleaned up superseded standalone artifacts (SQL script, metadata JSON, shortlink)
 - [x] ~~Add enrichments (perturbation names, images, links)~~ — no longer needed; the existing feature table already carries these
-- [ ] Full pipeline re-run on GPU to regenerate all three dataset tables with new columns
+- [x] Full pipeline re-run on GPU to regenerate all three dataset tables with new columns
+- [x] Fixed t-statistics transpose bug in `significance.py` (returned features×compounds, needed compounds×features)
+- [x] Fixed pre-existing bug: JCP2022 lookup used unsorted `med` instead of `filtered_med`
+- [x] Updated stale OMIM and NCBI gene info hashes in `mappers.py`
+- [x] Uploaded all feature tables + corrected full matrices to S3
+- [x] Removed superseded `compound_perturbation_ranking.parquet` from S3
 
 ## Pivot: Integration into Existing Feature Table
 
@@ -206,4 +213,16 @@ The existing `compound_interpretable_features.parquet` already contains per-feat
 - `src/tools/generate_perturbation_ranking.sql` — standalone SQL script
 - `metadata/compound_perturbation_ranking.json` — standalone datasette metadata
 - `metadata/shortlinks.org` entry for `compound_perturbation_ranking`
-- `compound_perturbation_ranking.parquet` on S3 — still exists but is no longer the canonical source; the feature table subsumes it
+- `compound_perturbation_ranking.parquet` on S3 — removed
+
+## Final state on S3
+
+All files on `s3://cellpainting-gallery/cpg0042-chandrasekaran-jump/source_all/workspace/publication_data/`:
+
+| File | Size | Contents |
+|------|------|----------|
+| `crispr_interpretable_features.parquet` | 11M | 403,260 rows, top 30 features/compound + top 50 compounds/feature |
+| `orf_interpretable_features.parquet` | 20M | 606,440 rows, top 30 features/compound + top 50 compounds/feature |
+| `compound_interpretable_features.parquet` | 58M | 1,315,459 rows, top 10 features/compound + top 50 compounds/feature |
+| `compound_significance_full.parquet` | 1.2G | Full BH-corrected p-value matrix (115,794 × 3,180) |
+| `compound_tstat_full.parquet` | 2.7G | Full t-statistic matrix (115,794 × 3,180) |
