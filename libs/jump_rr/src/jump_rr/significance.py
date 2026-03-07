@@ -115,7 +115,7 @@ def pvals_from_profile(
     corrected_p_values = correct_multitest_threaded(p_value)
 
     # Back to dask to find the significant values
-    return da.asarray(corrected_p_values).T, da.asarray(t_)
+    return da.asarray(corrected_p_values).T, da.asarray(t_).T
 
 
 def correct_multitest_threaded(p_values: np.ndarray) -> list[np.ndarray]:

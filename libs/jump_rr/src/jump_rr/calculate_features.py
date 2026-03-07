@@ -160,7 +160,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         stat_col: featstat_computed[xs, ys],
         tstat_col: tstat_computed[xs, ys],
         val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
-        jcp_short: med[jcp_col][xs],
+        jcp_short: filtered_med[jcp_col][xs],
         rank_gene_col: rankg,
         rank_feat_col: rankf,
     })
