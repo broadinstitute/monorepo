@@ -30,7 +30,6 @@ from pathlib import Path
 from time import perf_counter
 
 import dask.array as da
-import duckdb
 import numpy as np
 import polars as pl
 
@@ -50,7 +49,7 @@ from jump_rr.mappers import (
 from jump_rr.metadata import write_metadata
 from jump_rr.parse_features import get_feature_groups
 from jump_rr.replicability import add_replicability
-from jump_rr.significance import add_pert_type, pvals_from_profile
+from jump_rr.significance import add_pert_type, statistics_from_profile
 
 # %% Setup
 ## Paths
@@ -91,7 +90,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     precor = pl.read_parquet(get_dataset(dset))
     dset_type = dset.removesuffix("_interpretable")
     precor = add_pert_type(precor, dataset=dset_type)
-    featstat, cohens_d = pvals_from_profile(precor)
+    featstat, cohens_d = statistics_from_profile(precor)
 
     # %% Split data into med (consensus), meta and urls
     # Note that we remove the negcons from these analysis, as they are used to produce p-values on significance.py
@@ -102,7 +101,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
 
     filtered_med = med.sort(
         by="Metadata_JCP2022"
-    )  # To match the ouptut of pvals_from_profile
+    )  # To match the ouptut of statistics_from_profile
     median_vals = filtered_med.select(pl.exclude("^Metadata.*$")).to_numpy()
 
     # Per-compound: top features by lowest p-value
@@ -126,24 +125,26 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     # Unify Perturbation and Feature ranks
     # If an (x,y) cell is selected by both axes it gets both ranks,
     # otherwise it gets one and null for the other
-    tbl = duckdb.sql(
-        "SELECT x,y,"
-        "any_value(rankf) AS rankf,"
-        "any_value(rankg) AS rankg"
-        " FROM (SELECT * FROM"
-        " (SELECT column0 as x,column1 as rankf,column2 as y"
-        " FROM index_lowest_rank_x)"
-        " UNION ALL BY NAME"
-        " (SELECT column0 AS y,column1 AS rankg, column2 AS x"
-        " FROM index_lowest_rank_y))"
-        " GROUP By x,y"
-        " ORDER BY y,x,rankf"
+    df_x = pl.DataFrame({
+        "x": index_lowest_rank_x[0],
+        "rankf": index_lowest_rank_x[1],
+        "y": index_lowest_rank_x[2],
+    })
+    df_y = pl.DataFrame({
+        "x": index_lowest_rank_y[2],
+        "rankg": index_lowest_rank_y[1],
+        "y": index_lowest_rank_y[0],
+    })
+    unified = (
+        pl.concat([df_x, df_y], how="diagonal")
+        .group_by("x", "y")
+        .agg(pl.col("rankf").first(), pl.col("rankg").first())
+        .sort("y", "x", "rankf")
     )
-    items = tbl.fetchnumpy()
-    xs = items["x"]
-    ys = items["y"]
-    rankf = items["rankf"].filled()
-    rankg = items["rankg"].filled()
+    xs = unified["x"].to_numpy()
+    ys = unified["y"].to_numpy()
+    rankf = unified["rankf"].to_numpy()
+    rankg = unified["rankg"].to_numpy()
 
     print(f"{dset} features processed in {perf_counter() - t0}")
     # Get the Gene Rank and Feature Rank
@@ -164,7 +165,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         stat_col: featstat_computed[xs, ys],
         effect_col: cohens_d_computed[xs, ys],
         abs_effect_col: abs(cohens_d_computed[xs, ys]),
-        val_col: da.around(median_vals.astype(da.float64), 3).compute()[xs, ys],
+        val_col: np.around(median_vals[xs, ys].astype(np.float64), 3),
         jcp_short: filtered_med[jcp_col][xs],
         rank_gene_col: rankg,
         rank_feat_col: rankf,

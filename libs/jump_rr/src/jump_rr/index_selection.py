@@ -40,18 +40,6 @@ def get_bottom_top_indices(
     return xs, ys
 
 
-def get_ranks(
-    mat: da.array, n_vals_used: int = 20
-) -> tuple[list[da.array], list[da.array]]:
-    """Return the lowest `n_vals_used` indices in rows and columns for mat."""
-    bottom_on_y = da.argtopk(mat, -n_vals_used, axis=0)
-    bottom_on_x = da.argtopk(mat, -n_vals_used, axis=1)
-
-    return (
-        bottom_on_x,
-        bottom_on_y,
-    )
-
 
 def get_ranks_per_feature(
     mat: da.Array, n: int = 50

@@ -78,7 +78,7 @@ def add_pert_type(
     return profiles
 
 
-def pvals_from_profile(
+def statistics_from_profile(
     profile: pl.DataFrame | duckdb.DuckDBPyRelation,
 ) -> tuple[da.Array, da.Array]:
     """

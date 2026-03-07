@@ -1,6 +1,5 @@
 """Test the t value calculation."""
 
-import dask.array as da
 import numpy as np
 import polars as pl
 from scipy.stats import ttest_ind
@@ -8,7 +7,7 @@ from scipy.stats import ttest_ind
 from jump_rr.significance import (
     correct_multitest_threaded,
     get_metrics_for_ttest,
-    pvals_from_profile,
+    statistics_from_profile,
     t_from_metrics,
 )
 
@@ -67,7 +66,7 @@ def test_pvalue() -> None:
         assert np.isclose(d, expected_d)
 
     # Test corrected p-value calculation.
-    corrected_pvalue, _ = pvals_from_profile(test_df)
+    corrected_pvalue, _ = statistics_from_profile(test_df)
     corrected_pvalue = corrected_pvalue.compute()
     # Correct scipy p values
     corrected_pvals_scipy = correct_multitest_threaded(
