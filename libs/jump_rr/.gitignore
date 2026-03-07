@@ -3,3 +3,4 @@
 .venv/
 databases/
 __pycache__/
+CLAUDE.md
