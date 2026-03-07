@@ -4,7 +4,7 @@
             "source": "JUMP Consortium",
             "source_url": "http://broad.io/jump",
             "tables": {
-                "content": {
+                "compound_perturbation_ranking": {
                     "description_html": "Perturbations ranked by effect size for each morphological feature. Pick a feature to see which compounds affect it most strongly. Ranked by |t-statistic| descending, filtered to p < 0.05 (BH-corrected). <a href='http://broad.io/jump'>JUMP Hub</a> for more information.",
                     "title": "COMPOUND Perturbation Ranking by Feature",
                     "columns": {
