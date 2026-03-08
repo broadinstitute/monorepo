@@ -2,6 +2,8 @@
 Test urls and (optionally) that the downloaded files match the expected hashes.
 """
 
+from pathlib import Path
+
 import pytest
 import requests
 
@@ -19,7 +21,7 @@ from jump_rr.datasets import get_dataset, get_profiles_url
         "compound_interpretable",
     ],
 )
-def test_url_exists(subset: str):
+def test_url_exists(subset: str) -> None:
     url = get_profiles_url(subset)
     response = requests.head(url)
     assert response.status_code == 200
@@ -37,7 +39,7 @@ def test_url_exists(subset: str):
         "compound_interpretable",
     ],
 )
-def test_data_download(subset: str):
+def test_data_download(subset: str) -> Path:
     """
     Pull data using Pooch and cache it.
 
@@ -45,3 +47,5 @@ def test_data_download(subset: str):
     Requires '--runslow' flag to run.
     """
     path_to_local_data = get_dataset(subset)
+
+    return path_to_local_data

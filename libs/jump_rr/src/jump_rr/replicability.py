@@ -62,9 +62,11 @@ def df_from_jcp(jcp: str) -> pl.LazyFrame:
     fn = (
         pl.scan_csv
         if filepath.endswith("csv.gz")
-        else lambda x: pl.read_parquet(x, use_pyarrow=True)
-        .with_columns(pl.col("Metadata_JCP2022").cast(pl.String))
-        .lazy()
+        else lambda x: (
+            pl.read_parquet(x, use_pyarrow=True)
+            .with_columns(pl.col("Metadata_JCP2022").cast(pl.String))
+            .lazy()
+        )
     )
     return fn(filepath)
 
