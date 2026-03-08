@@ -159,7 +159,7 @@ def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelatio
     """
     duckdb.connect(":memory:")
     # Group the plates for any given perturbation (trt)
-    plates_trt = duckdb.sql(
+    plates_trt = duckdb.sql(  # noqa: F841 (referenced by DuckDB SQL below)
         "SELECT Metadata_JCP2022,list(DISTINCT Metadata_Plate) AS Metadata_plates"
         " FROM df WHERE Metadata_pert_type = 'trt'"
         " GROUP BY Metadata_JCP2022,Metadata_pert_type"
@@ -167,7 +167,7 @@ def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelatio
     # Attach the profiles based on two conditions:
     # 1. The profile belongs to that perturbation (trt)
     # 2. The profile belongs to a negative control present in the same plate as trt
-    merged = duckdb.sql(
+    merged = duckdb.sql(  # noqa: F841 (referenced by DuckDB SQL below)
         "SELECT A.Metadata_JCP2022 AS"
         " Metadata_JCP2022,B.Metadata_pert_type as Metadata_pert_type,"
         "COLUMNS(c->c NOT LIKE 'Metadata%') FROM plates_trt A"

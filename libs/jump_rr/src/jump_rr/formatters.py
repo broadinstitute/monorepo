@@ -81,7 +81,7 @@ def build_dict(fmt: str, vendor: str, value: str or int or Iterable) -> dict[str
 
     """
     url_template, label = get_url_label(vendor)
-    if isinstance(value, (str, int)):
+    if isinstance(value, str | int):
         url = url_template.format(value)
     else:
         url = url_template.format(*value)

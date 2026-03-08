@@ -24,7 +24,6 @@ def match_jcp(jcp: str) -> str:
         If the JCP id is invalid or compound replicability has not been precomputed.
 
     """
-
     # Niranj produced these p values
     base_url = "https://github.com/jump-cellpainting/2024_Chandrasekaran_Morphmap/raw/c47ad6c953d70eb9e6c9b671c5fe6b2c82600cfc/03.retrieve-annotations/output/{}"
     match jcp[8]:
