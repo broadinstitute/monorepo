@@ -82,6 +82,7 @@ replicability_cols = {
     "mean_average_precision": "Phenotypic activity",
 }
 ndecimals = 5
+UNRANKED_SENTINEL = 99999
 
 for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     print(f"Processing features for {dset} dataset")
@@ -144,8 +145,8 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     xs = items["x"]
     ys = items["y"]
     # 99999 sentinel for unranked items (nulls sort to top in Datasette)
-    rankf = items["rankf"].filled(99999)
-    rankg = items["rankg"].filled(99999)
+    rankf = items["rankf"].filled(UNRANKED_SENTINEL)
+    rankg = items["rankg"].filled(UNRANKED_SENTINEL)
 
     print(f"{dset} features processed in {perf_counter() - t0:.2f}")
     # Get the Gene Rank and Feature Rank
