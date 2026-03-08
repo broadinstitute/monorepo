@@ -200,7 +200,7 @@ def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelatio
 
 def t_from_metrics(
     metrics: duckdb.DuckDBPyRelation,
-) -> duckdb.DuckDBPyRelation:
+) -> tuple[da.Array, da.Array, da.Array]:
     """
     Compute the t statistic from the mean, count and variance of two distributions.
 
