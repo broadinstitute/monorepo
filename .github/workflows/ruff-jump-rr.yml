@@ -25,7 +25,9 @@ jobs:
         run: pip install ruff
         
       - name: Run Ruff Check (Lint)
-        run: ruff check libs/jump_rr/
+        working-directory: libs/jump_rr
+        run: ruff check .
         
       - name: Run Ruff Format
-        run: ruff format --check libs/jump_rr/
+        working-directory: libs/jump_rr
+        run: ruff format --check .
