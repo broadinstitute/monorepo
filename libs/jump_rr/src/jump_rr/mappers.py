@@ -11,11 +11,11 @@ from pooch import retrieve
 MAPPERS = {
     "omim": (
         "https://www.omim.org/static/omim/data/mim2gene.txt",
-        "835396a88350b0487d9c45f1eb1321c158777275a0faedf863a07d7d02b88f5e",
+        "6f82401c77e9c9375a206d7b65f5cdb2d84020d92b784631575749222efd049c",
     ),
     "synonym": (
         "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz",
-        "19acf7198587fde68e7922e3501303078514a4e5c995afcf0fd11d8e6446ffa1",
+        "841808c6b72a122af5f3e7ad9cdb19575ed3a14d064694eebe710f2703eef1d0",
     ),
     "compound": (
         "https://zenodo.org/api/records/15644946/files/jcp_to_dbs.parquet/content",
@@ -106,10 +106,12 @@ def get_external_mappers(
     entrez_to_omim = {}
     entrez_to_ensembl = {}
 
-    other_ids = pl.DataFrame({
-        "entrez": jcp_to_entrez.values(),
-        "std": jcp_to_std.values(),
-    })
+    other_ids = pl.DataFrame(
+        {
+            "entrez": jcp_to_entrez.values(),
+            "std": jcp_to_std.values(),
+        }
+    )
 
     if any(jcp_to_entrez.values()):
         other_ids = other_ids.filter(~pl.col("entrez").str.contains("[A-Z]")).unique()

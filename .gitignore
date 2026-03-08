@@ -1,3 +1,5 @@
 outputs/
 libs/jump_smiles/CLAUDE.md
 libs/jump_smiles/.claude/settings.local.json
+.claude/settings.local.json
+.DS_Store

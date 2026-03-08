@@ -78,11 +78,11 @@ def add_pert_type(
     return profiles
 
 
-def pvals_from_profile(
-    profile: pl.DataFrame or duckdb.duckdb.DuckDBPyRelation,
-) -> da.Array:
+def statistics_from_profile(
+    profile: pl.DataFrame | duckdb.DuckDBPyRelation,
+) -> tuple[da.Array, da.Array]:
     """
-    Compute p-values for every feature in a given profile.
+    Compute p-values and Cohen's d for every feature in a given profile.
 
     Parameters
     ----------
@@ -91,12 +91,14 @@ def pvals_from_profile(
 
     Returns
     -------
-    corrected_p_values : array_like
+    corrected_p_values : da.Array
         Array of p-values corrected for multiple testing using FDR.
+    cohens_d : da.Array
+        Array of Cohen's d effect sizes (sample-size independent).
 
     """
     metrics = get_metrics_for_ttest(profile)
-    t_, df = t_from_metrics(metrics)
+    t_, df, d_ = t_from_metrics(metrics)
     # Here it is numpy again. If we can remain in dask there's speed to be gained
     # scipy.stats allows for broadcasting but not dask arrays
 
@@ -113,7 +115,7 @@ def pvals_from_profile(
     corrected_p_values = correct_multitest_threaded(p_value)
 
     # Back to dask to find the significant values
-    return da.asarray(corrected_p_values).T
+    return da.asarray(corrected_p_values).T, da.asarray(d_).T
 
 
 def correct_multitest_threaded(p_values: np.ndarray) -> list[np.ndarray]:
@@ -176,13 +178,15 @@ def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelatio
     )
 
     # Generate COLUMNS expressions to ignore metadata columns
-    stats_str = ",".join([
-        metric
-        + "(COLUMNS(c -> c NOT LIKE 'Metadata%')) AS "
-        + metric.split("_")[0]
-        + "_col"
-        for metric in ("count", "avg", "var_samp")
-    ])
+    stats_str = ",".join(
+        [
+            metric
+            + "(COLUMNS(c -> c NOT LIKE 'Metadata%')) AS "
+            + metric.split("_")[0]
+            + "_col"
+            for metric in ("count", "avg", "var_samp")
+        ]
+    )
     # Calculate the metrics
     # This table is split in six sections: three on columns and two on rows:
     # The left-right halves are controls or perturbations (because 'negcon' < 'trt')
@@ -197,14 +201,14 @@ def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelatio
 
 
 def t_from_metrics(
-    metrics: duckdb.duckdb.DuckDBPyRelation,
-) -> duckdb.duckdb.DuckDBPyRelation:
+    metrics: duckdb.DuckDBPyRelation,
+) -> tuple[da.Array, da.Array, da.Array]:
     """
     Compute the t statistic from the mean, count and variance of two distributions.
 
     Parameters
     ----------
-    metrics : duckdb.duckdb.DuckDBPyRelation
+    metrics : duckdb.DuckDBPyRelation
         A DuckDB table containing the mean, count and variance of two distributions.
 
     Returns
@@ -237,17 +241,17 @@ def t_from_metrics(
         [stats[x, y] for x in (n, m, v)] for y in (slice(0, trt), slice(trt, trt * 2))
     ]
 
-    t, df = t_from_stats(n1, m1, v1, n2, m2, v2)
+    t, df, d = t_from_stats(n1, m1, v1, n2, m2, v2)
 
     # Return also the df for p value calculations
-    return t, df
+    return t, df, d
 
 
 def t_from_stats(
     n1: da.Array, m1: da.Array, v1: da.Array, n2: da.Array, m2: da.Array, v2: da.Array
-) -> tuple[da.Array, da.Array]:
+) -> tuple[da.Array, da.Array, da.Array]:
     """
-    Calculate degrees of freedom and t-statistic for two sample comparison.
+    Calculate degrees of freedom, t-statistic, and Cohen's d for two sample comparison.
 
     Parameters
     ----------
@@ -266,15 +270,19 @@ def t_from_stats(
 
     Returns
     -------
-    df : da.Array
-        Degrees of freedom for the t-test.
     t : da.Array
         T-statistic value.
+    df : da.Array
+        Degrees of freedom for the t-test.
+    d : da.Array
+        Cohen's d (standardized mean difference, sample-size independent).
 
     """
     df = n1 + n2 - 2
     # pooled variance
     sv = ((n1 - 1) * v1 + (n2 - 1) * v2) / df
+    diff = m1 - m2
     denom = da.sqrt(sv * (1 / n1 + 1 / n2))
-    t = (m1 - m2) / denom
-    return t, df
+    t = diff / denom
+    d = diff / da.sqrt(sv)
+    return t, df, d

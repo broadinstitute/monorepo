@@ -753,11 +753,11 @@ dependencies = [
 dev = [
     { name = "ipdb" },
     { name = "jupyter" },
-    { name = "pytest" },
     { name = "ruff" },
     { name = "ruff-lsp" },
 ]
 test = [
+    { name = "pytest" },
     { name = "requests" },
 ]
 
@@ -778,11 +778,13 @@ requires-dist = [
 dev = [
     { name = "ipdb", specifier = ">=0.13.13,<0.14" },
     { name = "jupyter", specifier = ">=1.0.0,<2" },
-    { name = "pytest", specifier = ">=8.3.5,<9" },
     { name = "ruff", specifier = ">=0.9.6,<0.10" },
     { name = "ruff-lsp", specifier = ">=0.0.50,<0.0.51" },
 ]
-test = [{ name = "requests", specifier = ">=2.32.3" }]
+test = [
+    { name = "pytest", specifier = ">=8.3.5,<9" },
+    { name = "requests", specifier = ">=2.32.3" },
+]
 
 [[package]]
 name = "jupyter"

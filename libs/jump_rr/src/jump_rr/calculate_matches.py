@@ -134,11 +134,13 @@ for dset, n_vals_used in datasets_nvals:
     jcp_ids = med[jcp_col].to_numpy().astype("<U15")
 
     # Build a dataframe containing matches
-    jcp_df = pl.DataFrame({
-        jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
-        match_jcp_col: jcp_ids[ys].astype("<U15"),
-        dist_col: cosine_sim_computed[xs, ys],
-    })
+    jcp_df = pl.DataFrame(
+        {
+            jcp_short: np.repeat(jcp_ids, n_vals_used * 2),
+            match_jcp_col: jcp_ids[ys].astype("<U15"),
+            dist_col: cosine_sim_computed[xs, ys],
+        }
+    )
 
     # Add images for both queries and matches
     df_meta = df.select("^Metadata.*$")
