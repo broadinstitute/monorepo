@@ -126,20 +126,21 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     # Unify Perturbation and Feature ranks
     # If an (x,y) cell is selected by both axes it gets both ranks,
     # otherwise it gets one and 99999 (sentinel for unranked) for the other
-    tbl = duckdb.sql(
-        "SELECT x,y,"
-        "any_value(rankf) AS rankf,"
-        "any_value(rankg) AS rankg"
-        " FROM (SELECT * FROM"
-        " (SELECT column0 as x,column1 as rankf,column2 as y"
-        " FROM index_lowest_rank_x)"
-        " UNION ALL BY NAME"
-        " (SELECT column0 AS y,column1 AS rankg, column2 AS x"
-        " FROM index_lowest_rank_y))"
-        " GROUP By x,y"
-        " ORDER BY y,x,rankf"
-    )
-    items = tbl.fetchnumpy()
+    with duckdb.connect() as con:
+        tbl = con.execute(
+            "SELECT x,y,"
+            "any_value(rankf) AS rankf,"
+            "any_value(rankg) AS rankg"
+            " FROM (SELECT * FROM"
+            " (SELECT column0 as x,column1 as rankf,column2 as y"
+            " FROM index_lowest_rank_x)"
+            " UNION ALL BY NAME"
+            " (SELECT column0 AS y,column1 AS rankg, column2 AS x"
+            " FROM index_lowest_rank_y))"
+            " GROUP By x,y"
+            " ORDER BY y,x,rankf"
+        )
+        items = tbl.fetchnumpy()
     xs = items["x"]
     ys = items["y"]
     # 99999 sentinel for unranked items (nulls sort to top in Datasette)
