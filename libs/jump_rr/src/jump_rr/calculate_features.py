@@ -125,16 +125,20 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     # Unify Perturbation and Feature ranks
     # If an (x,y) cell is selected by both axes it gets both ranks,
     # otherwise it gets one and null for the other
-    df_x = pl.DataFrame({
-        "x": index_lowest_rank_x[0],
-        "rankf": index_lowest_rank_x[1],
-        "y": index_lowest_rank_x[2],
-    })
-    df_y = pl.DataFrame({
-        "x": index_lowest_rank_y[2],
-        "rankg": index_lowest_rank_y[1],
-        "y": index_lowest_rank_y[0],
-    })
+    df_x = pl.DataFrame(
+        {
+            "x": index_lowest_rank_x[0],
+            "rankf": index_lowest_rank_x[1],
+            "y": index_lowest_rank_x[2],
+        }
+    )
+    df_y = pl.DataFrame(
+        {
+            "x": index_lowest_rank_y[2],
+            "rankg": index_lowest_rank_y[1],
+            "y": index_lowest_rank_y[0],
+        }
+    )
     unified = (
         pl.concat([df_x, df_y], how="diagonal")
         .group_by("x", "y")
@@ -160,19 +164,23 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     cohens_d_computed = np.around(cohens_d_full, 3)
 
     # %% Build Data Frame
-    df = pl.DataFrame({
-        **{
-            k: v
-            for k, v in zip(decomposed_feats.columns, decomposed_feats.to_numpy()[ys].T)
-        },
-        stat_col: featstat_computed[xs, ys],
-        effect_col: cohens_d_computed[xs, ys],
-        abs_effect_col: abs(cohens_d_computed[xs, ys]),
-        val_col: np.around(median_vals[xs, ys].astype(np.float64), 3),
-        jcp_short: filtered_med[jcp_col][xs],
-        rank_gene_col: rankg,
-        rank_feat_col: rankf,
-    })
+    df = pl.DataFrame(
+        {
+            **{
+                k: v
+                for k, v in zip(
+                    decomposed_feats.columns, decomposed_feats.to_numpy()[ys].T
+                )
+            },
+            stat_col: featstat_computed[xs, ys],
+            effect_col: cohens_d_computed[xs, ys],
+            abs_effect_col: abs(cohens_d_computed[xs, ys]),
+            val_col: np.around(median_vals[xs, ys].astype(np.float64), 3),
+            jcp_short: filtered_med[jcp_col][xs],
+            rank_gene_col: rankg,
+            rank_feat_col: rankf,
+        }
+    )
 
     # Add images
     df_meta = precor.select("^Metadata.*$")

@@ -183,10 +183,12 @@ def add_external_sites(
     in the input DataFrame and aggregating them into a single column.
 
     """
-    df = df.with_columns([
-        pl.col(source).replace_strict(mapper, default="").alias(key)
-        for key, source, mapper in key_source_mapper
-    ])
+    df = df.with_columns(
+        [
+            pl.col(source).replace_strict(mapper, default="").alias(key)
+            for key, source, mapper in key_source_mapper
+        ]
+    )
 
     df = df.with_columns(
         (

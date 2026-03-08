@@ -40,16 +40,11 @@ def get_bottom_top_indices(
     return xs, ys
 
 
-
-def get_ranks_per_feature(
-    mat: da.Array, n: int = 50
-) -> da.Array:
+def get_ranks_per_feature(mat: da.Array, n: int = 50) -> da.Array:
     """Return the top `n` indices per feature (column), ranked by largest value."""
     return da.argtopk(mat, n, axis=0)
 
 
-def get_ranks_per_perturbation(
-    mat: da.Array, n: int = 10
-) -> da.Array:
+def get_ranks_per_perturbation(mat: da.Array, n: int = 10) -> da.Array:
     """Return the top `n` indices per compound (row), ranked by smallest value."""
     return da.argtopk(mat, -n, axis=1)

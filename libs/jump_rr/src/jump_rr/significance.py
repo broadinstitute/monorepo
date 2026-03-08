@@ -178,13 +178,15 @@ def get_metrics_for_ttest(df: duckdb.DuckDBPyRelation) -> duckdb.DuckDBPyRelatio
     )
 
     # Generate COLUMNS expressions to ignore metadata columns
-    stats_str = ",".join([
-        metric
-        + "(COLUMNS(c -> c NOT LIKE 'Metadata%')) AS "
-        + metric.split("_")[0]
-        + "_col"
-        for metric in ("count", "avg", "var_samp")
-    ])
+    stats_str = ",".join(
+        [
+            metric
+            + "(COLUMNS(c -> c NOT LIKE 'Metadata%')) AS "
+            + metric.split("_")[0]
+            + "_col"
+            for metric in ("count", "avg", "var_samp")
+        ]
+    )
     # Calculate the metrics
     # This table is split in six sections: three on columns and two on rows:
     # The left-right halves are controls or perturbations (because 'negcon' < 'trt')
