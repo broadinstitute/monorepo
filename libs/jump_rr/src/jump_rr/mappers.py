@@ -11,11 +11,11 @@ from pooch import retrieve
 MAPPERS = {
     "omim": (
         "https://www.omim.org/static/omim/data/mim2gene.txt",
-        "d36e49dcfc50a9eaad17d603fac137cad711af3f149684fcd9d37b280b85f179",
+        "6f82401c77e9c9375a206d7b65f5cdb2d84020d92b784631575749222efd049c",
     ),
     "synonym": (
         "https://ftp.ncbi.nlm.nih.gov/gene/DATA/GENE_INFO/Mammalia/Homo_sapiens.gene_info.gz",
-        "fa68d8bf183c26b414c6d257f2a8c7d578c6b463b4a319db72ebf89dccb408b0",
+        "841808c6b72a122af5f3e7ad9cdb19575ed3a14d064694eebe710f2703eef1d0",
     ),
     "compound": (
         "https://zenodo.org/api/records/15644946/files/jcp_to_dbs.parquet/content",
