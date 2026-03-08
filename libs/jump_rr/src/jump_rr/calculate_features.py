@@ -153,7 +153,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
     rankf = unified["rankf"].to_numpy()
     rankg = unified["rankg"].to_numpy()
 
-    print(f"{dset} features processed in {perf_counter() - t0}")
+    print(f"{dset} features processed in {perf_counter() - t0:.2f}")
     # Get the Gene Rank and Feature Rank
     decomposed_feats = get_feature_groups(
         tuple(filtered_med.select(pl.exclude("^Metadata.*$")).columns),
