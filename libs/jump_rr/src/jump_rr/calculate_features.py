@@ -30,6 +30,7 @@ from pathlib import Path
 from time import perf_counter
 
 import dask.array as da
+import duckdb
 import numpy as np
 import polars as pl
 
@@ -124,34 +125,26 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
 
     # Unify Perturbation and Feature ranks
     # If an (x,y) cell is selected by both axes it gets both ranks,
-    # otherwise it gets one and null for the other
-    df_x = pl.DataFrame(
-        {
-            "x": index_lowest_rank_x[0],
-            "rankf": index_lowest_rank_x[1],
-            "y": index_lowest_rank_x[2],
-        }
+    # otherwise it gets one and 99999 (sentinel for unranked) for the other
+    tbl = duckdb.sql(
+        "SELECT x,y,"
+        "any_value(rankf) AS rankf,"
+        "any_value(rankg) AS rankg"
+        " FROM (SELECT * FROM"
+        " (SELECT column0 as x,column1 as rankf,column2 as y"
+        " FROM index_lowest_rank_x)"
+        " UNION ALL BY NAME"
+        " (SELECT column0 AS y,column1 AS rankg, column2 AS x"
+        " FROM index_lowest_rank_y))"
+        " GROUP By x,y"
+        " ORDER BY y,x,rankf"
     )
-    df_y = pl.DataFrame(
-        {
-            "x": index_lowest_rank_y[2],
-            "rankg": index_lowest_rank_y[1],
-            "y": index_lowest_rank_y[0],
-        }
-    )
-    unified = (
-        pl.concat([df_x, df_y], how="diagonal")
-        .group_by("x", "y")
-        .agg(
-            pl.col("rankf").drop_nulls().first().alias("rankf"),
-            pl.col("rankg").drop_nulls().first().alias("rankg"),
-        )
-        .sort("y", "x", "rankf")
-    )
-    xs = unified["x"].to_numpy()
-    ys = unified["y"].to_numpy()
-    rankf = unified["rankf"].to_numpy()
-    rankg = unified["rankg"].to_numpy()
+    items = tbl.fetchnumpy()
+    xs = items["x"]
+    ys = items["y"]
+    # 99999 sentinel for unranked items (nulls sort to top in Datasette)
+    rankf = items["rankf"].filled(99999)
+    rankg = items["rankg"].filled(99999)
 
     print(f"{dset} features processed in {perf_counter() - t0:.2f}")
     # Get the Gene Rank and Feature Rank
@@ -268,6 +261,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         (featstat_computed, "significance_full"),
         (cohens_d_full, "cohens_d_full"),
     ]:
-        pl.DataFrame(data=data, schema=feature_cols).with_columns(
+        matrix_df = pl.DataFrame(data=data, schema=feature_cols).with_columns(
             jcp_col_data
-        ).write_parquet(output_dir / f"{dset_type}_{suffix}.parquet")
+        )
+        matrix_df.write_parquet(output_dir / f"{dset_type}_{suffix}.parquet")
