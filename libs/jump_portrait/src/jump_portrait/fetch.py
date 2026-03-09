@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-JUMP-CP Data Access and Image Retrieval Tools
+JUMP-CP Data Access and Image Retrieval Tools.
 
 This module facilitates querying the JUMP-CP dataset index, retrieving metadata
 for specific genes or compounds, and downloading or loading microscopy images
@@ -27,7 +27,7 @@ from pathlib import Path
 
 import duckdb
 import numpy as np
-import pyarrow
+import pyarrow as pa
 from broad_babel import query
 from broad_babel.data import get_table
 from joblib import Parallel, delayed
@@ -38,17 +38,26 @@ from jump_portrait.s3 import download_s3uri, get_image_from_s3uri
 
 @cache
 def get_index_file() -> Path:
-    JUMP_INDEX = (
+    """
+    Retrieve the index file of the JUMP-CP dataset.
+
+    Returns
+    -------
+    Path
+        The path to the downloaded index file.
+
+    """
+    jump_index = (
         "https://zenodo.org/api/records/18729301/files/jump_index.parquet/content"
     )
 
     return retrieve(
-        JUMP_INDEX,
+        jump_index,
         known_hash="6dddbda730650a079005565ce7f1418555cbb0ac77f0e3ecbf9a538f11c9a156",
     )
 
 
-def get_sample(n: int = 2, seed: int = 42) -> pyarrow.lib.Table:
+def get_sample(n: int = 2, seed: int = 42) -> pa.Table:
     """
     Retrieve a sample of cell painting data from S3.
 
@@ -61,7 +70,7 @@ def get_sample(n: int = 2, seed: int = 42) -> pyarrow.lib.Table:
 
     Returns
     -------
-    parquet_meta : pyarrow.lib.Table
+    parquet_meta : pa.Table
         Retrieved parquet metadata.
 
     """
@@ -109,9 +118,10 @@ def get_item_location_metadata(
         If the item_name is "JCP2022_033924", which is not supported as it is a negative control and fills the memory of most computers.
 
     """
-    assert input_column in ("standard_key", "JCP2022"), (
-        "Only standard_key and JCP2022 are valid input_columns."
-    )
+    assert input_column in (
+        "standard_key",
+        "JCP2022",
+    ), "Only standard_key and JCP2022 are valid input_columns."
 
     # Get plates
     jcp_ids = query.run_query(
@@ -124,11 +134,11 @@ def get_item_location_metadata(
 
     assert len(jcp_item), f"No JCP id found for {jcp_item}"
 
-    meta_wells = get_table("well")
     index_file = get_index_file()
 
     with duckdb.connect() as con:
-        found_rows = con.sql(
+        meta_wells = get_table("well")  # noqa: F841
+        found_rows = con.sql(  # noqa: F841
             f"SELECT *, '{item_name}' AS standard_key FROM meta_wells WHERE Metadata_JCP2022 IN {list(jcp_item.keys())}"
         )
 
@@ -140,7 +150,7 @@ def get_item_location_metadata(
 
 
 def get_metadata_dicts(
-    metadata: pyarrow.lib.Table | dict[str, str | int] | list[dict[str, str | int]],
+    metadata: pa.Table | dict[str, str | int] | list[dict[str, str | int]],
     channels: list[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
     site: list[int] = None,
 ) -> list[dict[str, str | int]]:
@@ -176,6 +186,7 @@ def get_metadata_dicts(
     AssertionError
         If any of the provided channel names are not in the valid set
         ("DNA", "RNA", "Mito", "AGP", "ER").
+
     """
     if isinstance(metadata, dict):
         metadata = pa.Table.from_pydict(metadata)
@@ -188,17 +199,17 @@ def get_metadata_dicts(
         site_filter = f"WHERE Metadata_Site IN {site}"
 
     valid_channels = set(channels).intersection(("DNA", "RNA", "Mito", "AGP", "ER"))
-    assert len(valid_channels) == len(channels), (
-        f"Invalid channel name(s): {channels}, only {len(valid_channels)} are valid: {valid_channels}"
-    )
+    assert (
+        len(valid_channels) == len(channels)
+    ), f"Invalid channel name(s): {channels}, only {len(valid_channels)} are valid: {valid_channels}"
 
     with duckdb.connect() as con:
-        joint = con.sql(
+        joint = con.sql(  # noqa: F841
             f"SELECT standard_key,COLUMNS('Metadata_(JCP2022|Source|Batch|Plate|Well|Site)'),COLUMNS('URL_Orig({'|'.join(channels)})') FROM metadata {site_filter}"
         )
         metadata_dicts = (
             con.sql(
-                f"UNPIVOT joint ON COLUMNS('URL_Orig(.+)') AS \"\\1\" INTO NAME Metadata_Channel VALUE Metadata_uri"
+                "UNPIVOT joint ON COLUMNS('URL_Orig(.+)') AS \"\\1\" INTO NAME Metadata_Channel VALUE Metadata_uri"
             )
             .to_arrow_table()
             .to_pylist()
@@ -261,7 +272,7 @@ def get_jump_image(
 
 
 def get_jump_image_batch(
-    metadata: pyarrow.lib.Table | dict[str, str | int] | list[dict[str, str | int]],
+    metadata: pa.Table | dict[str, str | int] | list[dict[str, str | int]],
     channels: list[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
     site: list[int] = None,
 ) -> tuple[list[dict[str, str | int]], list[np.ndarray]]:
@@ -270,9 +281,9 @@ def get_jump_image_batch(
 
     Parameters
     ----------
-    metadata : DataFrame-like, pyarrow table, dict or list of dict.
+    metadata : pa.Table, dict or list of dict.
         must have the columns ("Metadata_Source", "Metadata_Batch", "Metadata_Plate", "Metadata_Well"), as well as the URIs.
-    channel : list of string
+    channels : list of string
         list of channel desired
         Must be in ['DNA', 'ER', 'AGP', 'Mito', 'RNA']
     site : list of int or str
@@ -286,6 +297,7 @@ def get_jump_image_batch(
         list containing the metadata, channel, site and correction
     img_list : list of array
         list containing the images
+
     """
     metadata_dicts = get_metadata_dicts(metadata, channels, site)
 
@@ -298,7 +310,7 @@ def get_jump_image_batch(
 
 
 def download_jump_image_batch(
-    metadata: pyarrow.lib.Table | dict[str, str | int] | list[dict[str, str | int]],
+    metadata: pa.Table | dict[str, str | int] | list[dict[str, str | int]],
     output_dir: Path,
     path_to_name: bool = True,
     channels: list[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
@@ -327,6 +339,7 @@ def download_jump_image_batch(
     list of bool
         A list of boolean values indicating whether each individual file
         download was successful.
+
     """
     output_dir = Path(output_dir)
 
@@ -336,10 +349,12 @@ def download_jump_image_batch(
     curried = partial(download_s3uri, output_dir=output_dir, path_to_name=path_to_name)
     result = list(
         Parallel()(
-            delayed(curried)((
-                *[x[f"Metadata_{y}"] for y in identifiers],
-                x["Metadata_uri"],
-            ))
+            delayed(curried)(
+                (
+                    *[x[f"Metadata_{y}"] for y in identifiers],
+                    x["Metadata_uri"],
+                )
+            )
             for x in metadata_dicts
         )
     )

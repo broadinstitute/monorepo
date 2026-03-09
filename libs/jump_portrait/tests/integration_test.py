@@ -8,7 +8,6 @@ Pending tests:
 """
 
 import pytest
-
 from jump_portrait.fetch import get_jump_image
 
 

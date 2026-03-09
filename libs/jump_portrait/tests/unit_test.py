@@ -6,7 +6,6 @@ from itertools import groupby, product, starmap
 import numpy as np
 import pyarrow
 import pytest
-
 from jump_portrait.fetch import (
     get_item_location_metadata,
     get_jump_image,

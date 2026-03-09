@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 """
 Utilities for interacting with S3 buckets, specifically for the Cell Painting Gallery.
+
 This module provides functions to create S3 clients, retrieve images as NumPy arrays,
 and download files to local storage.
 """
@@ -150,6 +151,7 @@ def download_s3uri(
     bool
         True if the file was downloaded successfully or already exists
         locally. False if an exception occurs during the process.
+
     """
     *location, key = meta
     clean_key = key.removeprefix("s3://cellpainting-gallery/")

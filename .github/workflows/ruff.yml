@@ -1,18 +1,23 @@
-name: Ruff (jump_rr)
+name: Ruff
 
 on:
   push:
     paths:
       - 'libs/jump_rr/**'
-      - '.github/workflows/ruff-jump-rr.yml'
+      - 'libs/jump_portrait/**'
+      - '.github/workflows/ruff.yml'
   pull_request:
     paths:
       - 'libs/jump_rr/**'
-      - '.github/workflows/ruff-jump-rr.yml'
+      - 'libs/jump_portrait/**'
+      - '.github/workflows/ruff.yml'
 
 jobs:
   ruff:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        library: [jump_rr, jump_portrait]
     steps:
       - uses: actions/checkout@v4
       
@@ -25,9 +30,9 @@ jobs:
         run: pip install ruff
         
       - name: Run Ruff Check (Lint)
-        working-directory: libs/jump_rr
+        working-directory: libs/${{ matrix.library }}
         run: ruff check .
         
       - name: Run Ruff Format
-        working-directory: libs/jump_rr
+        working-directory: libs/${{ matrix.library }}
         run: ruff format --check .
