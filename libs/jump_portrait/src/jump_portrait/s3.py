@@ -1,23 +1,21 @@
+#!/usr/bin/env python
 """
-Tools to Search for files in AWS's CellPainting Gallery.
+Utilities for interacting with S3 buckets, specifically for the Cell Painting Gallery.
 
-S3_BUCKET_NAME = "cellpainting-gallery"
-prefix = "/cpg0020-varchamp/broad/images/".
-
+This module provides functions to create S3 clients, retrieve images as NumPy arrays,
+and download files to local storage.
 """
 
 import os
-from functools import lru_cache
 from io import BytesIO
+from pathlib import Path
 
 import boto3
 import matplotlib.image as mpimg
 import numpy as np
-import polars as pl
 from botocore import UNSIGNED
 from botocore.config import Config
 from matplotlib import pyplot as plt
-from s3path import PureS3Path
 
 
 def s3client(use_credentials: bool = False) -> boto3.client:
@@ -127,117 +125,49 @@ def get_image_from_s3uri(
     return result
 
 
-def get_corrected_image(
-    image_metadata: dict,
-    channel: str,
-    correction: str or None,
-    apply_correction: bool = True,
-    staging: bool = False,
-) -> np.ndarray:
+def download_s3uri(
+    meta: tuple[str, ...],
+    output_dir: str,
+    path_to_name: bool = True,
+) -> bool:
     """
-    Retrieve and correct an image from a specified location.
+    Download a file from the cellpainting-gallery S3 bucket to a local directory.
 
     Parameters
     ----------
-    image_metadata : dict
-        Dictionary containing image locations.
-    channel : str
-        Channel of the image to retrieve.
-    correction : str or None
-        Type of correction to apply (or None for no correction).
-    apply_correction : bool, optional
-        Whether to apply the correction (default is True).
-    staging : bool, optional
-        Whether to use the "staging-cellpainting-gallery" instead of the public one.
-    Default is False. If True, it requires valid credentials in the environment.
+    meta : tuple of str
+        A tuple containing metadata components. The last element is treated
+        as the S3 key, while the preceding elements are used to construct
+        the local filename if `path_to_name` is True.
+    output_dir : str
+        The local directory where the downloaded file will be saved.
+    path_to_name : bool, optional
+        Determines how the local filename is generated. If True, joins the
+        location components with '__' and appends '.tif'. If False, derives
+        the name by removing the S3 prefix from the key. Defaults to True.
 
     Returns
     -------
-    np.ndarray
-        The corrected or raw image.
-
-    Notes
-    -----
-    If `apply_correction` is True and `correction` is not "Orig" or None,
-    the function divides the original image by the correction image.
+    bool
+        True if the file was downloaded successfully or already exists
+        locally. False if an exception occurs during the process.
 
     """
-    s3_image_path = build_s3_image_path(
-        image_metadata=image_metadata,
-        channel=channel,
-        correction=correction,
-        staging=staging,
-    )
-
-    result = get_image_from_s3uri(s3_image_path, staging=staging)
-
-    if apply_correction and correction not in ("Orig", None):
-        original_image_path = build_s3_image_path(
-            image_metadata=image_metadata, channel=channel, correction="Orig"
-        )
-        result = get_image_from_s3uri(original_image_path) / result
-
-    return result
-
-
-def build_s3_image_path(
-    image_metadata: dict[str, str],
-    channel: str,
-    correction: None or str = None,
-    staging: bool = False,
-) -> PureS3Path:
-    """
-    Build the path for an image on cellpainting gallery's S3 bucket.
-
-    image_metadata : dict[str, str]
-        Dictionary containing the location of images on `cellpainting-gallery`.
-    It contains keys like 'PathNameOrigDNA", necessary to locate specific images.
-    It is a single row of the location DataFrames.
-    channel : str
-        Channel of the image to retrieve.
-    correction : str or None
-        Type of correction to apply (or None for no correction).
-    staging : bool, optional
-        Whether to use the "staging-cellpainting-gallery" instead of the public one.
-    Default is False. If True, it requires valid credentials in the environment.
-    """
-    if correction is None:
-        correction = "Orig"
-
-    key = correction + channel
-    url = image_metadata.get(f"URL_{key}")
-
-    assert url, f"{key} not available for {image_metadata.values}"
-
-    if staging:
-        url = url.replace("cellpainting-gallery", "staging-cellpainting-gallery")
-
-    return url
-
-
-@lru_cache
-def read_ldcsv_s3(path: str, lazy: bool = False) -> pl.DataFrame or pl.LazyFrame:
-    """
-    Read `load data csv` file from S3 onto memory.
-
-    Parameters
-    ----------
-    path : str
-        S3 path location.
-    lazy : bool
-        Whether to load lazily or not. The mechanisms changes depending on how
-        the data is to be loaded. Warning: Lazy-loading does not work
-        specifically for the datasets that contain image information.
-
-    Notes
-    -----
-    Returns all columns as strings. See below for details:
-    `https://github.com/jump-cellpainting/datasets/issues/147#issuecomment-2648272358`
-
-    """
-    if lazy:
-        result = pl.scan_csv(path)
+    *location, key = meta
+    clean_key = key.removeprefix("s3://cellpainting-gallery/")
+    if path_to_name:
+        local_name = "__join".join(map(str, location)) + ".tif"
     else:
-        result = pl.read_csv(path)
+        local_name = clean_key
+    local_file = Path(output_dir) / local_name
 
-    return result.with_columns(pl.all().cast(pl.String))
+    local_file.parent.mkdir(exist_ok=True, parents=True)
+    s3_client = boto3.client("s3", config=Config(signature_version=UNSIGNED))
+
+    try:
+        if not local_file.exists():
+            s3_client.download_file("cellpainting-gallery", clean_key, str(local_file))
+        return True
+    except Exception as e:
+        print(f"Error: {e}")
+        return False
