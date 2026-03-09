@@ -35,6 +35,7 @@ from pooch import retrieve
 
 from jump_portrait.s3 import download_s3uri, get_image_from_s3uri
 
+
 @cache
 def get_index_file() -> Path:
     """
@@ -198,9 +199,9 @@ def get_metadata_dicts(
         site_filter = f"WHERE Metadata_Site IN {site}"
 
     valid_channels = set(channels).intersection(("DNA", "RNA", "Mito", "AGP", "ER"))
-    assert (
-        len(valid_channels) == len(channels)
-    ), f"Invalid channel name(s): {channels}, only {len(valid_channels)} are valid: {valid_channels}"
+    assert len(valid_channels) == len(channels), (
+        f"Invalid channel name(s): {channels}, only {len(valid_channels)} are valid: {valid_channels}"
+    )
 
     with duckdb.connect() as con:
         joint = con.sql(  # noqa: F841
