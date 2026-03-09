@@ -291,9 +291,9 @@ def get_jump_image_batch(
         - For compound, must be in [1 - 6]
         - For ORF, CRISPR, must be in [1 - 9]
 
-    Return:
-    ----------
-    iterable : list of dict
+    Returns
+    -------
+    metadata_dicts : list of dict
         list containing the metadata, channel, site and correction
     img_list : list of array
         list containing the images
@@ -321,7 +321,7 @@ def download_jump_image_batch(
 
     Parameters
     ----------
-    metadata : pyarrow.lib.Table or dict or list of dict
+    metadata : pa.Table or dict or list of dict
         The metadata containing image information, including S3 URIs and
         identifiers (Source, Batch, Plate, Well, Site, Channel).
     output_dir : Path
