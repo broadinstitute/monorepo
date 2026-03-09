@@ -35,7 +35,6 @@ from pooch import retrieve
 
 from jump_portrait.s3 import download_s3uri, get_image_from_s3uri
 
-
 @cache
 def get_index_file() -> Path:
     """
