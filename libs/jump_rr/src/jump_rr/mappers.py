@@ -164,7 +164,6 @@ def get_omim_mappers(other_ids: pl.DataFrame) -> tuple[dict, dict]:
         Two dictionaries containing the mapped OMIM data.
 
     """
-
     url, known_hash = MAPPERS["omim"]
     with duckdb.connect(":memory:"):
         duckdb.execute(
@@ -200,7 +199,7 @@ def get_compound_mappers() -> tuple[tuple[str, dict[str, str or int]]]:
     """Get mapping between jcp ids and compound ids from different databases."""
     url, known_hash = MAPPERS["compound"]
     with duckdb.connect(":memory:") as con:
-        tb = con.sql(
+        tb = con.sql(  # noqa: F841 (referenced by DuckDB SQL below)
             f"""select Metadata_JCP2022,COLUMNS("id.*") from read_parquet(
             '{retrieve(url, known_hash)}')
             where Metadata_JCP2022 IS NOT NULL;"""

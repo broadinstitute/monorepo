@@ -14,6 +14,7 @@ columns = sorted(set(col for x in paths.values() for col in pl.scan_parquet(x).c
 
 import json
 from importlib.resources import files
+from pathlib import Path
 
 from jump_rr.datasets import get_profiles_url
 
@@ -78,6 +79,7 @@ def get_col_desc(key: str) -> str:
 def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
     """
     Write metadata file to customize Datasette.
+
     This contains all the logic to build the header sentence and columns for the tables.
 
     Parameters
@@ -141,10 +143,9 @@ def write_metadata(dset: str, table_type: str, colnames: tuple[str]) -> None:
         }
     }
 
-    with open(
+    with Path(
         str(files("jump_rr") / ".." / ".." / "metadata" / f"{dset}_{table_type}.json"),
-        "w",
-    ) as f:
+    ).open("w") as f:
         data["databases"]["data"]["tables"]["content"]["columns"] = {
             x: get_col_desc(x) for x in valid_names
         }

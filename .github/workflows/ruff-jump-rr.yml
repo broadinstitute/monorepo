@@ -1,0 +1,33 @@
+name: Ruff (jump_rr)
+
+on:
+  push:
+    paths:
+      - 'libs/jump_rr/**'
+      - '.github/workflows/ruff-jump-rr.yml'
+  pull_request:
+    paths:
+      - 'libs/jump_rr/**'
+      - '.github/workflows/ruff-jump-rr.yml'
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Install Ruff
+        run: pip install ruff
+        
+      - name: Run Ruff Check (Lint)
+        working-directory: libs/jump_rr
+        run: ruff check .
+        
+      - name: Run Ruff Format
+        working-directory: libs/jump_rr
+        run: ruff format --check .
