@@ -3,7 +3,6 @@
   - [Formatting and linting](#Formatting%20and%20linting)
   - [Git commit messages](#Git%20commit%20messages)
   - [Documentation style guide](#Documentation%20style%20guide)
-  - [Test coverage](#Test%20coverage)
   - [Code reviews](#Code%20reviews)
 
 Thanks for considering contributing to our libraries! While the purpose of these are internal use within the Imaging Platform, we welcome bug reports and pull requests.
@@ -13,25 +12,7 @@ Thanks for considering contributing to our libraries! While the purpose of these
 
 # Setting up development environments
 
-Most of the current libraries are set up using Poetry (you&rsquo;ll see a poetry.lock file inside the lib/<NAME> folder). You can install them in a local environment using the following lines by replacing <library<sub>name</sub>> with your library of interest.
-
-```bash
-# Install Poetry (Linux, MacOS, Windows - WSL)
-lib="<library_name>"
-curl -sSL https://install.python-poetry.org | python3 -
-# Checkout the repository
-git clone git@github.com:broadinstitute/monorepo.git
-cd libs/<NAME>
-poetry install --with dev
-```
-
-We are slowly testing uv for development as a poetry replacement. In that case use this instead:
-```
-uv venv
-source .venv/bin/activate
-uv sync
-```
-it should create a virtualenvironment on the `.venv` folder and install the depenencies in `pyproject.toml`.
+We use uv for development, just cd to the libs/PROJECT folder and run `uv sync --all-groups`. If Nix is available, `nix develop .` should be enough.
 
 <a id="Code%20Quality"></a>
 
@@ -65,13 +46,6 @@ While not strictly enforced, we suggest using the [conventional commits](https:/
 We use numpy documentation style (see [guide](https://numpydoc.readthedocs.io/en/latest/format.html)).
 
 
-<a id="Test%20coverage"></a>
-
-## Test coverage
-
-[WIP] We aim to have a test coverage of over 90%, mostly focusing on the core functionality of each library.
-
-
 <a id="Code%20reviews"></a>
 
 ## Code reviews
@@ -81,18 +55,17 @@ We follow multiple rules of the thumb on how to review code to maintain high qua
 -   Binaries: They cannot be version-controlled.
 -   Large files (>10MB): They slow down the repository.
 -   Do not push notebooks to the modules: They are hard to parse, obscure diffs and are much bigger than the equivalent script.
--   Data: the only exception is tiny (<1MB) datasets for tests, but try to generate it as [pytest fixtures](https://docs.pytest.org/en/6.2.x/fixture.html) instead if possible.
+-   Data: the only exception is tiny (<1MB) datasets for tests, but try to generate it as [pytest fixtures](https://docs.pytest.org/en/stable/reference/fixtures.html) instead if possible.
 
 Observed anti-patterns to avoid:
 
--   One function can return types of output.
--   Paths to local files: For full reproducibility we need to be able to access the data when it is publicly available. The exceptions for this are tutorial-like scripts and data that is not yet public. In the latter case use instead a folder present in the data location of the Imaging Platform (e.g., our server&rsquo;s shared storage); add a comment to the url of the private repo pointing to the original files. This will simplify the refactoring when making the data public and ensure that the results are reproducible.
+-   One function can return multiple types of output.
+-   Paths to local files: For full reproducibility we need to be able to access the data when it is publicly available. The exceptions for this are tutorial-like scripts and data that is not yet public. In the latter case use instead a folder present in the data location (e.g., our server&rsquo;s shared storage); add a comment to the url of the private repo pointing to the original files. This will simplify the refactoring when making the data public and ensure that the results are reproducible.
 -   Sample data contains unnecessary information: Everything not necessary to test the functionality of a component is noise, avoid commiting such type of data.
 -   Overusing Try-Except: This may make your code run but it may obscure edge-cases that bring bugs out to the open.
 
 Things that makes us happy:
 
--   Lock your dependencies: Regardless of the library you use, please ensure you lock your libraries (e.g., poetry.lock) to ensure others can reproduce your environment.
+-   Lock your dependencies: Regardless of the library you use, please ensure you lock your libraries (e.g., uv.lock) to ensure others can reproduce your environment.
 -   Document and specify the type all inputs and outputs: This makes code much easier to maintain over time.
 
-[WIP] We will enforce some of these items using precommit files.
