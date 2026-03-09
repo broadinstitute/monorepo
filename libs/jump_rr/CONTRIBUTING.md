@@ -13,37 +13,22 @@ This guide covers everything you need to get productive in the codebase: setup, 
 uv sync --all-extras --group test
 
 # Run tests (fast only)
-uv run pytest tests/
+pytest tests/
 
 # Run tests including slow (network-dependent downloads)
-uv run pytest tests/ --runslow
+pytest tests/ --runslow
 
 # Run a single test
 uv run pytest tests/test_t.py::test_pvalue
 
 # Lint and format
-uv run ruff check src/
-uv run ruff format src/
+ruff check src/
+ruff format src/
 ```
 
 **Python version**: >3.10, <3.12 (required by pylibraft-cu12 dependency).
 
 **GPU requirement**: `calculate_matches.py` and `index_selection.py` require CUDA GPUs (CuPy + pylibraft). The Nix flake provides a reproducible dev shell with CUDA support.
-
-### Testing on macOS
-
-`pylibraft-cu12` has no macOS wheels and its transitive deps fail to build, so `uv sync` fails. Note: uv platform markers (`sys_platform == 'linux'`), `environments`, and optional extras all fail because nvidia's build stub runs during resolution. The sed workaround below is the only reliable approach.
-
-```bash
-# Temporarily remove pylibraft-cu12 from dependencies, then sync and test
-sed -i '' '/"pylibraft-cu12/d' pyproject.toml
-uv lock && uv sync --group test
-uv run pytest tests/
-# Restore after testing
-git checkout pyproject.toml uv.lock
-```
-
-Do not commit the modified `pyproject.toml` or `uv.lock` — this is a local-only workaround.
 
 ## Architecture
 
@@ -66,7 +51,7 @@ All three output zstd-compressed parquet files to `./databases/` and write JSON 
 
 ## Code Style & Conventions
 
-- **Format before pushing**: always run `uv run ruff format src/` using the pyproject.toml config
+- **Format before pushing**: always run `ruff format src/` using the pyproject.toml config
 - **Prefer DuckDB over Polars for data joins/grouping** — the project is deliberately moving toward DuckDB for memory spill benefits. Fix bugs within the existing technology; don't swap to Polars.
 - **Split chained expressions when debugging matters** — assign intermediate results to variables so breakpoints can inspect them, especially for multi-step data transformations
 
@@ -89,7 +74,3 @@ All three output zstd-compressed parquet files to `./databases/` and write JSON 
 - Add `&install=datasette-json-html` for images/links to render
 - Datasette-lite derives the table name from the URL: Zenodo's `/files/foo.parquet/content` endpoint produces a table called `content`, while S3 uses the filename (e.g., `orf_interpretable_features`). The `"tables"` key in the metadata JSON must match this derived name, otherwise column descriptions and titles silently won't apply.
 - Metadata JSON must be served from a URL accessible to the browser (e.g., raw GitHub link)
-
-## GitHub CLI
-
-- `gh pr edit` fails with "Projects (classic) deprecation" error. Use `gh api repos/{owner}/{repo}/pulls/{n} -X PATCH -f body="..."` instead.
