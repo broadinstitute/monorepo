@@ -1,0 +1,44 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "copairs-runner"
+description = "Configurable runner for copairs analyses on cell painting data"
+dynamic = ["version"]
+readme = "README.md"
+requires-python = ">=3.9,<3.13"
+# Dependencies must be kept in sync with PEP 723 inline deps in src/copairs_runner/copairs_runner.py
+dependencies = [
+    "pandas",
+    "numpy",
+    "copairs @ git+https://github.com/cytomining/copairs.git@main",
+    "omegaconf",
+    "hydra-core",
+    "pyarrow",
+    "matplotlib",
+    "seaborn",
+    "polars",
+]
+
+[project.scripts]
+copairs-runner = "copairs_runner.copairs_runner:main"
+
+[tool.hatch.version]
+path = "src/copairs_runner/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/copairs_runner"]
+
+[tool.hatch.metadata]
+allow-direct-references = true
+
+[tool.ruff.lint]
+# 1. Enable flake8-bugbear (`B`) rules, in addition to the defaults.
+select = ["E4", "E7", "E9", "F", "B"]
+
+# 2. Avoid enforcing line-length violations (`E501`)
+ignore = ["E501"]
+
+# 3. Avoid trying to fix flake8-bugbear (`B`) violations.
+unfixable = ["B"]
