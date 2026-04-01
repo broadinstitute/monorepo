@@ -73,7 +73,15 @@ def provide_mapper(
 
 df_all = []
 for dataset in plates_order[:3]:
-    table = get_table(dataset).rename(provide_mapper(get_table(dataset), std_col))
+    table_file = get_table(dataset)
+    table = pl.read_csv(
+        table_file,
+        schema_overrides={
+            "Metadata_NCBI_Gene_ID": pl.String,
+            "Metadata_Taxon_ID": pl.String,
+        },
+    )
+    table = table.rename(provide_mapper(table, std_col))
     sel_table = (
         select_if_available(table, (jcp_col, std_col, "Metadata_NCBI_Gene_ID"))
         .with_columns(pl.lit(dataset).alias(plate_col))
@@ -85,8 +93,18 @@ for dataset in plates_order[:3]:
         df_all.append(sel_table)
 df_all = pl.concat(df_all, how="diagonal")
 
+
+orf_table_file = get_table("orf")
+orf_table = pl.read_csv(
+    orf_table_file,
+    schema_overrides={
+        "Metadata_NCBI_Gene_ID": pl.String,
+        "Metadata_Taxon_ID": pl.String,
+    },
+)
+
 df_all_pert = df_all.join(
-    get_table("orf").select(jcp_col, "Metadata_broad_sample", pert_col),
+    orf_table.select(jcp_col, "Metadata_broad_sample", pert_col),
     on=jcp_col,
     how="full",
 )
