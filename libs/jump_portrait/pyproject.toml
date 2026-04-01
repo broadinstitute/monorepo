@@ -28,6 +28,8 @@ dev = [
 ]
 test = [
     "pytest>=7.4.4",
+    "pytest-cov",
+    "pytest-markdown-docs",
 ]
 
 [tool.hatch.build.targets.sdist]

@@ -114,12 +114,15 @@ def drop_indices(values: numpy.ndarray, indices: list[int], axis=1):
 def basic_cleanup(
     df: pl.DataFrame,
     meta_selector: pl.selectors,
-    params: dict[str, int] = {"nan_rows": 0.5, "redundancy": 0.9, "outliers": 500},
+    params: dict[str, int] | None = None,
 ) -> tuple[pl.DataFrame, dict[str, int]]:
     """
     df: data+metadata data frame.
     meta_selector: metadata it determines which columns are metadata and which are data.
     """
+    if params is None:
+        params = {"nan_rows": 0.5, "redundancy": 0.9, "outliers": 500}
+
     ndropped = {}
     values_df = df.select(~meta_selector)
     current_vals = values_df.to_numpy()

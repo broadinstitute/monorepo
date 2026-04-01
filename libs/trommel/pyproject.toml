@@ -24,9 +24,13 @@ dev = [
     "ruff>=0.8.1",
     "ipdb>=0.13.13,<0.14",
     "jupyter>=1.0.0,<2",
-    "pytest>=7.4.1,<8",
 ]
-
+test = [
+    "pytest>=7.4.1,<8",
+    "pytest-cov",
+    "pytest-markdown-docs",
+]
+  
 [tool.hatch.build.targets.sdist]
 include = ["src/trommel"]
 
