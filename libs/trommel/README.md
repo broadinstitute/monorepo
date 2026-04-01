@@ -70,24 +70,6 @@ The basic cleanup steps are:
 3. Remove outliers
 4. Remove redundant (highly correlated) features
 
-# Installation
-
-## Pip
-Aimed towards users of the functions/pipelines.
-
-```python
-pip install trommel
-```
-## Poetry
-Predominantly for developers who want to edit the code.
-
-```python
-git clone git@github.com:broadinstitute/monorepo.git
-cd monorepo/libs/trommel
-
-poetry install
-```
-
 # Additional information
 ## Related projects
 - [pycytominer](https://github.com/cytomining/pycytominer): The closest match, but with more complexity imbued and many of the math functions are pandas-centric.
