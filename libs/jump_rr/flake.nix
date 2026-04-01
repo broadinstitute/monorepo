@@ -5,6 +5,14 @@
     systems.url = "github:nix-systems/default";
     flake-utils.url = "github:numtide/flake-utils";
     flake-utils.inputs.systems.follows = "systems";
+    git-hooks = {
+      url = "github:cachix/git-hooks.nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+    treefmt-nix = {
+      url = "github:numtide/treefmt-nix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
@@ -12,6 +20,8 @@
       self,
       nixpkgs,
       flake-utils,
+      git-hooks,
+      treefmt-nix,
       ...
     }@inputs:
     flake-utils.lib.eachDefaultSystem (
@@ -29,25 +39,46 @@
           config.cudaSupport = true;
         };
 
-        libList =
+        libList = [
+          # Add needed packages here
+          mpkgs.stdenv.cc.cc
+          mpkgs.libGL
+          mpkgs.glib
+        ]
+        ++ pkgs.lib.optionals pkgs.stdenv.isLinux (
+          with pkgs;
           [
-            # Add needed packages here
-            mpkgs.stdenv.cc.cc
-            mpkgs.libGL
-            mpkgs.glib
-          ]
-          ++ pkgs.lib.optionals pkgs.stdenv.isLinux (
-            with pkgs;
-            [
-              cudatoolkit
+            cudatoolkit
 
-              # This is required for most app that uses graphics api
-              # linuxPackages.nvidia_x11
-            ]
-          );
+            # This is required for most app that uses graphics api
+            # linuxPackages.nvidia_x11
+          ]
+        );
+        treefmtEval = treefmt-nix.lib.evalModule pkgs {
+          projectRootFile = "flake.nix";
+          programs.nixfmt.enable = true;
+          programs.ruff-format.enable = true;
+          programs.ruff-check.enable = true;
+        };
+
+        pre-commit-check = git-hooks.lib.${system}.run {
+          src = ./.;
+          package = pkgs.prek;
+          hooks = {
+            treefmt = {
+              enable = true;
+              package = treefmtEval.config.build.wrapper;
+            };
+          };
+        };
       in
       with pkgs;
       {
+        checks = {
+          inherit pre-commit-check;
+          formatting = treefmtEval.config.build.check self;
+        };
+        formatter = treefmtEval.config.build.wrapper;
         devShells = {
           default =
             let
@@ -66,7 +97,8 @@
                 python311Packages.venvShellHook
                 # We # We now recommend to use uv for package management inside nix env
                 pkgs.uv
-              ] ++ libList;
+              ]
+              ++ libList;
               venvDir = "./.venv";
               postVenvCreation = ''
                 unset SOURCE_DATE_EPOCH
@@ -75,6 +107,7 @@
                 unset SOURCE_DATE_EPOCH
               '';
               shellHook = ''
+                ${pre-commit-check.shellHook}
                 export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:"/run/opengl-driver/lib":$LD_LIBRARY_PATH
                 export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
                 export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
