@@ -35,4 +35,4 @@ jobs:
         run: uv sync --all-groups
 
       - name: Test
-        run: uv run pytest --markdown-docs --cov --color=yes --cov-report=xml -s
+        run: uv run pytest --markdown-docs --cov=${{ matrix.library }} --color=yes --cov-report=xml -s
