@@ -83,8 +83,6 @@
               NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
               packages = [
                 pwp
-                python312Packages.venvShellHook
-                # We # We now recommend to use uv for package management inside nix env
                 pkgs.uv
               ]
               ++ libList;
