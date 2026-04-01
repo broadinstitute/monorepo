@@ -1,0 +1,25 @@
+name: lint
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+jobs:
+  flake-check:
+    name: "Check Flake (Formatting & Linting) for \${{ matrix.library }}"
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        library: [jump_babel, jump_portrait, jump_rr, trommel]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Nix
+        uses: cachix/install-nix-action@v30
+        with:
+          nix_path: nixpkgs=channel:nixos-unstable
+      - name: Format
+        run: nix fmt ./libs/\${{ matrix.library }}
+      - name: Check formatting changes
+        run: git diff --exit-code
+      - name: Run checks
+        run: nix flake check ./libs/\${{ matrix.library }}

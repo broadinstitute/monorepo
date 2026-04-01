@@ -1,0 +1,52 @@
+name: Tests
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+jobs:
+  get_changed_libs:
+    runs-on: ubuntu-latest
+    outputs:
+      libs: ${{ steps.filter.outputs.changes }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v2
+      id: filter
+      with:
+        filters: |
+          jump_babel:
+            - "libs/jump_babel/**"
+          jump_portrait:
+            - "libs/jump_portrait/**"
+          trommel:
+            - "libs/trommel/**"
+          # jump_rr:
+          #   - "libs/jump_rr/**"
+
+  test:
+    needs: get_changed_libs
+    if: needs.get_changed_libs.outputs.libs != '[]'
+    name: Test ${{ matrix.library }} on ubuntu-latest with Python 3.11
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        library: ${{ fromJson(needs.get_changed_libs.outputs.libs) }}
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11 and uv
+        uses: astral-sh/setup-uv@v1
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          cd libs/${{ matrix.library }}
+          uv sync --all-groups
+      - name: Test
+        run: |
+          cd libs/${{ matrix.library }}
+          uv run pytest
