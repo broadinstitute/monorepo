@@ -7,6 +7,7 @@ requires-python = ">=3.10,<3.15"
 readme = "README.md"
 dependencies = [
     "pooch>=1.7.0,<2",
+    "pyarrow>=23.0.1",
 ]
 
 [project.urls]
@@ -14,8 +15,6 @@ Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/broad_babe
 
 [dependency-groups]
 datagen = [
-    "polars>=1.39.3",
-    "pyarrow>=23.0.1",
     "adbc-driver-sqlite>=0.8.0",
 ]
 dev = [
