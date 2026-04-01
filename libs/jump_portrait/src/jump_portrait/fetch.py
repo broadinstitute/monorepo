@@ -28,6 +28,7 @@ from pathlib import Path
 import duckdb
 import numpy as np
 import pyarrow as pa
+import pyarrow.csv as pv
 from broad_babel import query
 from broad_babel.data import get_table
 from joblib import Parallel, delayed
@@ -137,7 +138,8 @@ def get_item_location_metadata(
     index_file = get_index_file()
 
     with duckdb.connect() as con:
-        meta_wells = get_table("well")  # noqa: F841
+        meta_wells_csv: str = get_table("well")
+        meta_wells = pv.read_csv(meta_wells_csv)  # noqa: F841
         found_rows = con.sql(  # noqa: F841
             f"SELECT *, '{item_name}' AS standard_key FROM meta_wells WHERE Metadata_JCP2022 IN {list(jcp_item.keys())}"
         )
