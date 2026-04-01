@@ -15,6 +15,9 @@ dependencies = [
 Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_babel"
 
 [dependency-groups]
+datagen = [
+    "pyarrow>=23.0.1",
+]
 dev = [
     "jupytext>=1.15.0,<2",
     "ipdb>=0.13.13,<0.14",
