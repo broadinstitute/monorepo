@@ -23,7 +23,5 @@ jobs:
           nix fmt 
           git diff --exit-code
       - name: Run Flake Check
-      
         run: |
-          cd ./libs/${{ matrix.library }}
           nix flake check ./libs/${{ matrix.library }}
