@@ -6,11 +6,8 @@ on:
     branches: [main]
 jobs:
   flake-check:
-    name: "Check Flake formatting and linting: ${{ matrix.library }}"
+    name: "Check linting on monorepo"
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        library: [jump_babel, jump_portrait, trommel]
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
@@ -19,9 +16,8 @@ jobs:
           nix_path: nixpkgs=channel:nixos-unstable
       - name: Check Formatting
         run: |
-          cd ./libs/${{ matrix.library }}
           nix fmt 
           git diff --exit-code
       - name: Run Flake Check
         run: |
-          nix flake check ./libs/${{ matrix.library }}
+          nix flake check
