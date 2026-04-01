@@ -1,6 +1,6 @@
 [project]
 name = "broad-babel"
-version = "0.1.28"
+version = "0.1.29"
 description = "A translator of Broad and JUMP ids to more conventional names."
 authors = [{ name = "Alan Munoz" }]
 requires-python = ">=3.10,<3.15"

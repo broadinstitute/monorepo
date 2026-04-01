@@ -225,7 +225,7 @@ css = [
 
 [[package]]
 name = "broad-babel"
-version = "0.1.28"
+version = "0.1.29"
 source = { editable = "." }
 dependencies = [
     { name = "pooch" },
