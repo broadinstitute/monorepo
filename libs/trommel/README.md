@@ -38,7 +38,6 @@ shape: (100, 3_677)
 
 # the second argument is a dictionary indicating how many samples or columns were dropped at each step
 preprocessed, _ = basic_cleanup(profiles, meta_selector = meta_selector)
-preprocessed
 """
 shape: (100, 554)
 ┌─────────────────┬────────────────┬───────────────┬───┬─────────────────┬─────────────────┬────────────────┐

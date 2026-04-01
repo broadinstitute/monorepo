@@ -53,3 +53,6 @@ ignore = ["E501"]
 
 # 3. Avoid trying to fix flake8-bugbear (`B`) violations.
 unfixable = ["B"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests", "README.md"]
