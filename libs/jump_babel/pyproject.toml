@@ -3,13 +3,12 @@ name = "broad-babel"
 version = "0.1.28"
 description = "A translator of Broad and JUMP ids to more conventional names."
 authors = [{ name = "Alan Munoz" }]
-requires-python = ">=3.10,<3.12"
+requires-python = ">=3.10,<3.15"
 readme = "README.md"
 dependencies = [
     "pooch>=1.7.0,<2",
     "polars>=1.5.0,<2",
     "adbc-driver-sqlite>=0.8.0,<0.9",
-    "pyarrow>=16.1.0",
 ]
 
 [project.urls]
@@ -19,13 +18,9 @@ Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_babel
 dev = [
     "jupytext>=1.15.0,<2",
     "ipdb>=0.13.13,<0.14",
-    "biopython~=1.81",
     "jupyter>=1.0.0,<2",
-    "more-itertools>=10.1.0,<11",
     "tqdm>=4.66.1,<5",
-    "pandas>=2.0.3",
     "pytest>=7.4.1,<8",
-    "csvkit>=1.1.1,<2",
     "ruff<0.2.0",
 ]
 
