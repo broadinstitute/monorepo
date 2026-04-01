@@ -1,6 +1,8 @@
 #!/usr/bin/env jupyter
 """Script to build a sqlite containing the final version of a database."""
 
+from pathlib import Path
+
 import polars as pl
 from broad_babel.data import get_table
 
@@ -138,10 +140,12 @@ final_version = pert_target_all_manual.select(
 )
 
 # Save
-db_name = "babel.db"
+db_file = Path("babel.db")
+if db_file.exists():
+    db_file.unlink()
 final_version.write_database(
     table_name="babel",
-    connection=f"sqlite:{db_name}",
+    connection=f"sqlite:{db_file}",
     if_table_exists="replace",
     engine="adbc",
 )
