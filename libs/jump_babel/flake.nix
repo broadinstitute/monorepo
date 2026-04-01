@@ -68,13 +68,7 @@
         devShells = {
           default =
             let
-              pwp = (
-                python313.withPackages (
-                  p: with p; [
-                    venvShellHook
-                  ]
-                )
-              );
+              pwp = python313.withPackages (p: with p; [ venvShellHook ]);
             in
             mkShell {
               NIX_LD = runCommand "ld.so" { } ''

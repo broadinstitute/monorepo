@@ -6,7 +6,7 @@ on:
     branches: [main]
 jobs:
   flake-check:
-    name: "Check Flake (Formatting & Linting) for \${{ matrix.library }}"
+    name: "Check Flake formatting and linting: ${{ matrix.library }}"
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -17,9 +17,13 @@ jobs:
         uses: cachix/install-nix-action@v30
         with:
           nix_path: nixpkgs=channel:nixos-unstable
-      - name: Format
-        run: nix fmt ./libs/\${{ matrix.library }}
-      - name: Check formatting changes
-        run: git diff --exit-code
-      - name: Run checks
-        run: nix flake check ./libs/\${{ matrix.library }}
+      - name: Check Formatting
+        run: |
+          cd ./libs/${{ matrix.library }}
+          nix fmt 
+          git diff --exit-code
+      - name: Run Flake Check
+      
+        run: |
+          cd ./libs/${{ matrix.library }}
+          nix flake check ./libs/${{ matrix.library }}
