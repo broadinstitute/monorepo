@@ -54,4 +54,5 @@ jobs:
         run: |
           cd libs/${{ matrix.library }}
           uv sync --all-groups
-          pytest --markdown-docs --cov --color=yes --cov-report=xml -s
+          uv run pytest --markdown-docs --cov --color=yes --cov-report=xml -s
+          
