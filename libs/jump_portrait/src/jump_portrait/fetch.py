@@ -48,12 +48,12 @@ def get_index_file() -> Path:
 
     """
     jump_index = (
-        "https://zenodo.org/api/records/18729301/files/jump_index.parquet/content"
+        "https://zenodo.org/api/records/19373370/files/jump_index.parquet/content"
     )
 
     return retrieve(
         jump_index,
-        known_hash="6dddbda730650a079005565ce7f1418555cbb0ac77f0e3ecbf9a538f11c9a156",
+        known_hash="f45ea1a5de091e43caf35358370abf843bd2be47b2810283fd76db472b5acc6a",
     )
 
 
