@@ -6,36 +6,14 @@ on:
   pull_request:
     branches: ["main"]
 
-jobs:
-  get_changed_libs:
-    runs-on: ubuntu-latest
-    outputs:
-      libs: ${{ steps.filter.outputs.changes }}
-    steps:
-    - uses: actions/checkout@v4
-    - uses: dorny/paths-filter@v2
-      id: filter
-      with:
-        filters: |
-          jump_babel:
-            - "libs/jump_babel/**"
-          jump_portrait:
-            - "libs/jump_portrait/**"
-          trommel:
-            - "libs/trommel/**"
-          # jump_rr:
-          #   - "libs/jump_rr/**"
-
   test:
-    needs: get_changed_libs
-    if: needs.get_changed_libs.outputs.libs != '[]'
-    name: Test ${{ matrix.library }} on ubuntu-latest with Python ${{ matrix.python-version }}
+    name: Test ${{ matrix.library }} on ${{ matrix.os }} with Python ${{ matrix.python-version }}
     runs-on: ubuntu-latest
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
         python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
-        library: ${{ fromJson(needs.get_changed_libs.outputs.libs) }}
+        library: ["jump_babel", "jump_portrait", "trommel"]
 
     steps:
       - uses: actions/checkout@v4
