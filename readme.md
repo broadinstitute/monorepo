@@ -4,7 +4,7 @@ Monorepo of the Carpenter-Singh Lab, hosting many of the tools and methods we de
 
 ### Libraries
 
-- [broad\_babel](https://github.com/broadinstitute/monorepo/tree/main/libs/jump_babel): Translate gene names to and from broad and JUMP ids, NCBI and other identifiers.
+- [broad\_babel](https://github.com/broadinstitute/monorepo/tree/main/libs/broad_babel): Translate gene names to and from broad and JUMP ids, NCBI and other identifiers.
 - [jump\_compound\_annotator](https://github.com/broadinstitute/monorepo/tree/main/libs/jump_compound_annotator): Collect compound names and relationships from multiple online databases using their APIs or web requests.
 - [jump\_portrait](https://github.com/broadinstitute/monorepo/tree/main/libs/jump_portrait): Fetch JUMP images from CellPainting&rsquo;s AWS servers. It also contains some utilities to explore file names.
 - [jump\_rr](https://github.com/broadinstitute/monorepo/tree/main/libs/jump_rr): Generate browsable databases of perturbation similarities and morphological feature rankings to be explored and queried on a browser.

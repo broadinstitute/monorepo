@@ -1,12 +1,12 @@
-name: lint
+name: Lint
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   pull_request:
-    branches: [main]
+    branches: ["main"]
 jobs:
   flake-check:
-    name: "Check linting on monorepo"
+    name: "Check monorepo linting"
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

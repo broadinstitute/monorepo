@@ -12,7 +12,7 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/jump_babel"
+Homepage = "https://github.com/broadinstitute/monorepo/tree/main/libs/broad_babel"
 
 [dependency-groups]
 datagen = [
