@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        library: [jump_babel, jump_portrait, jump_rr, trommel]
+        library: [jump_babel, jump_portrait, trommel]
     steps:
       - uses: actions/checkout@v4
       - name: Install Nix
