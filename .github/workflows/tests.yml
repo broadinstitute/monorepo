@@ -32,7 +32,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
 
       - name: Install dependencies
-        run: uv sync --group test
+        run: uv sync --all-groups
 
       - name: Test
         run: uv run pytest --markdown-docs --cov=${{ matrix.library }} --color=yes --cov-report=xml -s
