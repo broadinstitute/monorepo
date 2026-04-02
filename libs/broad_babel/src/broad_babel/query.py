@@ -29,11 +29,11 @@ def run_query(
 
     Parameters
     ----------
-    query : str or t.List[str]
+    query : str or list[str]
         Input identifiers
     input_column : str
         Type of name the input belongs to. It can be  standard_key,JCP2022,plate_type,NCBI_Gene_ID,broad_sample or pert_type.
-    output_columns : str
+    output_columns : str | list[str]
         Desired name translation.
     operator : None or str
         Type of comparison to use, default is "=", but use "LIKE" to match an expression.
@@ -46,23 +46,30 @@ def run_query(
         - List of tuples with all fields.
 
     """
-    con = sqlite3.connect(DB_FILE)
-    cur = con.cursor()
-    expression_prefix = expression = (
-        f"SELECT {output_columns} FROM {TABLE} WHERE {input_column} "
-    )
-    placeholder = "?"  # For SQLite. See DBAPI paramstyle.
-    if isinstance(query, str):
-        operator = operator or "="
-        query = (query,)
-    else:
-        operator = "IN"
-        placeholder = ", ".join(placeholder for _ in query)
-    expression = expression_prefix + operator + f" ({placeholder})"
-    if predicate is not None:
-        expression += f" {predicate}"
+    if isinstance(output_columns, list):
+        output_columns = ", ".join(output_columns)
 
-    result = cur.execute(expression, query).fetchall()
+    con = sqlite3.connect(DB_FILE)
+    try:
+        cur = con.cursor()
+        expression_prefix = expression = (
+            f"SELECT {output_columns} FROM {TABLE} WHERE {input_column} "
+        )
+        placeholder = "?"  # For SQLite. See DBAPI paramstyle.
+        if isinstance(query, str):
+            operator = operator or "="
+            query = (query,)
+        else:
+            operator = "IN"
+            placeholder = ", ".join(placeholder for _ in query)
+        expression = expression_prefix + operator + f" ({placeholder})"
+        if predicate is not None:
+            expression += f" {predicate}"
+
+        result = cur.execute(expression, query).fetchall()
+    finally:
+        con.close()
+
     # Remove duplicates (e.g., different broad ids, same JUMP ids)
     no_duplicates = list(set(result))
 
@@ -81,12 +88,12 @@ def get_mapper(
 
     Parameters
     ----------
-    query : t.List[str]
+    query : list[str] | tuple[str]
         Input identifiers
     input_column : str
         Type of name the input belongs to. It can be JCP2022, broad_sample or standard_key.
     output_columns : str
-        Desired value of resulting dictionary
+        Desired value of resulting dictionary, comma-separated fields.
 
     Returns
     -------
