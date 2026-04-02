@@ -87,10 +87,7 @@ for dataset in plates_order[:3]:
         .with_columns(pl.lit(dataset).alias(plate_col))
         .cast(pl.Utf8)
     )
-    if df_all is None:
-        df_all = sel_table
-    else:
-        df_all.append(sel_table)
+    df_all.append(sel_table)
 df_all = pl.concat(df_all, how="diagonal")
 
 
@@ -108,12 +105,6 @@ df_all_pert = df_all.join(
     on=jcp_col,
     how="full",
 )
-
-# Combine target plates table to the normal one
-# all_target_pert = df_all_pert.join(targets_combined_control, on=std_col, how="outer")
-
-# Combine pert_type and broad sample from both sources
-# Note that this picks a single broad_sample per JCP
 
 # We keep this list here because it is manually-curated, and not everything
 # was contained in the original datasets. The positive controls
@@ -141,8 +132,6 @@ jcp_pert = {k: v for k, v in manual_mapper.items()}
 
 # %%
 
-# Replace nulls with trt
-# pert_target_all_trt = pert_target_all.with_columns(pl.col(pert_col).fill_null("trt"))
 pert_target_all_trt = df_all_pert.with_columns(pl.col(pert_col).fill_null("trt"))
 
 # Add manual annotations

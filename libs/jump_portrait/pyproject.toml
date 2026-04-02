@@ -57,5 +57,5 @@ exclude = ["vendor"]
 default-groups = ["dev"]
 
 [tool.pytest.ini_options]
-testpaths = ["tests", "REAMDE.md"]
+testpaths = ["tests", "README.md"]
 
