@@ -7,18 +7,17 @@ The hashes of these datasets are defined in this document.
 
 from functools import cache
 
-import polars as pl
 import pooch
 
 
 @cache
-def get_table(table_name: str) -> pl.DataFrame:
+def get_table(table_name: str) -> str:
     """
-    Fetch a table from broad_portrait based on the provided name.
+    Fetch a table from jump-cellpainting/datasets based on the provided name.
 
     The function retrieves the corresponding metadata csv file,
     checks its hash against a known value for integrity, and
-    returns the contents as a polars DataFrame.
+    returns the local path to the downloaded CSV file.
 
     Parameters
     ----------
@@ -27,8 +26,8 @@ def get_table(table_name: str) -> pl.DataFrame:
 
     Returns
     -------
-    pl.DataFrame
-        A polars DataFrame containing the contents of the requested table.
+    str
+        The local path to the downloaded CSV file containing the requested table.
 
     """
     # Obtained from broad_portrait
@@ -45,10 +44,7 @@ def get_table(table_name: str) -> pl.DataFrame:
         "plate": "745391d930627474ec6e3083df8b5c108db30408c0d670cdabb3b79f66eaff48",
     }
 
-    return pl.read_csv(
-        pooch.retrieve(
-            url=metadata_location.format(table_name),
-            known_hash=metafile_hash[table_name],
-        ),
-        use_pyarrow=True,
+    return pooch.retrieve(
+        url=metadata_location.format(table_name),
+        known_hash=metafile_hash[table_name],
     )

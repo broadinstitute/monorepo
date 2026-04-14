@@ -1,6 +1,8 @@
 #!/usr/bin/env jupyter
 """Script to build a sqlite containing the final version of a database."""
 
+from pathlib import Path
+
 import polars as pl
 from broad_babel.data import get_table
 
@@ -71,29 +73,38 @@ def provide_mapper(
 
 df_all = []
 for dataset in plates_order[:3]:
-    table = get_table(dataset).rename(provide_mapper(get_table(dataset), std_col))
+    table_file = get_table(dataset)
+    table = pl.read_csv(
+        table_file,
+        schema_overrides={
+            "Metadata_NCBI_Gene_ID": pl.String,
+            "Metadata_Taxon_ID": pl.String,
+        },
+    )
+    table = table.rename(provide_mapper(table, std_col))
     sel_table = (
         select_if_available(table, (jcp_col, std_col, "Metadata_NCBI_Gene_ID"))
         .with_columns(pl.lit(dataset).alias(plate_col))
         .cast(pl.Utf8)
     )
-    if df_all is None:
-        df_all = sel_table
-    else:
-        df_all.append(sel_table)
+    df_all.append(sel_table)
 df_all = pl.concat(df_all, how="diagonal")
 
+
+orf_table_file = get_table("orf")
+orf_table = pl.read_csv(
+    orf_table_file,
+    schema_overrides={
+        "Metadata_NCBI_Gene_ID": pl.String,
+        "Metadata_Taxon_ID": pl.String,
+    },
+)
+
 df_all_pert = df_all.join(
-    get_table("orf").select(jcp_col, "Metadata_broad_sample", pert_col),
+    orf_table.select(jcp_col, "Metadata_broad_sample", pert_col),
     on=jcp_col,
     how="full",
 )
-
-# Combine target plates table to the normal one
-# all_target_pert = df_all_pert.join(targets_combined_control, on=std_col, how="outer")
-
-# Combine pert_type and broad sample from both sources
-# Note that this picks a single broad_sample per JCP
 
 # We keep this list here because it is manually-curated, and not everything
 # was contained in the original datasets. The positive controls
@@ -121,8 +132,6 @@ jcp_pert = {k: v for k, v in manual_mapper.items()}
 
 # %%
 
-# Replace nulls with trt
-# pert_target_all_trt = pert_target_all.with_columns(pl.col(pert_col).fill_null("trt"))
 pert_target_all_trt = df_all_pert.with_columns(pl.col(pert_col).fill_null("trt"))
 
 # Add manual annotations
@@ -138,10 +147,12 @@ final_version = pert_target_all_manual.select(
 )
 
 # Save
-db_name = "babel.db"
+db_file = Path("babel.db")
+if db_file.exists():
+    db_file.unlink()
 final_version.write_database(
     table_name="babel",
-    connection=f"sqlite:{db_name}",
+    connection=f"sqlite:{db_file}",
     if_table_exists="replace",
     engine="adbc",
 )

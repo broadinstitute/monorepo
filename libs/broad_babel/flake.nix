@@ -20,7 +20,6 @@
       self,
       nixpkgs,
       flake-utils,
-      systems,
       git-hooks,
       treefmt-nix,
       ...
@@ -29,21 +28,16 @@
       system:
       let
         pkgs = import nixpkgs {
-          system = system;
-          config.allowUnfree = true;
-        };
-
-        mpkgs = import inputs.nixpkgs_master {
-          system = system;
+          inherit system;
           config.allowUnfree = true;
         };
 
         libList = [
           # Add needed packages here
-          pkgs.libz # Numpy
           pkgs.stdenv.cc.cc
           pkgs.libGL
           pkgs.glib
+          pkgs.libz
         ];
 
         treefmtEval = treefmt-nix.lib.evalModule pkgs {
@@ -74,15 +68,7 @@
         devShells = {
           default =
             let
-              # These packages get built by Nix, and will be ahead on the PATH
-              pwp = (
-                python313.withPackages (
-                  p: with p; [
-                    python-lsp-server
-                    python-lsp-ruff
-                  ]
-                )
-              );
+              pwp = python313.withPackages (p: with p; [ venvShellHook ]);
             in
             mkShell {
               NIX_LD = runCommand "ld.so" { } ''
@@ -91,10 +77,7 @@
               NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
               packages = [
                 pwp
-                python313Packages.venvShellHook
-                uv
-
-                ruff
+                pkgs.uv
               ]
               ++ libList;
               venvDir = "./.venv";
@@ -105,6 +88,7 @@
                 unset SOURCE_DATE_EPOCH
               '';
               shellHook = ''
+                ${pre-commit-check.shellHook}
                 export UV_PYTHON=${pkgs.python313}
                 export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:$LD_LIBRARY_PATH
                 export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring

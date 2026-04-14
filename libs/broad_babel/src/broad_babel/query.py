@@ -2,6 +2,7 @@
 
 import csv
 import sqlite3
+import typing as t
 from functools import cache
 
 import pooch
@@ -17,22 +18,22 @@ TABLE = "babel"
 
 @cache
 def run_query(
-    query: str or tuple[str],
+    query: str | tuple[str],
     input_column: str,
-    output_columns: str or str,
-    operator: None or str = None,
-    predicate: None or str = None,
-) -> str or dict[str, str]:
+    output_columns: str | list[str],
+    operator: t.Optional[str] = None,
+    predicate: t.Optional[str] = None,
+) -> list[tuple[str, ...]]:
     """
     Query one or multiple values to the database.
 
     Parameters
     ----------
-    query : str or t.List[str]
+    query : str or list[str]
         Input identifiers
     input_column : str
         Type of name the input belongs to. It can be  standard_key,JCP2022,plate_type,NCBI_Gene_ID,broad_sample or pert_type.
-    output_columns : str or t.List[str]
+    output_columns : str | list[str]
         Desired name translation.
     operator : None or str
         Type of comparison to use, default is "=", but use "LIKE" to match an expression.
@@ -41,29 +42,34 @@ def run_query(
 
     Returns
     -------
-    str, t.List[t.Tuple[str]] or t.Dict[str, str]
-        - Translated name (str) if query is string and only one occurrence is found.
-        - List of tuples with all fields if output_column is not one column or multiple occurrnces are found.
-        - Dictionary with input->output names if the input is a collection of strings.
+    list[tuple[str, ...]]
+        - List of tuples with all fields.
 
     """
-    con = sqlite3.connect(DB_FILE)
-    cur = con.cursor()
-    expression_prefix = expression = (
-        f"SELECT {output_columns} FROM {TABLE} WHERE {input_column} "
-    )
-    placeholder = "?"  # For SQLite. See DBAPI paramstyle.
-    if isinstance(query, str):
-        operator = operator or "="
-        query = (query,)
-    else:
-        operator = "IN"
-        placeholder = ", ".join(placeholder for _ in query)
-    expression = expression_prefix + operator + f" ({placeholder})"
-    if predicate is not None:
-        expression += f" {predicate}"
+    if isinstance(output_columns, list):
+        output_columns = ", ".join(output_columns)
 
-    result = cur.execute(expression, query).fetchall()
+    con = sqlite3.connect(DB_FILE)
+    try:
+        cur = con.cursor()
+        expression_prefix = expression = (
+            f"SELECT {output_columns} FROM {TABLE} WHERE {input_column} "
+        )
+        placeholder = "?"  # For SQLite. See DBAPI paramstyle.
+        if isinstance(query, str):
+            operator = operator or "="
+            query = (query,)
+        else:
+            operator = "IN"
+            placeholder = ", ".join(placeholder for _ in query)
+        expression = expression_prefix + operator + f" ({placeholder})"
+        if predicate is not None:
+            expression += f" {predicate}"
+
+        result = cur.execute(expression, query).fetchall()
+    finally:
+        con.close()
+
     # Remove duplicates (e.g., different broad ids, same JUMP ids)
     no_duplicates = list(set(result))
 
@@ -71,7 +77,7 @@ def run_query(
 
 
 def get_mapper(
-    query: list or tuple, input_column: str, output_columns: str
+    query: list[str] | tuple[str, ...], input_column: str, output_columns: str
 ) -> dict[str, str]:
     """
     Generate a query->result mapper from a collection of queries.
@@ -82,12 +88,12 @@ def get_mapper(
 
     Parameters
     ----------
-    query : str or t.List[str]
+    query : list[str] | tuple[str]
         Input identifiers
     input_column : str
         Type of name the input belongs to. It can be JCP2022, broad_sample or standard_key.
-    output_columns : str or t.List[str]
-        Desired value of resulting dictionary
+    output_columns : str
+        Desired value of resulting dictionary, comma-separated fields.
 
     Returns
     -------
@@ -109,7 +115,7 @@ def get_mapper(
     )
 
 
-def broad_to_standard(query: str or list[str]) -> str or dict[str, str]:
+def broad_to_standard(query: str | list[str]) -> str | dict[str, str]:
     """
     Convert broad ids to standard, either InChiKey or Entrez Gene name.
 
@@ -154,7 +160,7 @@ def export_csv(output: str = "exported.csv", table: str = TABLE) -> None:
     Parameters
     ----------
     table : str
-        (optional) table name, if multiple ones. Default is "names"
+        (optional) table name, if multiple ones. Default is "babel"
     output : str
         filepath of resultant file
 

@@ -28,6 +28,7 @@ from pathlib import Path
 import duckdb
 import numpy as np
 import pyarrow as pa
+import pyarrow.csv as pv
 from broad_babel import query
 from broad_babel.data import get_table
 from joblib import Parallel, delayed
@@ -48,12 +49,12 @@ def get_index_file() -> Path:
 
     """
     jump_index = (
-        "https://zenodo.org/api/records/18729301/files/jump_index.parquet/content"
+        "https://zenodo.org/api/records/19373370/files/jump_index.parquet/content"
     )
 
     return retrieve(
         jump_index,
-        known_hash="6dddbda730650a079005565ce7f1418555cbb0ac77f0e3ecbf9a538f11c9a156",
+        known_hash="f45ea1a5de091e43caf35358370abf843bd2be47b2810283fd76db472b5acc6a",
     )
 
 
@@ -137,7 +138,8 @@ def get_item_location_metadata(
     index_file = get_index_file()
 
     with duckdb.connect() as con:
-        meta_wells = get_table("well")  # noqa: F841
+        meta_wells_csv: str = get_table("well")
+        meta_wells = pv.read_csv(meta_wells_csv)  # noqa: F841
         found_rows = con.sql(  # noqa: F841
             f"SELECT *, '{item_name}' AS standard_key FROM meta_wells WHERE Metadata_JCP2022 IN {list(jcp_item.keys())}"
         )

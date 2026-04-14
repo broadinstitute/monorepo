@@ -38,7 +38,6 @@ shape: (100, 3_677)
 
 # the second argument is a dictionary indicating how many samples or columns were dropped at each step
 preprocessed, _ = basic_cleanup(profiles, meta_selector = meta_selector)
-preprocessed
 """
 shape: (100, 554)
 ┌─────────────────┬────────────────┬───────────────┬───┬─────────────────┬─────────────────┬────────────────┐
@@ -69,24 +68,6 @@ The basic cleanup steps are:
 2. Calculate Robust Mean Average Deviation (following [pycytominer's](https://github.com/cytomining/pycytominer/blob/f6d0f6668571e39a8cf3a10dc290389b42891777/pycytominer/operations/transform.py#L313) implementation)
 3. Remove outliers
 4. Remove redundant (highly correlated) features
-
-# Installation
-
-## Pip
-Aimed towards users of the functions/pipelines.
-
-```python
-pip install trommel
-```
-## Poetry
-Predominantly for developers who want to edit the code.
-
-```python
-git clone git@github.com:broadinstitute/monorepo.git
-cd monorepo/libs/trommel
-
-poetry install
-```
 
 # Additional information
 ## Related projects

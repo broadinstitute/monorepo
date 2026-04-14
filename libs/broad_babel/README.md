@@ -19,6 +19,8 @@ broad_to_standard("ccsbBroad304_99994")
 If you provide multiple strings it will return dictionary.
 
 ```python
+from broad_babel.query import broad_to_standard
+
 broad_to_standard(("ccsbBroad304_09930", "ccsbBroad304_16164")) 
 
 # {'ccsbBroad304_09930': 'SCIMP', 'ccsbBroad304_16164': 'NAP1L5'}
@@ -29,6 +31,7 @@ You can also use [sqlite](https://docs.python.org/3/library/sqlite3.html) bindin
 
 ```python
 from broad_babel.query import run_query
+
 run_query(query="poscon%", input_column="pert_type", output_columns="JCP2022,standard_key,plate_type,pert_type", operator="LIKE")
 
 # [(None, 'LRRMQNGSYOUANY-OMCISZLKSA-N', 'compound', 'poscon_cp'),
@@ -67,6 +70,8 @@ The available fields are:
 You can fetch any field using another (note that the output is a list of tuples)
 
 ```python
+from broad_babel.query import run_query
+
 run_query(query="JCP2022_915119", input_column="JCP2022", output_columns="broad_sample")
 # [('ccsbBroad304_16164',)]
 ```
@@ -74,6 +79,8 @@ run_query(query="JCP2022_915119", input_column="JCP2022", output_columns="broad_
 It is also possible to use fuzzy querying by changing the operator argument and adding "%" to out key. For example, to get the genes in the "orf" dataset whose name start with "RBP"(some of which are retinol-binding proteins) we can do:
 
 ```python
+from broad_babel.query import run_query
+
 [x[:2] for x in run_query(
     "RBP%",
     input_column="standard_key",
