@@ -1492,7 +1492,7 @@ wheels = [
 
 [[package]]
 name = "jump-portrait"
-version = "0.0.29"
+version = "0.1.1"
 source = { editable = "." }
 dependencies = [
     { name = "boto3" },

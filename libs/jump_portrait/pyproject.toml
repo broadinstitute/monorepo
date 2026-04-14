@@ -1,6 +1,6 @@
 [project]
 name = "jump-portrait"
-version = "0.0.29"
+version = "0.1.1"
 description = "Tools to fetch and visualize JUMP images"
 authors = [{ name = "Alan Munoz" }]
 requires-python = ">=3.10,<3.15"
