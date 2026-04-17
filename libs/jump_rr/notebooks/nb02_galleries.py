@@ -2,8 +2,7 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #     "marimo",
-#     "polars",
-#     "jump-rr",
+#     "duckdb>=1.1.3",
 # ]
 # ///
 
@@ -17,70 +16,73 @@ app = marimo.App(width="medium")
 with app.setup:
     from pathlib import Path
 
-    import polars as pl
+    import duckdb
+    import marimo as mo  # noqa: F401
     from nb01_load_data import (
         JCP_COL,
         REPLICABILITY_COLS,
         STD_OUTNAME,
+        _write_parquet,
+        add_external_sites,
+        add_replicability,
         build_key_source_mapper,
         build_mappers,
+        format_value,
+        get_dataset,
+        get_range,
+        write_metadata,
     )
-
-    from jump_rr.consensus import get_range
-    from jump_rr.datasets import get_dataset
-    from jump_rr.formatters import add_external_sites, format_value
-    from jump_rr.metadata import write_metadata
-    from jump_rr.replicability import add_replicability
 
     EXT_LINKS_COL = "Resources"
     DEFAULT_OUTPUT_DIR = Path("./databases")
 
 
 @app.function
-def generate_gallery(dset: str, output_dir: Path = DEFAULT_OUTPUT_DIR) -> pl.DataFrame:
-    """
-    Generate a browsable gallery for a single JUMP dataset.
-
-    Loads profiles, maps names, generates image URLs, adds replicability
-    and external links, writes parquet + metadata JSON.
-    """
+def generate_gallery(
+    dset: str, output_dir: Path = DEFAULT_OUTPUT_DIR
+) -> duckdb.DuckDBPyRelation:
+    """Generate a browsable gallery for a single JUMP dataset."""
     jcp_col = JCP_COL
     std_outname = STD_OUTNAME
     ext_links_col = EXT_LINKS_COL
     replicability_cols = REPLICABILITY_COLS
 
     # Load
-    df = pl.scan_parquet(get_dataset(dset, return_pooch=False))
+    url = get_dataset(dset, return_pooch=False)
+    df = duckdb.sql(f"SELECT * FROM read_parquet('{url}')")
 
     # Map names
-    collected_df = df.select(jcp_col).unique().collect()
+    unique_jcp = duckdb.sql(f'SELECT DISTINCT "{jcp_col}" FROM df')
     jcp_to_std, jcp_to_entrez, std_to_omim, std_to_ensembl = build_mappers(
-        collected_df, jcp_col, dset
+        unique_jcp, jcp_col, dset
     )
 
-    # Generate image URLs and add standard names
-    df = df.with_columns(
-        *[
-            pl.format(
-                format_value("img", "phenaid", tuple("{}" for _ in range(8))),
-                *[pl.col(f"Metadata_{x}") for x in ("Source", "Plate", "Well")],
-                site,
-                *[pl.col(f"Metadata_{x}") for x in ("Source", "Plate", "Well")],
-                site,
-            ).alias(f"Site {site}")
-            for site in get_range(dset)
-        ],
-        pl.col(jcp_col).replace_strict(jcp_to_std, default="").alias(std_outname),
+    # Register jcp_to_std mapper for name lookup
+    duckdb.execute(
+        "CREATE OR REPLACE TEMP TABLE _gal_std_map AS "
+        "SELECT UNNEST($1::VARCHAR[]) AS _key, UNNEST($2::VARCHAR[]) AS _val",
+        [list(jcp_to_std.keys()), list(jcp_to_std.values())],
     )
 
-    order = [
-        std_outname,
-        jcp_col,
-        "^Site.*$",
-        "Metadata_Source",
-        "Metadata_Plate",
-        "Metadata_Well",
-    ]
+    # Build site image columns using printf
+    img_tpl = format_value("img", "phenaid")
+    site_cols = []
+    for site in get_range(dset):
+        site_cols.append(
+            f"printf('{img_tpl}',"
+            f" Metadata_Source, Metadata_Plate, Metadata_Well, '{site}',"
+            f" Metadata_Source, Metadata_Plate, Metadata_Well, '{site}'"
+            f') AS "Site {site}"'
+        )
+
+    df = duckdb.sql(f"""
+        SELECT df.*,
+            {', '.join(site_cols)},
+            COALESCE(_gal_std_map._val, '') AS "{std_outname}"
+        FROM df
+        LEFT JOIN _gal_std_map ON CAST(df."{jcp_col}" AS VARCHAR) = _gal_std_map._key
+    """)
+    duckdb.execute("DROP TABLE IF EXISTS _gal_std_map")
 
     # Replicability
     df = add_replicability(
@@ -95,21 +97,28 @@ def generate_gallery(dset: str, output_dir: Path = DEFAULT_OUTPUT_DIR) -> pl.Dat
         dset, jcp_col, jcp_to_std, jcp_to_entrez, std_to_omim, std_to_ensembl
     )
     df = add_external_sites(df, ext_links_col, key_source_mapper)
-    order.insert(1, ext_links_col)
-    order = (*order, *replicability_cols.values())
 
-    # Rename and select
-    df = (
-        df.select(pl.col(order))
-        .collect()
-        .rename(lambda c: c.removeprefix("Metadata_"))
-        .rename({"JCP2022": "JCP2022"})
-    )
+    # Select ordered columns and rename Metadata_ prefixes
+    site_col_names = ", ".join(f'"Site {site}"' for site in get_range(dset))
+    repl_col_names = ", ".join(f'"{col}"' for col in replicability_cols.values())
+
+    df = duckdb.sql(f"""
+        SELECT
+            "{std_outname}",
+            "{ext_links_col}",
+            "{jcp_col}" AS "{jcp_col.removeprefix('Metadata_')}",
+            {site_col_names},
+            Metadata_Source AS Source,
+            Metadata_Plate AS Plate,
+            Metadata_Well AS Well,
+            {repl_col_names}
+        FROM df
+    """)
 
     # Write
     output_dir.mkdir(parents=True, exist_ok=True)
     final_output = output_dir / f"{dset}_gallery.parquet"
-    df.write_parquet(final_output, compression="zstd")
+    _write_parquet(df, final_output)
     write_metadata(dset, "gallery", df.columns)
 
     return df
@@ -146,8 +155,10 @@ def _(mo):
 def _(gallery_dset, gallery_run, mo):
     mo.stop(not gallery_run.value)
     _result = generate_gallery(gallery_dset.value)
+    _count = duckdb.sql("SELECT COUNT(*) FROM _result").fetchone()[0]
     mo.md(
-        f"**Done** — {len(_result)} rows written to `databases/{gallery_dset.value}_gallery.parquet`"
+        f"**Done** — {_count} rows written to"
+        f" `databases/{gallery_dset.value}_gallery.parquet`"
     )
     return ()
 

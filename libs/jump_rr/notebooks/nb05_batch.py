@@ -2,11 +2,9 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #     "marimo",
-#     "polars",
-#     "jump-rr",
+#     "duckdb>=1.1.3",
 #     "cupy",
 #     "dask",
-#     "duckdb",
 #     "numpy",
 # ]
 # ///
@@ -21,7 +19,8 @@ app = marimo.App(width="medium")
 with app.setup:
     from pathlib import Path
 
-    import polars as pl
+    import duckdb
+    import marimo as mo  # noqa: F401
     from nb02_galleries import generate_gallery
     from nb03_matches import generate_matches
     from nb04_features import generate_features
@@ -30,7 +29,7 @@ with app.setup:
 
 
 @app.function
-def run_all(output_dir: Path = DEFAULT_OUTPUT_DIR) -> dict[str, pl.DataFrame]:
+def run_all(output_dir: Path = DEFAULT_OUTPUT_DIR) -> dict[str, duckdb.DuckDBPyRelation]:
     """
     Run the full pipeline across all datasets.
 
@@ -88,7 +87,8 @@ def _(batch_run, mo):
     mo.stop(not batch_run.value)
     _results = run_all()
     _summary = "\n".join(
-        f"- **{name}**: {len(df)} rows" for name, df in _results.items()
+        f"- **{name}**: {duckdb.sql('SELECT COUNT(*) FROM rel').fetchone()[0]} rows"
+        for name, rel in _results.items()
     )
     mo.md(f"## Results\n{_summary}")
     return ()
@@ -98,8 +98,9 @@ def _(batch_run, mo):
 def _(mo):
     mo.stop(mo.app_meta().mode != "run")
     _results = run_all()
-    for _name, _df in _results.items():
-        print(f"{_name}: {len(_df)} rows")
+    for _name, _rel in _results.items():
+        _count = duckdb.sql("SELECT COUNT(*) FROM _rel").fetchone()[0]
+        print(f"{_name}: {_count} rows")
     print("Batch generation complete.")
     return ()
 
