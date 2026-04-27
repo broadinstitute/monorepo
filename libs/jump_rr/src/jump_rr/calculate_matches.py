@@ -24,11 +24,19 @@ This is intended for use on a server with GPUs and high RAM to analyse data mass
 from pathlib import Path
 from time import perf_counter
 
-import cupy as cp
 import dask.array as da
 import numpy as np
 import polars as pl
 import polars.selectors as cs
+
+try:
+    import cupy as cp
+
+    cp.cuda.get_current_stream()
+    HAS_GPU = True
+except Exception:
+    cp = None
+    HAS_GPU = False
 
 from jump_rr.consensus import add_sample_images, get_consensus_meta_urls, get_range
 from jump_rr.datasets import get_dataset
@@ -42,7 +50,7 @@ from jump_rr.mappers import (
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
 
-assert cp.cuda.get_current_stream().done, "GPU not available"
+print(f"GPU available: {HAS_GPU}")
 
 
 def pairwise_cosine_sim(x: da.array, y: da.array) -> da.array:
