@@ -126,12 +126,13 @@ for dset, n_vals_used in datasets_nvals:
     t = perf_counter()
 
     vals = da.array(median_np)
-    if dset != "compound":
+    use_gpu = HAS_GPU and dset != "compound"
+    if use_gpu:
         vals = vals.map_blocks(cp.asarray)
 
     # %% Calculate cosine distance
     cosine_sim = pairwise_cosine_sim(vals, vals)
-    if dset != "compound":
+    if use_gpu:
         cosine_sim = cosine_sim.map_blocks(cp.asnumpy)
 
     # Get most correlated and anticorrelated indices
@@ -227,7 +228,7 @@ for dset, n_vals_used in datasets_nvals:
             ("ensembl", match_col, std_to_ensembl),
         )
     else:
-        key_source_mapper = [(k, jcp_short, v) for k, v in get_compound_mappers()]
+        key_source_mapper = [(k, match_jcp_col, v) for k, v in get_compound_mappers()]
 
     jcp_df = add_external_sites(jcp_df, ext_links_col, key_source_mapper)
 
