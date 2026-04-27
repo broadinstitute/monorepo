@@ -265,4 +265,6 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
         matrix_df = pl.DataFrame(data=data, schema=feature_cols).with_columns(
             jcp_col_data
         )
-        matrix_df.write_parquet(output_dir / f"{dset_type}_{suffix}.parquet")
+        matrix_df.write_parquet(
+            output_dir / f"{dset_type}_{suffix}.parquet", compression="zstd"
+        )
