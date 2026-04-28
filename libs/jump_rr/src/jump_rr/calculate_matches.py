@@ -24,11 +24,19 @@ This is intended for use on a server with GPUs and high RAM to analyse data mass
 from pathlib import Path
 from time import perf_counter
 
-import cupy as cp
 import dask.array as da
 import numpy as np
 import polars as pl
 import polars.selectors as cs
+
+try:
+    import cupy as cp
+
+    cp.cuda.get_current_stream()
+    HAS_GPU = True
+except Exception:
+    cp = None
+    HAS_GPU = False
 
 from jump_rr.consensus import add_sample_images, get_consensus_meta_urls, get_range
 from jump_rr.datasets import get_dataset
@@ -42,7 +50,7 @@ from jump_rr.mappers import (
 from jump_rr.metadata import write_metadata
 from jump_rr.replicability import add_replicability
 
-assert cp.cuda.get_current_stream().done, "GPU not available"
+print(f"GPU available: {HAS_GPU}")
 
 
 def pairwise_cosine_sim(x: da.array, y: da.array) -> da.array:
@@ -118,12 +126,13 @@ for dset, n_vals_used in datasets_nvals:
     t = perf_counter()
 
     vals = da.array(median_np)
-    if dset != "compound":
+    use_gpu = HAS_GPU and dset != "compound"
+    if use_gpu:
         vals = vals.map_blocks(cp.asarray)
 
     # %% Calculate cosine distance
     cosine_sim = pairwise_cosine_sim(vals, vals)
-    if dset != "compound":
+    if use_gpu:
         cosine_sim = cosine_sim.map_blocks(cp.asnumpy)
 
     # Get most correlated and anticorrelated indices
@@ -219,7 +228,7 @@ for dset, n_vals_used in datasets_nvals:
             ("ensembl", match_col, std_to_ensembl),
         )
     else:
-        key_source_mapper = [(k, jcp_short, v) for k, v in get_compound_mappers()]
+        key_source_mapper = [(k, match_jcp_col, v) for k, v in get_compound_mappers()]
 
     jcp_df = add_external_sites(jcp_df, ext_links_col, key_source_mapper)
 
@@ -252,5 +261,5 @@ for dset, n_vals_used in datasets_nvals:
     pl.DataFrame(
         data=cosine_sim_computed,
         schema=med.get_column("Metadata_JCP2022").to_list(),
-    ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet")
+    ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet", compression="zstd")
     print(f"Matched pairwise {dset} in {perf_counter() - t} seconds")

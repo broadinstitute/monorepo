@@ -1,9 +1,11 @@
 #!/usr/bin/env jupyter
 """Functions to get and use mappers."""
 
+import sqlite3
+
 import duckdb
 import polars as pl
-from broad_babel.query import run_query
+from broad_babel.query import DB_FILE, TABLE, run_query  # noqa: F401
 from pooch import retrieve
 
 """Generate a dictionary of synonyms mapping an Entrez Gene ID to its other names."""
@@ -53,15 +55,18 @@ def get_mapper(
         A dictionary containing the mappers.
 
     """
-    mapper_values = run_query(
-        query=ids,
-        input_column=input_col,
-        output_columns=",".join((input_col, *output_cols)),
-        predicate=f"AND plate_type = '{plate_type}'",
-    )
+    cols = ",".join((input_col, *output_cols))
+    with sqlite3.connect(DB_FILE) as con:
+        rows = con.execute(
+            f"SELECT {cols} FROM {TABLE} WHERE plate_type = ?",
+            (plate_type,),
+        ).fetchall()
 
+    wanted = set(ids)
     mappers = {k: {} for k in output_cols}
-    for input_id, *output_ids in mapper_values:
+    for input_id, *output_ids in rows:
+        if input_id not in wanted:
+            continue
         for k, new_id in zip(mappers.keys(), output_ids):
             mappers[k][input_id] = new_id
     return list(mappers.values())

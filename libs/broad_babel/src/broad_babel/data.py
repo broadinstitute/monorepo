@@ -1,6 +1,5 @@
 #!/usr/bin/env jupyter
-"""
-Convenience function to get JUMP data tables.
+"""Convenience function to get JUMP data tables.
 
 The hashes of these datasets are defined in this document.
 """
@@ -12,8 +11,7 @@ import pooch
 
 @cache
 def get_table(table_name: str) -> str:
-    """
-    Fetch a table from jump-cellpainting/datasets based on the provided name.
+    """Fetch a table from jump-cellpainting/datasets based on the provided name.
 
     The function retrieves the corresponding metadata csv file,
     checks its hash against a known value for integrity, and

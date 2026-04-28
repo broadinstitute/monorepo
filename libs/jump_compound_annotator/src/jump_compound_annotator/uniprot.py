@@ -1,13 +1,12 @@
-"""
-code copied from https://www.uniprot.org/help/id_mapping
-"""
+"""code copied from https://www.uniprot.org/help/id_mapping"""
 
+import json
 import re
 import time
-import json
 import zlib
+from urllib.parse import parse_qs, urlencode, urlparse
 from xml.etree import ElementTree
-from urllib.parse import urlparse, parse_qs, urlencode
+
 import requests
 from requests.adapters import HTTPAdapter, Retry
 

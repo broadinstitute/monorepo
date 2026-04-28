@@ -2,7 +2,6 @@
 
 import csv
 import sqlite3
-import typing as t
 from functools import cache
 
 import pooch
@@ -21,11 +20,10 @@ def run_query(
     query: str | tuple[str],
     input_column: str,
     output_columns: str | list[str],
-    operator: t.Optional[str] = None,
-    predicate: t.Optional[str] = None,
+    operator: str | None = None,
+    predicate: str | None = None,
 ) -> list[tuple[str, ...]]:
-    """
-    Query one or multiple values to the database.
+    """Query one or multiple values to the database.
 
     Parameters
     ----------
@@ -79,8 +77,7 @@ def run_query(
 def get_mapper(
     query: list[str] | tuple[str, ...], input_column: str, output_columns: str
 ) -> dict[str, str]:
-    """
-    Generate a query->result mapper from a collection of queries.
+    """Generate a query->result mapper from a collection of queries.
 
     It delegates matching to sqlite3 and ensures prefixes are removed.
     Unlike "run_query", this returns a one-to-one relationship by compressing
@@ -116,8 +113,7 @@ def get_mapper(
 
 
 def broad_to_standard(query: str | list[str]) -> str | dict[str, str]:
-    """
-    Convert broad ids to standard, either InChiKey or Entrez Gene name.
+    """Convert broad ids to standard, either InChiKey or Entrez Gene name.
 
     Parameters
     ----------
@@ -154,8 +150,7 @@ def broad_to_standard(query: str | list[str]) -> str | dict[str, str]:
 
 
 def export_csv(output: str = "exported.csv", table: str = TABLE) -> None:
-    """
-    Export entire translation table as csv.
+    """Export entire translation table as csv.
 
     Parameters
     ----------

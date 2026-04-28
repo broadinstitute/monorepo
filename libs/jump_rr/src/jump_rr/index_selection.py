@@ -1,20 +1,19 @@
 #!/usr/bin/env jupyter
 """Find indices corresponding to the largest and smallest values."""
 
-import cupy as cp
 import dask.array as da
 import numpy as np
 
 
 def get_bottom_top_indices(
-    mat: cp.array, n: int, skip_first: bool = False
+    mat: da.Array, n: int, skip_first: bool = False
 ) -> tuple[np.array]:
     """
     Get the top n and bottom n indices from a matrix for each row.
 
     Parameters
     ----------
-    mat : cp.array
+    mat : da.Array
         The input matrix.
     n : int
         The number of top and bottom indices to get.

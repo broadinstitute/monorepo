@@ -19,8 +19,7 @@ plates_order = ("compound", "orf", "crispr", "compound")
 
 
 def select_if_available(df: pl.DataFrame, cols: tuple[str]) -> pl.DataFrame:
-    """
-    Select columns present in a Polars DataFrame.
+    """Select columns present in a Polars DataFrame.
 
     Parameters
     ----------
@@ -41,8 +40,7 @@ def select_if_available(df: pl.DataFrame, cols: tuple[str]) -> pl.DataFrame:
 def provide_mapper(
     df: pl.DataFrame, std_col: str, brd_col: str = None
 ) -> dict[str, str]:
-    """
-    Validate mapping keys against a Polars DataFrame to rename columns consistently.
+    """Validate mapping keys against a Polars DataFrame to rename columns consistently.
 
     Parameters
     ----------

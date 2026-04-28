@@ -1,10 +1,9 @@
-"""
-Test idempotency of SMILES standardization using JUMP compounds data.
-"""
+"""Test idempotency of SMILES standardization using JUMP compounds data."""
 
-import pytest
-import pandas as pd
 from pathlib import Path
+
+import pandas as pd
+import pytest
 from jump_smiles.standardize_smiles import StandardizeMolecule
 
 # Configuration
@@ -44,6 +43,7 @@ def test_standardizer_idempotency(method, sample_size):
     Args:
         method: Standardization method to test
         sample_size: Number of compounds to test (100 or "all" for full dataset)
+
     """
     compound_smiles = load_compounds(sample_size)
 

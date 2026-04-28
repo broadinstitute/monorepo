@@ -1,4 +1,5 @@
 from pathlib import Path
+
 import pandas as pd
 
 from jump_compound_annotator.utils import load_jump_ids

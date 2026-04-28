@@ -7,16 +7,16 @@
 #     "tqdm>=4.64.1",
 # ]
 # ///
-"""
-Download JUMP compound dataset and extract only SMILES column.
+"""Download JUMP compound dataset and extract only SMILES column.
 
 Usage:
     uv run --script scripts/download_jump_compounds.py
 """
 
+from pathlib import Path
+
 import pandas as pd
 import pooch
-from pathlib import Path
 
 # Configuration
 CACHE_DIR = Path(__file__).parent.parent / "test/test_data/jump_compounds"
@@ -26,7 +26,6 @@ OUTPUT_FILE = CACHE_DIR / "smiles_only.csv.gz"
 
 def main():
     """Download and process JUMP compounds data."""
-
     # Create cache directory
     CACHE_DIR.mkdir(parents=True, exist_ok=True)
 

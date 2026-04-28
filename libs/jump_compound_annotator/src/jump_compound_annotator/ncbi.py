@@ -1,6 +1,8 @@
-import pandas as pd
-from jump_compound_annotator.utils import download_ftp_file
 from pathlib import Path
+
+import pandas as pd
+
+from jump_compound_annotator.utils import download_ftp_file
 
 
 def read_gene_info_file(output_path: Path, redownload):
