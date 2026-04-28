@@ -261,7 +261,5 @@ for dset, n_vals_used in datasets_nvals:
     pl.DataFrame(
         data=cosine_sim_computed,
         schema=med.get_column("Metadata_JCP2022").to_list(),
-    ).write_parquet(
-        output_dir / f"{dset}_cosinesim_full.parquet", compression="zstd"
-    )
+    ).write_parquet(output_dir / f"{dset}_cosinesim_full.parquet", compression="zstd")
     print(f"Matched pairwise {dset} in {perf_counter() - t} seconds")

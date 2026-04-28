@@ -7,36 +7,19 @@
     flake-utils.inputs.systems.follows = "systems";
   };
 
-  outputs =
-    {
-      self,
-      nixpkgs,
-      flake-utils,
-      ...
-    }@inputs:
-    flake-utils.lib.eachDefaultSystem (
-      system:
+  outputs = { self, nixpkgs, flake-utils, ... }@inputs:
+    flake-utils.lib.eachDefaultSystem (system:
       let
         pkgs = import nixpkgs {
           inherit system;
           config.allowUnfree = true;
         };
 
-      in
-      with pkgs;
-      {
+      in with pkgs; {
         devShells = {
           default = mkShell {
-            packages = [
-              wget
-              coreutils
-              parallel
-              mawk
-              pzip
-              duckdb
-            ];
+            packages = [ wget coreutils parallel mawk pzip duckdb ];
           };
         };
-      }
-    );
+      });
 }
