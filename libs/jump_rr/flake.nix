@@ -15,8 +15,17 @@
     };
   };
 
-  outputs = { self, nixpkgs, flake-utils, git-hooks, treefmt-nix, ... }@inputs:
-    flake-utils.lib.eachDefaultSystem (system:
+  outputs =
+    {
+      self,
+      nixpkgs,
+      flake-utils,
+      git-hooks,
+      treefmt-nix,
+      ...
+    }@inputs:
+    flake-utils.lib.eachDefaultSystem (
+      system:
       let
         pkgs = import nixpkgs {
           inherit system;
@@ -35,13 +44,16 @@
           mpkgs.stdenv.cc.cc
           mpkgs.libGL
           mpkgs.glib
-        ] ++ pkgs.lib.optionals pkgs.stdenv.isLinux (with pkgs;
+        ]
+        ++ pkgs.lib.optionals pkgs.stdenv.isLinux (
+          with pkgs;
           [
             cudatoolkit
 
             # This is required for most app that uses graphics api
             # linuxPackages.nvidia_x11
-          ]);
+          ]
+        );
         treefmtEval = treefmt-nix.lib.evalModule pkgs {
           projectRootFile = "flake.nix";
           programs.nixfmt.enable = true;
@@ -59,48 +71,53 @@
             };
           };
         };
-      in with pkgs; {
+      in
+      with pkgs;
+      {
         checks = {
           inherit pre-commit-check;
           formatting = treefmtEval.config.build.check self;
         };
         formatter = treefmtEval.config.build.wrapper;
         devShells = {
-          default = let
-            python_with_pkgs = pkgs.python311.withPackages (pp:
-              [
+          default =
+            let
+              python_with_pkgs = pkgs.python311.withPackages (pp: [
                 # Add python pkgs here that you need from nix repos
                 python311Packages.cupy
               ]);
-          in mkShell {
-            NIX_LD = runCommand "ld.so" { } ''
-              ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
-            '';
-            NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
-            packages = [
-              python_with_pkgs
-              python311Packages.venvShellHook
-              # We # We now recommend to use uv for package management inside nix env
-              pkgs.uv
-            ] ++ libList;
-            venvDir = "./.venv";
-            postVenvCreation = ''
-              unset SOURCE_DATE_EPOCH
-            '';
-            postShellHook = ''
-              unset SOURCE_DATE_EPOCH
-            '';
-            shellHook = ''
-              ${pre-commit-check.shellHook}
-              export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:"/run/opengl-driver/lib":$LD_LIBRARY_PATH
-              export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
-              export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
-              runHook venvShellHook
-              export PYTHONPATH=${python_with_pkgs}/${python_with_pkgs.sitePackages}:$PYTHONPATH
-            '';
-          };
+            in
+            mkShell {
+              NIX_LD = runCommand "ld.so" { } ''
+                ln -s "$(cat '${pkgs.stdenv.cc}/nix-support/dynamic-linker')" $out
+              '';
+              NIX_LD_LIBRARY_PATH = lib.makeLibraryPath libList;
+              packages = [
+                python_with_pkgs
+                python311Packages.venvShellHook
+                # We # We now recommend to use uv for package management inside nix env
+                pkgs.uv
+              ]
+              ++ libList;
+              venvDir = "./.venv";
+              postVenvCreation = ''
+                unset SOURCE_DATE_EPOCH
+              '';
+              postShellHook = ''
+                unset SOURCE_DATE_EPOCH
+              '';
+              shellHook = ''
+                ${pre-commit-check.shellHook}
+                export LD_LIBRARY_PATH=$NIX_LD_LIBRARY_PATH:"/run/opengl-driver/lib":$LD_LIBRARY_PATH
+                export PYTHON_KEYRING_BACKEND=keyring.backends.fail.Keyring
+                export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}
+                runHook venvShellHook
+                export PYTHONPATH=${python_with_pkgs}/${python_with_pkgs.sitePackages}:$PYTHONPATH
+              '';
+            };
         };
-      });
+      }
+    );
 }
 # Things one might need for debugging or adding compatibility
 # export CUDA_PATH=${pkgs.cudaPackages.cudatoolkit}

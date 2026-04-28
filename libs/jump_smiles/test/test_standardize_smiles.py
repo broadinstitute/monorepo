@@ -1,11 +1,11 @@
 import os
-import pandas as pd
 import tempfile
-from src.jump_smiles.standardize_smiles import StandardizeMolecule
-import pytest
-
 from pathlib import Path
+
+import pandas as pd
+import pytest
 from rdkit import Chem
+from src.jump_smiles.standardize_smiles import StandardizeMolecule
 
 test_data_dir = Path(__file__).resolve().parent / "test_data"
 

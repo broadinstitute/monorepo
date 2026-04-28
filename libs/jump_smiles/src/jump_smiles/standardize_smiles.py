@@ -1,22 +1,22 @@
+import logging
 from collections import Counter
 from multiprocessing import Pool
-from rdkit import RDLogger
-from rdkit.rdBase import BlockLogs
-from rdkit.Chem import (
-    MolFromSmiles,
-    MolToSmiles,
-    MolToInchi,
-    MolToInchiKey,
-    MolFromInchi,
-)
-from rdkit.Chem.MolStandardize import Standardizer, rdMolStandardize, tautomer
-from typing import Union
+from pathlib import Path
+
 import fire
-import logging
 import numpy as np
 import pandas as pd
 import tqdm
-from pathlib import Path
+from rdkit import RDLogger
+from rdkit.Chem import (
+    MolFromInchi,
+    MolFromSmiles,
+    MolToInchi,
+    MolToInchiKey,
+    MolToSmiles,
+)
+from rdkit.Chem.MolStandardize import Standardizer, rdMolStandardize, tautomer
+from rdkit.rdBase import BlockLogs
 
 RDLogger.DisableLog("rdApp.*")
 
@@ -24,8 +24,7 @@ RDLogger.DisableLog("rdApp.*")
 
 
 class StandardizeMolecule:
-    """
-    Standardize chemical structures for consistency with JUMP Cell Painting datasets.
+    """Standardize chemical structures for consistency with JUMP Cell Painting datasets.
 
     This class provides two standardization methods:
 
@@ -60,7 +59,7 @@ class StandardizeMolecule:
 
     def __init__(
         self,
-        input: Union[str, pd.DataFrame],
+        input: str | pd.DataFrame,
         output: str = None,
         num_cpu: int = 1,
         limit_rows: int = None,
@@ -68,8 +67,7 @@ class StandardizeMolecule:
         method: str = "jump_canonical",
         random_seed: int = 42,
     ):
-        """
-        Initialize the class.
+        """Initialize the class.
 
         :param input: Input file name (TSV/TXT/CSV) or a pandas dataframe containing the SMILES
         :param output: Output file name (optional)
@@ -95,8 +93,7 @@ class StandardizeMolecule:
             )
 
     def _standardize_structure(self, smiles):
-        """
-        Standardize the given SMILES using MolVS and RDKit.
+        """Standardize the given SMILES using MolVS and RDKit.
 
         :param smiles: Input SMILES from the given structure data file
         :return: dataframe: Pandas dataframe containing the original SMILES, standardized SMILES, InChI, and InChIKey
@@ -222,14 +219,12 @@ class StandardizeMolecule:
         )
 
     def _run_standardize(self, smiles_list):
-        """
-        Run the standardization process in parallel using multiprocessing.
+        """Run the standardization process in parallel using multiprocessing.
 
         :param smiles_list: List of SMILES to be standardized
         :param num_cpu: Number of CPUs to use
 
         """
-
         with Pool(processes=self.num_cpu) as pool:
             standardized_dfs = list(
                 tqdm.tqdm(
@@ -241,8 +236,7 @@ class StandardizeMolecule:
         return pd.concat(standardized_dfs, ignore_index=True)
 
     def _load_input(self):
-        """
-        Read the input and return a pandas dataframe containing the SMILES.
+        """Read the input and return a pandas dataframe containing the SMILES.
 
         :return: dataframe: Pandas dataframe containing the SMILES
         """
@@ -303,9 +297,7 @@ class StandardizeMolecule:
         self.input = self.input.drop_duplicates()
 
     def run(self):
-        """
-        Run the standardization process.
-        """
+        """Run the standardization process."""
         self._load_input()
 
         logging.info(f"Number of CPUs: {self.num_cpu}")

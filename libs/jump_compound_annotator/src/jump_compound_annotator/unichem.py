@@ -1,13 +1,13 @@
-from functools import partial
-import logging
 import argparse
+import logging
 from datetime import datetime
+from functools import partial
 from pathlib import Path
 
 import pandas as pd
 import requests
-from tqdm.contrib.concurrent import thread_map
 from tqdm.auto import tqdm
+from tqdm.contrib.concurrent import thread_map
 
 logger = logging.getLogger(__name__)
 SOURCE_IDS = pd.read_csv(

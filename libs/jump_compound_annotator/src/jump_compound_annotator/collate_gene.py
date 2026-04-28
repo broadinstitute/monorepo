@@ -3,13 +3,23 @@ from pathlib import Path
 import pandas as pd
 from tqdm import tqdm
 
+from jump_compound_annotator.biokg import (
+    get_gene_interactions as get_biokg,  # noqa: F401
+)
+from jump_compound_annotator.hetionet import (
+    get_gene_interactions as get_hetionet,  # noqa: F401
+)
 from jump_compound_annotator.ncbi import get_synonyms
+from jump_compound_annotator.openbiolink import (
+    get_gene_interactions as get_openbiolink,  # noqa: F401
+)
+from jump_compound_annotator.pharmebinet import (
+    get_gene_interactions as get_pharmebinet,  # noqa: F401
+)
+from jump_compound_annotator.primekg import (
+    get_gene_interactions as get_primekg,  # noqa: F401
+)
 from jump_compound_annotator.utils import ncbi_to_symbol
-from jump_compound_annotator.biokg import get_gene_interactions as get_biokg  # noqa: F401
-from jump_compound_annotator.hetionet import get_gene_interactions as get_hetionet  # noqa: F401
-from jump_compound_annotator.openbiolink import get_gene_interactions as get_openbiolink  # noqa: F401
-from jump_compound_annotator.pharmebinet import get_gene_interactions as get_pharmebinet  # noqa: F401
-from jump_compound_annotator.primekg import get_gene_interactions as get_primekg  # noqa: F401
 
 
 def fill_with_synonyms(output_dir, codes, redownload: bool):
