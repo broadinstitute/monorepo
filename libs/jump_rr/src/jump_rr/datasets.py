@@ -1,10 +1,64 @@
 """Import morphological profiles using the manifest on github."""
 
-import json
-from urllib.request import urlopen
-
 import polars as pl
 import pooch
+
+# Mirror of https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.json
+# Embedded so dataset resolution does not require a network round-trip.
+_PROFILE_INDEX = [
+    {
+        "subset": "orf",
+        "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/ORF/v1.0a/profiles_wellpos_cc_var_mad_outlier_featselect_sphering_harmony.parquet",
+        "etag": "064759b3a850dc351b357116b3e7b32d",
+    },
+    {
+        "subset": "crispr",
+        "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/CRISPR/v1.0a/profiles_wellpos_cc_var_mad_outlier_featselect_sphering_harmony_PCA_corrected.parquet",
+        "etag": "5903af59605b2037190ff64c1f87c530",
+    },
+    {
+        "subset": "compound",
+        "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/COMPOUND/v1.0/profiles_var_mad_int_featselect_harmony.parquet",
+        "etag": "c9371af57a36a51e021935c9ca78e506",
+    },
+    {
+        "subset": "orf_interpretable",
+        "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/ORF/v1.0a/profiles_wellpos_cc_var_mad_outlier.parquet",
+        "etag": "a2ca4063bbfcee09ac303cf48eb8bafd",
+    },
+    {
+        "subset": "crispr_interpretable",
+        "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/CRISPR/v1.0a/profiles_wellpos_cc_var_mad_outlier.parquet",
+        "etag": "0009a142e5d132d007696ed8f71f2da8",
+    },
+    {
+        "subset": "compound_interpretable",
+        "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/COMPOUND/v1.0/profiles_var_mad_int.parquet",
+        # Multipart-upload etag — not a plain MD5, so hash verification is skipped.
+        "etag": "67212e3cbdaa25de511f318cdd0503dc-3",
+    },
+    {
+        "subset": "all",
+        "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/ALL/v1.0b/profiles_wellpos_cc_var_mad_outlier_featselect_sphering_harmony.parquet",
+        "etag": "96eeaeb01ac8eab9845111bd34a6c82d",
+    },
+    {
+        "subset": "all_interpretable",
+        "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/ALL/v1.0b/profiles_wellpos_cc_var_mad_outlier_featselect.parquet",
+        "etag": "29cafe5726408773300eb53619281a1d",
+    },
+]
+
+
+def _etag_to_pooch_hash(etag: str) -> str | None:
+    """Convert an S3 etag into a pooch-compatible hash string.
+
+    Single-part etags are plain MD5; multipart etags carry a "-N" suffix and
+    cannot be verified against the file contents, so they map to None.
+    """
+    if "-" in etag:
+        return None
+    return f"md5:{etag}"
 
 
 def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
@@ -28,31 +82,25 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
 
     Notes
     -----
-    This function uses a predefined manifest and md5s dictionary to filter and retrieve the dataset.
+    Hashes are derived from the S3 etag in the upstream manifest.
 
     """
-    md5s = {
-        "compound": "1dd9b76ce9635cc98ea2c6a58f4c1d6ed6aafc1a3990ddcb997162d16582c00f",
-        "crispr": "019cd1b767db48dad6fbab5cbc483449a229a44c2193d2341a8d331d067204c8",
-        "orf": "32f25ee6fdc4dcfa3349397ddf0e1f6ca2594001b8266c5dc0644fa65944f193",
-        "crispr_interpretable": "6153c9182faf0a0a9ba22448dfa5572bd7de9b943007356830304834e81a1d05",
-        "orf_interpretable": "ae3fea5445022ebd0535fcbae3cfbbb14263f63ea6243f4bac7e4c384f8d3bbf",
-        "compound_interpretable": "42028e8c60692df545e0b1dd087fc9b911f5117c318a8819d768cff251e4edda",
-    }
-    result = get_profiles_url(dataset)
+    entry = _get_entry(dataset)
+    url = entry["url"]
 
     if return_pooch:
-        result = pooch.retrieve(result, md5s[dataset])
+        return pooch.retrieve(url, _etag_to_pooch_hash(entry["etag"]))
 
-    return result
+    return url
 
 
 def get_profiles_url(dataset: str) -> str:
     """Select the correct url."""
-    with urlopen(
-        "https://raw.githubusercontent.com/jump-cellpainting/datasets/99b8501e2da16bb01792124df22d23ce7aa93668/manifests/profile_index.json"
-    ) as url:
-        data = json.load(url)
-    for entry in data:
+    return _get_entry(dataset)["url"]
+
+
+def _get_entry(dataset: str) -> dict:
+    for entry in _PROFILE_INDEX:
         if entry["subset"] == dataset:
-            return entry["url"]
+            return entry
+    raise KeyError(f"Unknown dataset subset: {dataset!r}")

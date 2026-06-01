@@ -10,17 +10,19 @@ import requests
 from jump_rr.datasets import get_dataset, get_profiles_url
 
 
-@pytest.mark.parametrize(
-    "subset",
-    [
-        "orf",
-        "crispr",
-        "compound",
-        "orf_interpretable",
-        "crispr_interpretable",
-        "compound_interpretable",
-    ],
-)
+SUBSETS = [
+    "orf",
+    "crispr",
+    "compound",
+    "orf_interpretable",
+    "crispr_interpretable",
+    "compound_interpretable",
+    "all",
+    "all_interpretable",
+]
+
+
+@pytest.mark.parametrize("subset", SUBSETS)
 def test_url_exists(subset: str) -> None:
     url = get_profiles_url(subset)
     response = requests.head(url)
@@ -28,17 +30,7 @@ def test_url_exists(subset: str) -> None:
 
 
 @pytest.mark.slow
-@pytest.mark.parametrize(
-    "subset",
-    [
-        "orf",
-        "crispr",
-        "compound",
-        "orf_interpretable",
-        "crispr_interpretable",
-        "compound_interpretable",
-    ],
-)
+@pytest.mark.parametrize("subset", SUBSETS)
 def test_data_download(subset: str) -> Path:
     """
     Pull data using Pooch and cache it.
