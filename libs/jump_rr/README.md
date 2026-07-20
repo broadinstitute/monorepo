@@ -44,6 +44,18 @@ Use the following datasets to explore morphological similarities between gene an
 
 Note that the feature databases are based on interpretable features. The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
 
+## Production-paper compound tables
+
+The JUMP production paper uses the compound-only `compound_no_source7` profile. Its tables are a one-off workflow and do not replace or modify the standard ORF, CRISPR, compound, or gallery outputs above. The same 758-dimension Harmony profile generates both matches and feature rankings, with CellProfiler names restored from the matching pre-Harmony schema.
+
+From `src/tools`, run:
+
+```bash
+./generate_production_databases.sh
+```
+
+This writes `compound_no_source7.parquet` and `compound_no_source7_features.parquet`. It does not generate galleries or genetic-perturbation tables.
+
 In the rare case where you experience a problem before data is loaded, it may be transient - try reloading the webpage. 
 
 <a id="Overview"></a>

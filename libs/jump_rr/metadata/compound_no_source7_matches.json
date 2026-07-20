@@ -1,0 +1,29 @@
+{
+    "databases": {
+        "data": {
+            "source": "JUMP Consortium",
+            "source_url": "http://broad.io/jump",
+            "tables": {
+                "content": {
+                    "description_html": "Explore the most similar production-profile compound perturbations. Click the \"Perturbation-Match Similarity\" header to sort the matches. This paper-specific table uses the JUMP production <code>compound_no_source7</code> profile and does not replace the <a href = http://broad.io/compound>standard all-source compound table</a>. <a href = https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.json>Data Index</a>. <a href = https://cellpainting-gallery.s3.amazonaws.com/cpg0042-chandrasekaran-jump/source_all/workspace/profiles_assembled/compound_no_source7/v1.0/profiles_var_mad_int_featselect_harmony.parquet>Download source profiles</a>. <a href = https://broad.io/jump>JUMP Hub</a> for more information.",
+                    "title": "JUMP PRODUCTION COMPOUND Matches",
+                    "columns": {
+                        "Perturbation": "Chemical or genetic perturbation. If genetic (overexpression or knock-out) it is the NCBI gene symbol. If it is a chemical perturbation this is the InChiKey. ",
+                        "Match": "Perturbations with the highest correlation or anti-correlation relative to 'Perturbation'.",
+                        "Perturbation example image": "Sample image of the perturbation. It cycles over the available images for every occurrence of the perturbation.",
+                        "Match example image": "Sample image of the perturbation\u2019s match. It cycles over the available images for every occurrence of the perturbation.",
+                        "Perturbation-Match Similarity": "Cosine similarity between the normalized morphological profiles of the two perturbations. Negative values indicate the perturbations\u2019 profiles are anti-correlated. Ranges from -1 to 1.",
+                        "Match resources": "External links that provide further information on the matched perturbation (e.g., NCBI, ChEMBL).",
+                        "Synonyms": "Other names of the perturbation. If it is a number it indicates that the gene name was not found.",
+                        "JCP2022": "JUMP id. This identifier is unique for any given reagent for a genetic or chemical perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Match JCP2022": "JUMP id for the matched perturbation. This identifier is unique for any given perturbation across all three datasets (ORF, CRISPR and compounds) and is only repeated for biological replicates.",
+                        "Corrected p-value": "Statistical significance of how distinctive a perturbation is relative to the negative control. It correlates negatively to mean average precision, but adjusted based on its composition of positive and negative values.",
+                        "Phenotypic activity": "Mean average precision of the perturbation. It determines its distinctiveness to the negative control. An empty value indicates that the value was discarded due to low infection efficiency.",
+                        "Corrected p-value Match": "Corrected p-value of the matched perturbation.",
+                        "Phenotypic activity Match": "Phenotypic activity of the matched perturbation."
+                    }
+                }
+            }
+        }
+    }
+}

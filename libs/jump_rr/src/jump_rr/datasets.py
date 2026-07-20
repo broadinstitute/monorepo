@@ -38,11 +38,18 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
         "crispr_interpretable": "6153c9182faf0a0a9ba22448dfa5572bd7de9b943007356830304834e81a1d05",
         "orf_interpretable": "ae3fea5445022ebd0535fcbae3cfbbb14263f63ea6243f4bac7e4c384f8d3bbf",
         "compound_interpretable": "42028e8c60692df545e0b1dd087fc9b911f5117c318a8819d768cff251e4edda",
+        "compound_no_source7": "8e1e5d9e50c8c7c95ed406981b02adb57c7ff9d253192ed52e661115379be6f1",
     }
     result = get_profiles_url(dataset)
 
     if return_pooch:
-        result = pooch.retrieve(result, md5s[dataset])
+        if dataset == "compound_no_source7":
+            # This profile shares its upstream basename with `compound`.
+            result = pooch.retrieve(
+                result, md5s[dataset], fname="compound_no_source7.parquet"
+            )
+        else:
+            result = pooch.retrieve(result, md5s[dataset])
 
     return result
 
@@ -50,7 +57,7 @@ def get_dataset(dataset: str, return_pooch: bool = True) -> pl.DataFrame or str:
 def get_profiles_url(dataset: str) -> str:
     """Select the correct url."""
     with urlopen(
-        "https://raw.githubusercontent.com/jump-cellpainting/datasets/99b8501e2da16bb01792124df22d23ce7aa93668/manifests/profile_index.json"
+        "https://raw.githubusercontent.com/jump-cellpainting/datasets/398f508ef1b5ba897d1f5af22c017d512ff37ba9/manifests/profile_index.json"
     ) as url:
         data = json.load(url)
     for entry in data:
