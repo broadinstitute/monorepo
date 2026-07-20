@@ -1,0 +1,78 @@
+hydra:
+  run:
+    # Project-specific directory with timestamps for independent JUMP analyses
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/jump-target2/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  job:
+    chdir: false  # Stay in original working directory for clarity
+
+input:
+  path: "https://cellpainting-gallery.s3.amazonaws.com/cpg0016-jump-assembled/source_all/workspace/profiles_assembled/COMPOUND/v1.0/profiles_var_mad_int_featselect_harmony.parquet"
+  use_lazy_filter: true
+  filter_query: "(Metadata_Source == 'source_2')"
+  columns: ["Metadata_Source", "Metadata_Plate", "Metadata_JCP2022", "Metadata_Well", "X_1", "X_2", "X_3"]
+
+# Example of modular preprocessing - these sections are processed in alphabetical order
+# You can have multiple preprocessing_* sections for better modularity
+
+preprocessing_01_metadata:
+  steps:
+    # Merge plate metadata
+    - type: merge_metadata
+      params:
+        source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/plate.csv.gz"
+        # source: "../../../../datasets/metadata/plate.csv.gz"
+        on_columns: ["Metadata_Source", "Metadata_Plate"]
+        how: "inner"
+    
+    # Merge compound metadata
+    - type: merge_metadata
+      params:
+        source: "https://raw.githubusercontent.com/jump-cellpainting/datasets/refs/tags/v0.11.1/metadata/compound.csv.gz"
+        # source: "../../../../datasets/metadata/compound.csv.gz"
+        on_columns: ["Metadata_JCP2022"]
+        how: "inner"
+
+preprocessing_02_filters:
+  steps:
+    # Filter for TARGET2 plates
+    - type: filter
+      params:
+        query: "Metadata_PlateType == 'TARGET2'"
+    
+    # Remove features with NaN values
+    - type: remove_nan_features
+      params: {}
+
+preprocessing_03_features:
+  steps:
+    # Add negative control indicator column
+    - type: add_column
+      params:
+        query: "Metadata_JCP2022 == 'JCP2022_033924'"
+        column: "Metadata_negcon"
+
+    # Force negcons not to have activity calculated
+    - type: apply_assign_reference
+      params:
+        condition: "Metadata_negcon"
+        reference_col: "Metadata_reference_index"
+        default_value: -1
+
+average_precision:
+  params:
+    pos_sameby: ["Metadata_JCP2022"]
+    pos_diffby: []
+    neg_sameby: ["Metadata_Plate"]
+    neg_diffby: ["Metadata_negcon"]
+    batch_size: 20000
+
+mean_average_precision:
+  params:
+    sameby: ["Metadata_JCP2022"]
+    null_size: 100000
+    threshold: 0.1
+    seed: 12527
+
+output:
+  directory: "${hydra:runtime.output_dir}"
+  name: "activity"

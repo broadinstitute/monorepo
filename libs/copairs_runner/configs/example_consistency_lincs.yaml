@@ -1,0 +1,67 @@
+hydra:
+  run:
+    # Using same project-specific directory to read outputs from activity analysis
+    # IMPORTANT: The nested 'consistency' subdirectory prevents overwriting Hydra runtime
+    # files from the activity analysis. The '../activity/' relative path allows access
+    # to activity outputs while maintaining separate Hydra runtime environments.
+    dir: ${oc.env:COPAIRS_OUTPUT,.}/output/lincs/shared/consistency
+  job:
+    chdir: false  # Stay in original working directory for clarity
+
+input:
+  path: "${oc.env:COPAIRS_DATA,.}/input/2016_04_01_a549_48hr_batch1_plateSQ00014812.csv"
+
+preprocessing:
+  steps:
+    # Filter to only active compounds based on activity analysis
+    # Note: The '../activity/' path works because of the nested subdirectory structure
+    - type: filter_active
+      params:
+        activity_file: "${hydra:runtime.output_dir}/../activity/activity_map_results.csv"
+        on_columns: "Metadata_broad_sample"
+        # Optional: override the activity threshold by filtering on corrected_p_value directly
+        # If omitted, uses the pre-computed below_corrected_p column from activity results
+        threshold: 0.05
+    
+    # Remove rows with missing targets (implicit in notebook via query)
+    - type: dropna
+      params:
+        columns: ["Metadata_target"]
+    
+    # Aggregate replicates by taking median of features (as done in notebook)
+    - type: aggregate_replicates
+      params:
+        groupby: ["Metadata_broad_sample", "Metadata_target"]
+    
+    # Split the pipe-separated target values into lists for multilabel analysis
+    - type: split_multilabel
+      params:
+        column: "Metadata_target"
+        separator: "|"
+
+average_precision:
+  # Use multilabel since compounds have multiple targets (separated by |)
+  multilabel: true
+  
+  params:
+    # Positive pairs: compounds sharing the same target
+    pos_sameby: ["Metadata_target"]
+    pos_diffby: []
+    
+    # Negative pairs: compounds with different targets
+    neg_sameby: []
+    neg_diffby: ["Metadata_target"]
+    
+    # For multilabel analysis, specify the column
+    multilabel_col: "Metadata_target"
+
+mean_average_precision:
+  params:
+    sameby: ["Metadata_target"]  # Group by target
+    null_size: 1000000           # As used in notebook
+    threshold: 0.05
+    seed: 0                      # As used in notebook
+
+output:
+  directory: "${hydra:runtime.output_dir}"
+  name: "consistency"
