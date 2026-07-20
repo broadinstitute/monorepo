@@ -4,7 +4,7 @@ Tools to collect and standardize drug-target interaction (DTI) annotations for J
 
 > **Using MOTIVE for ML?** See the [MOTIVE wiki](https://github.com/carpenter-singh-lab/2024_Arevalo_NeurIPS_MotiVE/wiki) for dataset documentation and processed data.
 >
-> **Want pre-computed annotations?** See the [Zenodo deposit](https://doi.org/10.5281/zenodo.XXXXXXX) for ready-to-use outputs with full schema documentation.
+> **Want pre-computed annotations?** See the [Zenodo deposit](https://doi.org/10.5281/zenodo.18197517) for ready-to-use outputs with full schema documentation.
 
 This repository contains the **pipeline code** to regenerate DTI annotations from scratch or extend to other compound sets.
 
