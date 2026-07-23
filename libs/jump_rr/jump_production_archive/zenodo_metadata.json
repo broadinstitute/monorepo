@@ -1,0 +1,47 @@
+{
+  "title": "JUMP production paper: jump_rr-compatible compound tables",
+  "upload_type": "dataset",
+  "description": "<p>Frozen, paper-consistent jump_rr tables generated from the JUMP production paper's compound-only <code>compound_no_source7</code> CellProfiler/Harmony profile. This independent historical archive contains compound similarity matches, CellProfiler feature rankings with restored feature names, Datasette metadata, checksums, and machine-readable provenance.</p><p>It does not replace the living JUMP Hub / jump_rr release. The generator is retained on the <a href=\"https://github.com/broadinstitute/monorepo/tree/jump-rr-production-profiles/libs/jump_rr\">jump-rr-production-profiles branch</a>. Interactive links are documented in the included README.</p>",
+  "creators": [
+    {
+      "name": "Muñoz, Alán F.",
+      "affiliation": "Broad Institute of MIT and Harvard"
+    }
+  ],
+  "access_right": "open",
+  "license": "cc-zero",
+  "version": "1.0.0",
+  "publication_date": "2026-07-23",
+  "keywords": [
+    "JUMP Cell Painting",
+    "phenotypic profiling",
+    "CellProfiler",
+    "jump_rr",
+    "Datasette",
+    "compound similarity",
+    "morphological profiling"
+  ],
+  "notes": "The activity artifact covers 112,462 of 112,604 profile compounds; 142 compounds therefore have no activity value (141 after negative controls are excluded from feature ranking). Source 7 is intentionally excluded to match the paper.",
+  "communities": [
+    {
+      "identifier": "broad-imaging"
+    }
+  ],
+  "related_identifiers": [
+    {
+      "identifier": "https://github.com/broadinstitute/monorepo/tree/jump-rr-production-profiles/libs/jump_rr",
+      "relation": "isDerivedFrom",
+      "scheme": "url"
+    },
+    {
+      "identifier": "https://cellpainting-gallery.s3.amazonaws.com/cpg0042-chandrasekaran-jump/source_all/workspace/profiles_assembled/compound_no_source7/v1.0/profiles_var_mad_int_featselect_harmony.parquet",
+      "relation": "isDerivedFrom",
+      "scheme": "url"
+    },
+    {
+      "identifier": "10.5281/zenodo.20496083",
+      "relation": "isVariantFormOf",
+      "scheme": "doi"
+    }
+  ]
+}

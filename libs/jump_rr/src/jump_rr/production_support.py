@@ -1,4 +1,4 @@
-"""Helpers for the opt-in JUMP production-paper compound tables."""
+"""Helpers for the one-off JUMP production-paper compound tables."""
 
 import json
 from functools import cache
@@ -20,6 +20,7 @@ _ACTIVITY_URL = (
     "all_sources__default/results/activity_map_results.csv"
 )
 _PROFILE_INDEX_URL = "https://github.com/jump-cellpainting/datasets/blob/main/manifests/profile_index.json"
+_ARCHIVE_URL = "https://doi.org/10.5281/zenodo.21515641"
 
 
 def build_feature_rename_mapping(
@@ -121,6 +122,7 @@ def write_production_metadata(table_type: str, colnames: list[str]) -> None:
         "<a href = http://broad.io/compound>standard all-source compound table</a>. "
         f"<a href = {_PROFILE_INDEX_URL}>Data Index</a>. "
         f"<a href = {source_url}>Download source profiles</a>. "
+        f"<a href = {_ARCHIVE_URL}>Historical archive</a>. "
         "<a href = https://broad.io/jump>JUMP Hub</a> for more information."
     )
     data = {

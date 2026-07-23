@@ -56,6 +56,8 @@ From `src/tools`, run:
 
 This writes `compound_no_source7.parquet` and `compound_no_source7_features.parquet`. It does not generate galleries or genetic-perturbation tables.
 
+The frozen generator is retained on the [`jump-rr-production-profiles`](https://github.com/broadinstitute/monorepo/tree/jump-rr-production-profiles/libs/jump_rr) branch. See its [archive documentation](https://github.com/broadinstitute/monorepo/blob/jump-rr-production-profiles/libs/jump_rr/jump_production_archive/README.md) for provenance and checksums. The paper-consistent files are preserved independently in [Zenodo record 21515641](https://doi.org/10.5281/zenodo.21515641), with links there for interactive exploration in Datasette Lite.
+
 In the rare case where you experience a problem before data is loaded, it may be transient - try reloading the webpage. 
 
 <a id="Overview"></a>

@@ -1,0 +1,61 @@
+{
+  "title": "JUMP production paper: jump_rr-compatible compound tables",
+  "version": "1.0.0",
+  "profile": {
+    "name": "compound_no_source7",
+    "url": "https://cellpainting-gallery.s3.amazonaws.com/cpg0042-chandrasekaran-jump/source_all/workspace/profiles_assembled/compound_no_source7/v1.0/profiles_var_mad_int_featselect_harmony.parquet",
+    "sha256": "8e1e5d9e50c8c7c95ed406981b02adb57c7ff9d253192ed52e661115379be6f1",
+    "feature_count": 758,
+    "sources": [
+      "source_1",
+      "source_2",
+      "source_3",
+      "source_5",
+      "source_6",
+      "source_8",
+      "source_9",
+      "source_10",
+      "source_11"
+    ],
+    "excluded_sources": [
+      "source_7"
+    ]
+  },
+  "activity": {
+    "url": "https://imaging-platform.s3.amazonaws.com/projects/cpg0042-chandrasekaran-jump/workspace/publication_data/2025_Chandrasekaran/jump_production_datastore/processed/copairs/runs/activity/compound_no_source7__feat_all__activity_no_target2__all_sources__default/results/activity_map_results.csv",
+    "profile_compounds": 112604,
+    "compounds_with_activity": 112462
+  },
+  "generator": {
+    "repository": "https://github.com/broadinstitute/monorepo",
+    "branch": "jump-rr-production-profiles",
+    "commit": "f95ac3e03e2e700f0bd8719fe18e236c3bbaf891",
+    "path": "libs/jump_rr"
+  },
+  "files": {
+    "compound_no_source7.parquet": {
+      "description": "Ten most similar and ten most dissimilar compounds per query",
+      "rows": 2252080,
+      "columns": 13,
+      "bytes": 141384783,
+      "sha256": "41dda7602d0ef232d05656bfcd3774788b4812d7d21c2f2c05e7806b8edc7e05"
+    },
+    "compound_no_source7_features.parquet": {
+      "description": "Distinctive CellProfiler features by compound and compounds by feature",
+      "rows": 1154530,
+      "columns": 17,
+      "bytes": 55833714,
+      "sha256": "04ef15e60028979b71b8c1f2bc56c1cea18083bdcfad7296fb06ec519bec7eb3"
+    },
+    "compound_no_source7_matches.json": {
+      "description": "Datasette metadata for compound_no_source7.parquet",
+      "bytes": 3596,
+      "sha256": "029d1efd7324498d7983d50486b213b65b77ad5719bf2a66ba5b3d8edf5946b1"
+    },
+    "compound_no_source7_feature.json": {
+      "description": "Datasette metadata for compound_no_source7_features.parquet",
+      "bytes": 4239,
+      "sha256": "c03be76a0b424608c4df049983df8deb4bfb4519444dc09b359c6ef22eefb420"
+    }
+  }
+}
