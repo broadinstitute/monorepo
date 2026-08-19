@@ -4,7 +4,7 @@
 from itertools import groupby, product, starmap
 
 import numpy as np
-import pyarrow
+import pyarrow as pa
 import pytest
 
 from jump_portrait.fetch import (
@@ -39,7 +39,7 @@ def test_get_image(s3_image_uri: str) -> None:
 
 
 @pytest.fixture
-def get_sample_location(item: str = "MYT1") -> pyarrow.lib.RecordBatch:
+def get_sample_location(item: str = "MYT1") -> pa.RecordBatch:
     metadata = get_item_location_metadata(item)
     return metadata.to_batches()[0]
 
@@ -52,15 +52,19 @@ def get_sample_location(item: str = "MYT1") -> pyarrow.lib.RecordBatch:
     ),
 )
 def test_get_jump_image(
-    get_sample_location: dict[str, str],
+    get_sample_location: pa.RecordBatch,
     channel: str,
-    site: str,
+    site: int,
 ) -> None:
-    unique_sample_location = [
-        get_sample_location.to_pylist()[0][f"Metadata_{x}"]
-        for x in ("Source", "Batch", "Plate", "Well")
-    ]
-    image = get_jump_image(*unique_sample_location, channel, site)
+    location = get_sample_location.to_pylist()[0]
+    image = get_jump_image(
+        str(location["Metadata_Source"]),
+        str(location["Metadata_Batch"]),
+        str(location["Metadata_Plate"]),
+        str(location["Metadata_Well"]),
+        channel,
+        site,
+    )
     x, y = image.shape
 
     assert x == 1080, "Wrong x axis size"
@@ -71,7 +75,9 @@ def test_get_jump_image(
     "channel,site", [(["DNA", "AGP", "Mito", "ER", "RNA"], [x for x in (1, 5, 8)])]
 )
 def test_get_jump_image_batch(
-    get_sample_location: dict[str, str], channel: str, site: str
+    get_sample_location: pa.RecordBatch,
+    channel: list[str],
+    site: list[int],
 ) -> None:
     """Test pulling images in batches and dealing with potentially missing values."""
     iterable, img_list = get_jump_image_batch(get_sample_location, channel, site)

@@ -14,11 +14,12 @@ import boto3
 import matplotlib.image as mpimg
 import numpy as np
 from botocore import UNSIGNED
+from botocore.client import BaseClient
 from botocore.config import Config
 from matplotlib import pyplot as plt
 
 
-def s3client(use_credentials: bool = False) -> boto3.client:
+def s3client(use_credentials: bool = False) -> BaseClient:
     """
     Create an S3 client with or without credentials.
 

@@ -22,8 +22,10 @@ downloaded = download_jump_image_batch(metadata, output_dir="/tmp/deleteme")
 
 """
 
+from collections.abc import Sequence
 from functools import cache, partial
 from pathlib import Path
+from typing import cast
 
 import duckdb
 import numpy as np
@@ -206,8 +208,8 @@ def get_item_location_metadata(
 
 def get_metadata_dicts(
     metadata: pa.Table | dict[str, str | int] | list[dict[str, str | int]],
-    channels: list[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
-    site: list[int] = None,
+    channels: Sequence[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
+    site: Sequence[int] | None = None,
 ) -> list[dict[str, str | int]]:
     """
     Transform image metadata into a list of dictionaries with unpivoted channel information.
@@ -335,8 +337,8 @@ def get_jump_image(
 
 def get_jump_image_batch(
     metadata: pa.Table | dict[str, str | int] | list[dict[str, str | int]],
-    channels: list[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
-    site: list[int] = None,
+    channels: Sequence[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
+    site: Sequence[int] | None = None,
 ) -> tuple[list[dict[str, str | int]], list[np.ndarray]]:
     """
     Load jump image associated to metadata in a threaded fashion.
@@ -363,10 +365,13 @@ def get_jump_image_batch(
     """
     metadata_dicts = get_metadata_dicts(metadata, channels, site)
 
-    result = list(
-        Parallel()(
-            delayed(get_image_from_s3uri)(x["Metadata_uri"]) for x in metadata_dicts
-        )
+    result = cast(
+        "list[np.ndarray]",
+        list(
+            Parallel()(
+                delayed(get_image_from_s3uri)(x["Metadata_uri"]) for x in metadata_dicts
+            )
+        ),
     )
     return metadata_dicts, result
 
@@ -375,8 +380,8 @@ def download_jump_image_batch(
     metadata: pa.Table | dict[str, str | int] | list[dict[str, str | int]],
     output_dir: Path,
     path_to_name: bool = True,
-    channels: list[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
-    site: list[int] = None,
+    channels: Sequence[str] = ("DNA", "RNA", "Mito", "AGP", "ER"),
+    site: Sequence[int] | None = None,
 ) -> list[bool]:
     """
     Download a batch of JUMP images from S3 based on provided metadata.
@@ -408,17 +413,24 @@ def download_jump_image_batch(
     metadata_dicts = get_metadata_dicts(metadata, channels, site)
 
     identifiers = ("Source", "Batch", "Plate", "Well", "Site", "Channel")
-    curried = partial(download_s3uri, output_dir=output_dir, path_to_name=path_to_name)
-    result = list(
-        Parallel()(
-            delayed(curried)(
-                (
-                    *[x[f"Metadata_{y}"] for y in identifiers],
-                    x["Metadata_uri"],
+    curried = partial(
+        download_s3uri,
+        output_dir=str(output_dir),
+        path_to_name=path_to_name,
+    )
+    result = cast(
+        "list[bool]",
+        list(
+            Parallel()(
+                delayed(curried)(
+                    (
+                        *[x[f"Metadata_{y}"] for y in identifiers],
+                        x["Metadata_uri"],
+                    )
                 )
+                for x in metadata_dicts
             )
-            for x in metadata_dicts
-        )
+        ),
     )
 
     return result

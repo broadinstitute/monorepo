@@ -1,14 +1,17 @@
 """General utilities."""
 
-from collections.abc import Callable, Iterable
+from collections.abc import Callable, Iterable, Sequence
 from itertools import chain
-from typing import Any
+from typing import Any, ParamSpec, TypeVar, cast
 
 from joblib import Parallel, cpu_count, delayed
 from tqdm import tqdm
 
+P = ParamSpec("P")
+R = TypeVar("R")
 
-def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
+
+def slice_iterable(iterable: Sequence[Any], count: int) -> list[slice]:
     """
     Create slices of the given iterable.
 
@@ -40,13 +43,13 @@ def slice_iterable(iterable: Iterable[Any], count: int) -> list[slice]:
 
 def parallel(
     iterable: Iterable[Any],
-    func: Callable[[list[Any], Any], Any],
-    args: list[Any] = [],
-    jobs: int = None,
-    timeout: float = None,
+    func: Callable[..., Iterable[Any] | None],
+    args: Sequence[object] = (),
+    jobs: int | None = None,
+    timeout: float | None = None,
     verbose: bool = True,
-    **kwargs: dict[Any, Any],
-) -> list[Any]:
+    **kwargs: object,
+) -> list[Any] | None:
     """
     Distribute process on iterable.
 
@@ -83,22 +86,29 @@ def parallel(
     """
     jobs = jobs or cpu_count()
 
-    if not hasattr(iterable, "__len__"):
-        iterable = list(iterable)
+    items: Sequence[Any] = (
+        iterable if isinstance(iterable, Sequence) else list(iterable)
+    )
 
-    if len(iterable) < jobs:
-        jobs = len(iterable)
-    slices = slice_iterable(iterable, jobs)
-    result = Parallel(n_jobs=jobs, timeout=timeout)(
-        delayed(func)(chunk, idx, verbose, *args, **kwargs)
-        for idx, chunk in enumerate([iterable[s] for s in slices])
+    if len(items) < jobs:
+        jobs = len(items)
+    slices = slice_iterable(items, jobs)
+    result = cast(
+        "list[Iterable[Any] | None]",
+        Parallel(n_jobs=jobs, timeout=timeout)(
+            delayed(func)(chunk, idx, verbose, *args, **kwargs)
+            for idx, chunk in enumerate([items[s] for s in slices])
+        ),
     )
 
     if result is not None:
         return list(chain(*[x for x in result if x is not None]))
+    return None
 
 
-def batch_processing(fn: Callable) -> Callable:
+def batch_processing(
+    fn: Callable[..., object | None],
+) -> Callable[..., list[object | None] | None]:
     """
     Decorate a function for parallel batch processing.
 
@@ -115,12 +125,12 @@ def batch_processing(fn: Callable) -> Callable:
 
     # This assumes parameters are packed in a tuple
     def batched_fn(
-        item_list: Iterable,
+        item_list: Iterable[Iterable[object]],
         job_idx: int,
         verbose: bool = True,
-        *args: Iterable,
-        **kwargs: dict,
-    ) -> list:
+        *args: object,
+        **kwargs: object,
+    ) -> list[object | None] | None:
         """
         Process a list of items in batches.
 
@@ -143,7 +153,7 @@ def batch_processing(fn: Callable) -> Callable:
             List of results if any item in the list is not None, otherwise None.
 
         """
-        results = []
+        results: list[object | None] = []
         for item in tqdm(
             item_list,
             position=0,
@@ -155,11 +165,12 @@ def batch_processing(fn: Callable) -> Callable:
 
         if any([x is not None for x in results]):
             return results
+        return None
 
     return batched_fn
 
 
-def try_function(fn: Callable) -> Callable:
+def try_function(fn: Callable[P, R]) -> Callable[P, R | None]:
     """
     Wrap a function into an instance which will Try to call the function.
 
@@ -179,7 +190,7 @@ def try_function(fn: Callable) -> Callable:
     """
 
     # This assumes parameters are packed in a tuple
-    def try_exc_block(*item: Iterable, **kwargs: dict) -> any:
+    def try_exc_block(*item: P.args, **kwargs: P.kwargs) -> R | None:
         """
         Execute a function with exception handling.
 
