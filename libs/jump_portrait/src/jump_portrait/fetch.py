@@ -36,11 +36,33 @@ from pooch import retrieve
 
 from jump_portrait.s3 import download_s3uri, get_image_from_s3uri
 
+ZENODO_INDEX_ORIGIN = (
+    "https://zenodo.org/api/records/19373370/files/jump_index.parquet/content"
+)
+DEFAULT_INDEX_ORIGIN = ZENODO_INDEX_ORIGIN
+DEFAULT_INDEX_HASH = (
+    "sha256:f45ea1a5de091e43caf35358370abf843bd2be47b2810283fd76db472b5acc6a"
+)
+
 
 @cache
-def get_index_file() -> Path:
+def get_index_file(
+    index_origin: str | Path = DEFAULT_INDEX_ORIGIN,
+    index_hash: str | None = DEFAULT_INDEX_HASH,
+) -> Path:
     """
     Retrieve the index file of the JUMP-CP dataset.
+
+    Remote origins are downloaded into Pooch's cache and checked against the
+    configured hash. Local paths are returned directly, which is useful for
+    testing or a locally managed mirror.
+
+    Parameters
+    ----------
+    index_origin : str or pathlib.Path
+        URL or local path for ``jump_index.parquet``.
+    index_hash : str or None
+        Pooch-compatible content hash for a remote origin.
 
     Returns
     -------
@@ -48,14 +70,14 @@ def get_index_file() -> Path:
         The path to the downloaded index file.
 
     """
-    jump_index = (
-        "https://zenodo.org/api/records/19373370/files/jump_index.parquet/content"
-    )
+    origin = Path(index_origin) if isinstance(index_origin, Path) else index_origin
+    if isinstance(origin, Path) or "://" not in origin:
+        path = Path(origin).expanduser()
+        if not path.is_file():
+            raise FileNotFoundError(f"Image index does not exist: {path}")
+        return path
 
-    return retrieve(
-        jump_index,
-        known_hash="f45ea1a5de091e43caf35358370abf843bd2be47b2810283fd76db472b5acc6a",
-    )
+    return Path(retrieve(origin, known_hash=index_hash))
 
 
 def get_sample(n: int = 2, seed: int = 42) -> pa.Table:
@@ -225,7 +247,10 @@ def get_jump_image(
     plate: str,
     well: str,
     channel: str,
-    site: str = "1",
+    site: int | str = "1",
+    *,
+    index_origin: str | Path = DEFAULT_INDEX_ORIGIN,
+    index_hash: str | None = DEFAULT_INDEX_HASH,
 ) -> np.ndarray:
     """
     Fetch a single image from JUMP from Cellpainting Gallery's AWS bucket.
@@ -244,6 +269,10 @@ def get_jump_image(
         The channel to fetch, standard channels include DNA, Mito, ER, and AGP.
     site : str or int, optional
         Site identifier (also called foci), by default "1". It is casted if needed.
+    index_origin : str or pathlib.Path
+        URL or local path for ``jump_index.parquet``.
+    index_hash : str or None
+        Pooch-compatible content hash for a remote image index.
 
     Returns
     -------
@@ -256,7 +285,7 @@ def get_jump_image(
         If no valid site is found or if more than one site is found.
 
     """
-    index_path = get_index_file()
+    index_path = get_index_file(index_origin, index_hash)
     with duckdb.connect() as con:
         url_field = f"URL_Orig{channel}"
         query_result = con.sql(

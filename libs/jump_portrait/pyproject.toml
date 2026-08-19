@@ -17,6 +17,13 @@ dependencies = [
     "numpy>1.25",
     "duckdb>=1.4.4",
     "matplotlib>=3.8.2,<4",
+    "imagecodecs-numcodecs==2024.6.1; python_version >= '3.11'",
+    "obspec-utils>=0.9.0,<0.10; python_version >= '3.11'",
+    "obstore>=0.11.0,<0.12; python_version >= '3.11'",
+    "virtual-tiff>=0.5.0,<0.6; python_version >= '3.11'",
+    "virtualizarr>=2.5.1,<2.6; python_version >= '3.11'",
+    "xarray>=2025.6.0,<2027; python_version >= '3.11'",
+    "zarr==3.1.5; python_version >= '3.11'",
 ]
 
 [dependency-groups]
@@ -58,4 +65,3 @@ default-groups = ["dev"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests", "README.md"]
-
