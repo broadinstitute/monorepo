@@ -14,6 +14,7 @@ import pyarrow.parquet as pq
 import xarray as xr
 from obspec_utils.protocols import ReadableStore
 
+import jump_portrait._index as index
 import jump_portrait.fetch as fetch
 import jump_portrait.virtual as virtual
 from jump_portrait import CHANNELS, UnsupportedTIFFLayoutError, get_jump_image_site
@@ -71,7 +72,7 @@ def test_get_index_file_uses_configured_remote_origin(
         calls.append((origin, known_hash))
         return image_index
 
-    monkeypatch.setattr(fetch, "retrieve", fake_retrieve)
+    monkeypatch.setattr(index, "retrieve", fake_retrieve)
     fetch.get_index_file.cache_clear()
     origin = "https://example.org/jump_index.parquet"
     assert fetch.get_index_file(origin, "sha256:abc") == image_index

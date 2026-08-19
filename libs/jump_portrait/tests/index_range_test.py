@@ -14,6 +14,7 @@ import pyarrow.csv as pv
 import pyarrow.parquet as pq
 import pytest
 
+import jump_portrait._index as index
 import jump_portrait.fetch as fetch
 
 
@@ -153,7 +154,7 @@ def test_metadata_remote_range_scan_matches_local_index(
     )
     monkeypatch.setattr(fetch, "get_table", lambda name: well_metadata_csv())
     monkeypatch.setattr(
-        fetch,
+        index,
         "retrieve",
         lambda *args, **kwargs: pytest.fail("range scan fell back to Pooch"),
     )

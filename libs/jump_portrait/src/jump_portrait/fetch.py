@@ -23,7 +23,7 @@ downloaded = download_jump_image_batch(metadata, output_dir="/tmp/deleteme")
 """
 
 from collections.abc import Sequence
-from functools import cache, partial
+from functools import partial
 from pathlib import Path
 from typing import cast
 
@@ -34,67 +34,17 @@ import pyarrow.csv as pv
 from broad_babel import query
 from broad_babel.data import get_table
 from joblib import Parallel, delayed
-from pooch import retrieve
 
+import jump_portrait._index as _index
 from jump_portrait.s3 import download_s3uri, get_image_from_s3uri
 
-ZENODO_INDEX_ORIGIN = (
-    "https://zenodo.org/api/records/19373370/files/jump_index.parquet/content"
-)
-CLOUDFRONT_INDEX_ORIGIN = (
-    "https://d3dw4c1b79pj57.cloudfront.net/19373370/jump_index.parquet/content"
-)
-DEFAULT_INDEX_ORIGIN = CLOUDFRONT_INDEX_ORIGIN
-DEFAULT_INDEX_SIZE = 145_197_890
-DEFAULT_INDEX_HASH = (
-    "sha256:f45ea1a5de091e43caf35358370abf843bd2be47b2810283fd76db472b5acc6a"
-)
-
-
-@cache
-def get_index_file(
-    index_origin: str | Path = DEFAULT_INDEX_ORIGIN,
-    index_hash: str | None = DEFAULT_INDEX_HASH,
-) -> Path:
-    """
-    Retrieve the index file of the JUMP-CP dataset.
-
-    Remote origins are downloaded into Pooch's cache and checked against the
-    configured hash. Local paths are returned directly, which is useful for
-    testing or a locally managed mirror.
-
-    Parameters
-    ----------
-    index_origin : str or pathlib.Path
-        URL or local path for ``jump_index.parquet``.
-    index_hash : str or None
-        Pooch-compatible content hash for a remote origin.
-
-    Returns
-    -------
-    Path
-        The path to the downloaded index file.
-
-    """
-    origin = Path(index_origin) if isinstance(index_origin, Path) else index_origin
-    if isinstance(origin, Path) or "://" not in origin:
-        path = Path(origin).expanduser()
-        if not path.is_file():
-            raise FileNotFoundError(f"Image index does not exist: {path}")
-        return path
-
-    return Path(retrieve(origin, known_hash=index_hash))
-
-
-def _get_index_scan_origin(index_origin: str | Path) -> str:
-    """Resolve an image index for a DuckDB scan without downloading it."""
-    origin = Path(index_origin) if isinstance(index_origin, Path) else index_origin
-    if isinstance(origin, Path) or "://" not in origin:
-        path = Path(origin).expanduser()
-        if not path.is_file():
-            raise FileNotFoundError(f"Image index does not exist: {path}")
-        return str(path)
-    return origin
+CLOUDFRONT_INDEX_ORIGIN = _index.CLOUDFRONT_INDEX_ORIGIN
+DEFAULT_INDEX_HASH = _index.DEFAULT_INDEX_HASH
+DEFAULT_INDEX_ORIGIN = _index.DEFAULT_INDEX_ORIGIN
+DEFAULT_INDEX_SIZE = _index.DEFAULT_INDEX_SIZE
+ZENODO_INDEX_ORIGIN = _index.ZENODO_INDEX_ORIGIN
+_get_index_scan_origin = _index._get_index_scan_origin
+get_index_file = _index.get_index_file
 
 
 def get_sample(n: int = 2, seed: int = 42) -> pa.Table:

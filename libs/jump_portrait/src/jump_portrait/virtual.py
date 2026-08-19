@@ -7,7 +7,6 @@ from dataclasses import replace
 from pathlib import Path
 from typing import BinaryIO, cast
 
-import duckdb
 import numpy as np
 import xarray as xr
 from obspec_utils.protocols import ReadableStore
@@ -26,9 +25,11 @@ from zarr.codecs import BytesCodec
 from zarr.core.dtype import parse_data_type
 from zarr.core.metadata.v3 import ArrayV3Metadata
 
-from jump_portrait.fetch import (
+from jump_portrait._index import (
+    CHANNELS,
     DEFAULT_INDEX_ORIGIN,
     _get_index_scan_origin,
+    _get_site_urls,
     get_index_file,
 )
 
@@ -39,7 +40,6 @@ __all__ = [
     "get_jump_image_site",
 ]
 
-CHANNELS: tuple[str, ...] = ("AGP", "DNA", "ER", "Mito", "RNA")
 GALLERY_ORIGIN = "s3://cellpainting-gallery/"
 MAX_TIFF_METADATA_BYTES = 1024 * 1024
 
@@ -210,48 +210,6 @@ class _BoundedTIFFParser:
             group=ManifestGroup(arrays={"0": manifest_array}),
             registry=registry,
         )
-
-
-def _get_site_urls(
-    index_origin: str | Path,
-    source: str,
-    batch: str,
-    plate: str,
-    well: str,
-    site: int,
-) -> dict[str, str]:
-    columns = ", ".join(f"URL_Orig{channel}" for channel in CHANNELS)
-    statement = f"""
-        SELECT {columns}
-        FROM read_parquet(?)
-        WHERE Metadata_Source = ?
-          AND Metadata_Batch = ?
-          AND Metadata_Plate = ?
-          AND Metadata_Well = ?
-          AND Metadata_Site = ?
-    """
-    with duckdb.connect() as connection:
-        rows = connection.execute(
-            statement,
-            [str(index_origin), source, batch, plate, well, site],
-        ).fetchall()
-
-    location = (
-        f"source={source!r}, batch={batch!r}, plate={plate!r}, "
-        f"well={well!r}, site={site}"
-    )
-    if len(rows) != 1:
-        raise ValueError(
-            f"Expected exactly one image-index row for {location}; found {len(rows)}"
-        )
-
-    urls: dict[str, object] = dict(zip(CHANNELS, rows[0], strict=True))
-    missing = [channel for channel, url in urls.items() if not isinstance(url, str)]
-    if missing:
-        raise ValueError(
-            f"Image-index row for {location} has no original TIFF URL for {missing}"
-        )
-    return {channel: url for channel, url in urls.items() if isinstance(url, str)}
 
 
 def _gallery_registry(trace: RequestTrace | None) -> ObjectStoreRegistry:
