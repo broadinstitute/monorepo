@@ -88,6 +88,13 @@ By default, `get_jump_image_site` Range-scans the remote image index and creates
 Pass `index_origin` as a local Parquet path for offline use.
 Pass `index_hash` explicitly only when a complete cached and checksum-verified remote index is required; this opt-in path downloads the full object.
 
+The [standalone VirtualiZarr vignette](notebooks/virtualizarr_image_vignette.py) queries public JUMP metadata, opens one Source_8 site lazily, displays the five Cell Painting channels, and reports its range-request evidence.
+It carries its own dependencies and exact public `jump_portrait` pin, so the single downloaded file can be launched with:
+
+```bash
+uv run marimo edit --sandbox virtualizarr_image_vignette.py
+```
+
 #### `get_jump_image_batch`
 Load multiple images into memory in parallel based on a metadata table.
 

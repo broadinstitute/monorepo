@@ -58,6 +58,8 @@ exclude = ["vendor"]
 "tests/**" = ["D"]
 # Ignore all files that end in `_test.py`.
 "*_test.py" = ["D"]
+# marimo cell signatures are generated from the reactive dependency graph.
+"notebooks/**" = ["ANN"]
 
 [tool.uv]
 default-groups = ["dev"]
