@@ -95,6 +95,12 @@ It carries its own dependencies and exact public `jump_portrait` pin, so the sin
 uv run marimo edit --sandbox virtualizarr_image_vignette.py
 ```
 
+For interactive plate, well, and site navigation, use the self-contained [virtual image browser](notebooks/virtual_image_browser.py):
+
+```bash
+uv run marimo edit --sandbox virtual_image_browser.py
+```
+
 #### `get_jump_image_batch`
 Load multiple images into memory in parallel based on a metadata table.
 
