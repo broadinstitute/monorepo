@@ -17,7 +17,12 @@ from obspec_utils.protocols import ReadableStore
 import jump_portrait._index as index
 import jump_portrait.fetch as fetch
 import jump_portrait.virtual as virtual
-from jump_portrait import CHANNELS, UnsupportedTIFFLayoutError, get_jump_image_site
+from jump_portrait import (
+    CHANNELS,
+    UnsupportedTIFFLayoutError,
+    get_jump_image_site,
+    get_jump_image_site_from_metadata,
+)
 
 
 class MemoryStore:
@@ -94,6 +99,36 @@ def test_bounded_range_reader_rejects_unbounded_read() -> None:
 
     with pytest.raises(ValueError, match="Unbounded TIFF reads"):
         reader.read()
+
+
+def test_contiguous_strips_are_coalesced_to_128_rows() -> None:
+    offsets = np.arange(256, dtype=np.uint64) * 8192
+    lengths = np.full(256, 8192, dtype=np.uint64)
+
+    result_offsets, result_lengths, chunk_rows = virtual._coalesce_strips(
+        offsets,
+        lengths,
+        4,
+    )
+
+    np.testing.assert_array_equal(result_offsets, offsets[::32])
+    np.testing.assert_array_equal(result_lengths, np.full(8, 262144))
+    assert chunk_rows == 128
+
+
+def test_noncontiguous_strips_are_not_coalesced() -> None:
+    offsets = np.array([0, 8, 17, 25], dtype=np.uint64)
+    lengths = np.full(4, 8, dtype=np.uint64)
+
+    result_offsets, result_lengths, chunk_rows = virtual._coalesce_strips(
+        offsets,
+        lengths,
+        4,
+    )
+
+    np.testing.assert_array_equal(result_offsets, offsets)
+    np.testing.assert_array_equal(result_lengths, lengths)
+    assert chunk_rows == 4
 
 
 def test_get_site_urls_returns_notebook_channel_order(image_index: Path) -> None:
@@ -218,6 +253,75 @@ def test_public_loader_range_scans_remote_index_by_default(
     get_jump_image_site("source_8", "J3", "A1166127", "A01", index_origin=origin)
 
     assert scan_origins == [origin]
+
+
+def test_metadata_loader_uses_returned_urls_without_index_lookup(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    urls = {channel: f"s3://cellpainting-gallery/{channel}.tif" for channel in CHANNELS}
+    record: dict[str, object] = {
+        "Metadata_Source": "source_8",
+        "Metadata_Batch": "J3",
+        "Metadata_Plate": "A1166127",
+        "Metadata_Well": "A01",
+        "Metadata_Site": 1,
+    }
+    record.update({f"URL_Orig{channel}": url for channel, url in urls.items()})
+    lazy_image = xr.DataArray(
+        np.zeros((5, 4, 3), dtype=np.uint16),
+        dims=("channel", "y", "x"),
+        coords={"channel": list(CHANNELS)},
+    )
+    manifest = SimpleNamespace(manifest=[object()], nbytes_virtual=32)
+    opened: list[tuple[str, dict[str, str]]] = []
+
+    monkeypatch.setattr(
+        virtual,
+        "_get_site_urls",
+        lambda *args: pytest.fail("metadata loader rescanned the image index"),
+    )
+
+    def fake_open(
+        source: str,
+        channel_urls: dict[str, str],
+        trace: object,
+    ) -> tuple[xr.DataArray, object]:
+        opened.append((source, channel_urls))
+        return lazy_image, manifest
+
+    monkeypatch.setattr(virtual, "_open_virtual_site", fake_open)
+
+    result = get_jump_image_site_from_metadata(record)
+
+    assert opened == [("source_8", urls)]
+    assert result.attrs == {
+        "source": "source_8",
+        "batch": "J3",
+        "plate": "A1166127",
+        "well": "A01",
+        "site": 1,
+        "source_urls": urls,
+        "image_index_origin": None,
+        "virtual_reference_count": 1,
+        "virtual_reference_bytes": 32,
+    }
+
+
+def test_metadata_loader_rejects_missing_public_channel_url() -> None:
+    with pytest.raises(ValueError, match="Gallery URL.*RNA"):
+        get_jump_image_site_from_metadata(
+            {
+                "Metadata_Source": "source_8",
+                "Metadata_Batch": "J3",
+                "Metadata_Plate": "A1166127",
+                "Metadata_Well": "A01",
+                "Metadata_Site": 1,
+                **{
+                    f"URL_Orig{channel}": f"s3://cellpainting-gallery/{channel}.tif"
+                    for channel in CHANNELS[:-1]
+                },
+            }
+        )
 
 
 def test_public_loader_explicit_hash_downloads_complete_index(

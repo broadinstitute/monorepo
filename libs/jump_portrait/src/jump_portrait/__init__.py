@@ -11,6 +11,7 @@ if TYPE_CHECKING:
         RequestTrace,
         UnsupportedTIFFLayoutError,
         get_jump_image_site,
+        get_jump_image_site_from_metadata,
     )
 
 __all__ = [
@@ -20,6 +21,7 @@ __all__ = [
     "get_item_location_metadata",
     "get_jump_image",
     "get_jump_image_site",
+    "get_jump_image_site_from_metadata",
 ]
 
 _LAZY_EXPORTS = {
@@ -27,6 +29,7 @@ _LAZY_EXPORTS = {
     "RequestTrace",
     "UnsupportedTIFFLayoutError",
     "get_jump_image_site",
+    "get_jump_image_site_from_metadata",
 }
 
 

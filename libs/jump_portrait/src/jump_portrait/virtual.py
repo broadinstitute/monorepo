@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import io
+import math
+from collections.abc import Mapping
 from dataclasses import replace
 from pathlib import Path
 from typing import BinaryIO, cast
@@ -38,10 +40,12 @@ __all__ = [
     "RequestTrace",
     "UnsupportedTIFFLayoutError",
     "get_jump_image_site",
+    "get_jump_image_site_from_metadata",
 ]
 
 GALLERY_ORIGIN = "s3://cellpainting-gallery/"
 MAX_TIFF_METADATA_BYTES = 1024 * 1024
+TARGET_CHUNK_ROWS = 128
 
 
 class UnsupportedTIFFLayoutError(ValueError):
@@ -113,6 +117,26 @@ class _BoundedRangeReader(io.RawIOBase):
         return data
 
 
+def _coalesce_strips(
+    offsets: np.ndarray,
+    byte_counts: np.ndarray,
+    rows_per_strip: int,
+) -> tuple[np.ndarray, np.ndarray, int]:
+    """Combine contiguous strips into complete chunks of at most 128 rows."""
+    strips_per_chunk = math.gcd(
+        offsets.size,
+        max(1, TARGET_CHUNK_ROWS // rows_per_strip),
+    )
+    contiguous = np.all(offsets[1:] == offsets[:-1] + byte_counts[:-1])
+    if strips_per_chunk == 1 or not contiguous:
+        return offsets, byte_counts, rows_per_strip
+    return (
+        offsets[::strips_per_chunk],
+        byte_counts.reshape(-1, strips_per_chunk).sum(axis=1),
+        rows_per_strip * strips_per_chunk,
+    )
+
+
 def _manifest_from_page(page: TiffPage, url: str, byteorder: str) -> ManifestArray:
     shape = tuple(int(length) for length in page.shape)
     if len(shape) != 2 or int(page.samplesperpixel) != 1:
@@ -154,7 +178,12 @@ def _manifest_from_page(page: TiffPage, url: str, byteorder: str) -> ManifestArr
             "variable or padded TIFF strip byte counts are not yet supported"
         )
 
-    manifest_shape = (expected_strips, 1)
+    offsets, byte_counts, chunk_rows = _coalesce_strips(
+        offsets,
+        byte_counts,
+        rows_per_strip,
+    )
+    manifest_shape = (offsets.size, 1)
     offsets = offsets.reshape(manifest_shape)
     byte_counts = byte_counts.reshape(manifest_shape)
     paths = np.full(offsets.shape, url, dtype=np.dtypes.StringDType())
@@ -170,7 +199,7 @@ def _manifest_from_page(page: TiffPage, url: str, byteorder: str) -> ManifestArr
         data_type=zarr_dtype,
         chunk_grid={
             "name": "regular",
-            "configuration": {"chunk_shape": (rows_per_strip, image_width)},
+            "configuration": {"chunk_shape": (chunk_rows, image_width)},
         },
         chunk_key_encoding={"name": "default"},
         fill_value=zarr_dtype.default_scalar(),
@@ -272,7 +301,44 @@ def _open_virtual_site(
         mask_and_scale=False,
         decode_times=False,
     )["image"].assign_coords(channel=list(CHANNELS))
+    image.attrs.update(
+        {
+            "source_layout": "uncompressed strips",
+            "virtual_chunk_shape": tuple(
+                int(length) for length in image.encoding["chunks"]
+            ),
+        }
+    )
     return image, manifest_array
+
+
+def _finish_site(
+    image: xr.DataArray,
+    manifest_array: ManifestArray,
+    *,
+    source: str,
+    batch: str,
+    plate: str,
+    well: str,
+    site: int,
+    channel_urls: dict[str, str],
+    index_origin: str | None,
+) -> xr.DataArray:
+    image.name = "image"
+    image.attrs.update(
+        {
+            "source": source,
+            "batch": batch,
+            "plate": plate,
+            "well": well,
+            "site": site,
+            "source_urls": channel_urls,
+            "image_index_origin": index_origin,
+            "virtual_reference_count": len(manifest_array.manifest),
+            "virtual_reference_bytes": manifest_array.nbytes_virtual,
+        }
+    )
+    return image
 
 
 def get_jump_image_site(
@@ -335,18 +401,56 @@ def get_jump_image_site(
         site_number,
     )
     image, manifest_array = _open_virtual_site(source, channel_urls, trace)
-    image.name = "image"
-    image.attrs.update(
-        {
-            "source": source,
-            "batch": batch,
-            "plate": plate,
-            "well": well,
-            "site": site_number,
-            "source_urls": channel_urls,
-            "image_index_origin": str(index_origin),
-            "virtual_reference_count": len(manifest_array.manifest),
-            "virtual_reference_bytes": manifest_array.nbytes_virtual,
-        }
+    return _finish_site(
+        image,
+        manifest_array,
+        source=source,
+        batch=batch,
+        plate=plate,
+        well=well,
+        site=site_number,
+        channel_urls=channel_urls,
+        index_origin=str(index_origin),
     )
-    return image
+
+
+def get_jump_image_site_from_metadata(
+    record: Mapping[str, object],
+    *,
+    trace: RequestTrace | None = None,
+) -> xr.DataArray:
+    """Open one site directly from a returned image-index metadata record."""
+    fields = {
+        field.lower(): record.get(f"Metadata_{field}")
+        for field in ("Source", "Batch", "Plate", "Well", "Site")
+    }
+    missing = [field for field, value in fields.items() if value is None]
+    if missing:
+        raise ValueError(f"Metadata record is missing location fields: {missing}")
+
+    channel_urls = {channel: record.get(f"URL_Orig{channel}") for channel in CHANNELS}
+    invalid = [
+        channel
+        for channel, url in channel_urls.items()
+        if not isinstance(url, str) or not url.startswith(GALLERY_ORIGIN)
+    ]
+    if invalid:
+        raise ValueError(
+            "Metadata record has no public Cell Painting Gallery URL for "
+            f"channels: {invalid}"
+        )
+
+    source = str(fields["source"])
+    urls = {channel: str(url) for channel, url in channel_urls.items()}
+    image, manifest_array = _open_virtual_site(source, urls, trace)
+    return _finish_site(
+        image,
+        manifest_array,
+        source=source,
+        batch=str(fields["batch"]),
+        plate=str(fields["plate"]),
+        well=str(fields["well"]),
+        site=int(str(fields["site"])),
+        channel_urls=urls,
+        index_origin=None,
+    )

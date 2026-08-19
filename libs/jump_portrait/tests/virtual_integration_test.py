@@ -93,6 +93,9 @@ def test_get_jump_image_site_matches_eager_source_8(
     assert image.coords["channel"].values.tolist() == list(CHANNELS)
     assert image.shape == (5, 1024, 1024)
     assert image.dtype == np.dtype("uint16")
+    assert image.encoding["chunks"] == (1, 128, 1024)
+    assert image.attrs["source_layout"] == "uncompressed strips"
+    assert image.attrs["virtual_chunk_shape"] == (1, 128, 1024)
 
     for channel in CHANNELS:
         eager = get_jump_image(
@@ -132,13 +135,22 @@ def test_get_jump_image_site_crop_uses_ranges_without_local_tiffs(
     assert trace.total_bytes < sum(SOURCE_8_OBJECT_SIZES.values()) // 10
     trace.clear()
 
-    crop = image.isel(y=slice(0, 8), x=slice(0, 8)).values
+    selections = [
+        (slice(0, 512), slice(0, 512), (5, 512, 512), 20, 5 * 1024**2),
+        (slice(1, 513), slice(128, 384), (5, 512, 256), 25, 6400 * 1024),
+        (slice(900, 1024), slice(900, 1024), (5, 124, 124), 5, 1280 * 1024),
+        (slice(0, 1024), slice(0, 1024), (5, 1024, 1024), 40, 10 * 1024**2),
+    ]
+    for y_slice, x_slice, shape, requests, requested_bytes in selections:
+        trace.clear()
+        crop = image.isel(y=y_slice, x=x_slice).values
+        assert crop.shape == shape
+        assert len(trace.requests) == requests
+        assert trace.total_bytes == requested_bytes
+        assert all(
+            request.method in {"get_range", "get_ranges"} for request in trace.requests
+        )
+        assert not any(request.method == "get" for request in trace.requests)
 
-    assert crop.shape == (5, 8, 8)
-    assert trace.requests
-    assert all(
-        request.method in {"get_range", "get_ranges"} for request in trace.requests
-    )
-    assert trace.total_bytes < image.nbytes // 10
     assert not list(tmp_path.rglob("*.tif"))
     assert not list(tmp_path.rglob("*.tiff"))
