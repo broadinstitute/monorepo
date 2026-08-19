@@ -20,6 +20,12 @@ metadata = get_item_location_metadata("MYT1")
 metadata = get_item_location_metadata("JCP2022_000001", input_column="JCP2022")
 ```
 
+By default, metadata lookup scans the immutable CloudFront Parquet object at `https://d3dw4c1b79pj57.cloudfront.net/19373370/jump_index.parquet/content`.
+The object is 145,197,890 bytes and has SHA-256 `f45ea1a5de091e43caf35358370abf843bd2be47b2810283fd76db472b5acc6a`.
+DuckDB uses HTTP byte-range requests for the Parquet metadata and row groups needed by the query and does not create a local `jump_index.parquet` copy.
+A partial remote scan does not verify the full-object SHA-256 because it does not read every byte.
+Pass an explicit local `Path` through `index_origin` for offline use, or call `get_index_file()` when a complete cached and checksum-verified index is required.
+
 ### Image Retrieval
 
 #### `get_jump_image`

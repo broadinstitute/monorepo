@@ -39,7 +39,11 @@ from jump_portrait.s3 import download_s3uri, get_image_from_s3uri
 ZENODO_INDEX_ORIGIN = (
     "https://zenodo.org/api/records/19373370/files/jump_index.parquet/content"
 )
-DEFAULT_INDEX_ORIGIN = ZENODO_INDEX_ORIGIN
+CLOUDFRONT_INDEX_ORIGIN = (
+    "https://d3dw4c1b79pj57.cloudfront.net/19373370/jump_index.parquet/content"
+)
+DEFAULT_INDEX_ORIGIN = CLOUDFRONT_INDEX_ORIGIN
+DEFAULT_INDEX_SIZE = 145_197_890
 DEFAULT_INDEX_HASH = (
     "sha256:f45ea1a5de091e43caf35358370abf843bd2be47b2810283fd76db472b5acc6a"
 )
@@ -80,6 +84,17 @@ def get_index_file(
     return Path(retrieve(origin, known_hash=index_hash))
 
 
+def _get_index_scan_origin(index_origin: str | Path) -> str:
+    """Resolve an image index for a DuckDB scan without downloading it."""
+    origin = Path(index_origin) if isinstance(index_origin, Path) else index_origin
+    if isinstance(origin, Path) or "://" not in origin:
+        path = Path(origin).expanduser()
+        if not path.is_file():
+            raise FileNotFoundError(f"Image index does not exist: {path}")
+        return str(path)
+    return origin
+
+
 def get_sample(n: int = 2, seed: int = 42) -> pa.Table:
     """
     Retrieve a sample of cell painting data from S3.
@@ -112,9 +127,11 @@ def get_sample(n: int = 2, seed: int = 42) -> pa.Table:
 
 def get_item_location_metadata(
     item_name: str,
-    operator: str or None = None,
+    operator: str | None = None,
     input_column: str = "standard_key",
-) -> list[dict[str, str | int]]:
+    *,
+    index_origin: str | Path = DEFAULT_INDEX_ORIGIN,
+) -> pa.Table:
     """
     Get metadata location for an item (gene or compound) by its name.
 
@@ -129,6 +146,9 @@ def get_item_location_metadata(
         The operator to use for the query (default is None).
     input_column : str, optional
         The input column to use for the query (default is "standard_key").
+    index_origin : str or pathlib.Path, optional
+        Remote Parquet URL to scan with HTTP byte-range requests, or an explicit
+        local Parquet path. The default is the immutable CloudFront record URL.
 
     Returns
     -------
@@ -157,17 +177,28 @@ def get_item_location_metadata(
 
     assert len(jcp_item), f"No JCP id found for {jcp_item}"
 
-    index_file = get_index_file()
+    index_scan_origin = _get_index_scan_origin(index_origin)
 
     with duckdb.connect() as con:
         meta_wells_csv: str = get_table("well")
-        meta_wells = pv.read_csv(meta_wells_csv)  # noqa: F841
-        found_rows = con.sql(  # noqa: F841
-            f"SELECT *, '{item_name}' AS standard_key FROM meta_wells WHERE Metadata_JCP2022 IN {list(jcp_item.keys())}"
+        meta_wells = pv.read_csv(meta_wells_csv)
+        requested_items = pa.table(
+            {"Metadata_JCP2022": [str(jcp_id) for jcp_id in jcp_item]}
         )
-
-        well_metadata = con.sql(
-            f"FROM found_rows JOIN (FROM read_parquet('{index_file}')) USING(Metadata_Source,Metadata_Plate,Metadata_Well)"
+        con.register("meta_wells", meta_wells)
+        con.register("requested_items", requested_items)
+        well_metadata = con.execute(
+            """
+            WITH found_rows AS (
+                SELECT meta_wells.*, ? AS standard_key
+                FROM meta_wells
+                JOIN requested_items USING (Metadata_JCP2022)
+            )
+            FROM found_rows
+            JOIN read_parquet(?)
+                USING (Metadata_Source, Metadata_Plate, Metadata_Well)
+            """,
+            [item_name, index_scan_origin],
         ).to_arrow_table()
 
     return well_metadata
