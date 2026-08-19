@@ -84,8 +84,9 @@ evidence = {
 Each `trace.requests` record exposes the object path, byte start, length and end, timestamp, duration, method, and range style.
 A bounded read should contain `get_range` or `get_ranges` methods and no full-object `get` method.
 `trace.total_bytes` is the sum of requested range lengths, not a wire-level transfer counter.
-Pass `index_origin` as either an image-index URL or a local Parquet path to use a managed mirror or frozen index.
-Pass the matching Pooch-compatible checksum as `index_hash` for a remote origin.
+By default, `get_jump_image_site` Range-scans the remote image index and creates no local index copy.
+Pass `index_origin` as a local Parquet path for offline use.
+Pass `index_hash` explicitly only when a complete cached and checksum-verified remote index is required; this opt-in path downloads the full object.
 
 #### `get_jump_image_batch`
 Load multiple images into memory in parallel based on a metadata table.

@@ -147,7 +147,11 @@ def test_public_loader_sets_location_and_reference_evidence(
     )
     manifest = SimpleNamespace(manifest=[object(), object()], nbytes_virtual=64)
 
-    monkeypatch.setattr(virtual, "get_index_file", lambda *args: image_index)
+    monkeypatch.setattr(
+        virtual,
+        "get_index_file",
+        lambda *args: pytest.fail("default site lookup fell back to Pooch"),
+    )
     monkeypatch.setattr(virtual, "_get_site_urls", lambda *args: urls)
     monkeypatch.setattr(
         virtual,
@@ -178,3 +182,86 @@ def test_public_loader_sets_location_and_reference_evidence(
         "virtual_reference_count": 2,
         "virtual_reference_bytes": 64,
     }
+
+
+def test_public_loader_range_scans_remote_index_by_default(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    origin = "https://example.org/jump_index.parquet"
+    urls = {channel: f"s3://cellpainting-gallery/{channel}.tif" for channel in CHANNELS}
+    lazy_image = xr.DataArray(
+        np.zeros((5, 4, 3), dtype=np.uint16),
+        dims=("channel", "y", "x"),
+        coords={"channel": list(CHANNELS)},
+    )
+    manifest = SimpleNamespace(manifest=[], nbytes_virtual=0)
+    scan_origins: list[str | Path] = []
+
+    monkeypatch.setattr(
+        virtual,
+        "get_index_file",
+        lambda *args: pytest.fail("default site lookup fell back to Pooch"),
+    )
+
+    def fake_get_site_urls(index_origin: str | Path, *args: object) -> dict[str, str]:
+        scan_origins.append(index_origin)
+        return urls
+
+    monkeypatch.setattr(virtual, "_get_site_urls", fake_get_site_urls)
+    monkeypatch.setattr(
+        virtual,
+        "_open_virtual_site",
+        lambda source, channel_urls, trace: (lazy_image, manifest),
+    )
+
+    get_jump_image_site("source_8", "J3", "A1166127", "A01", index_origin=origin)
+
+    assert scan_origins == [origin]
+
+
+def test_public_loader_explicit_hash_downloads_complete_index(
+    image_index: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    origin = "https://example.org/jump_index.parquet"
+    index_hash = "sha256:abc"
+    urls = {channel: f"s3://cellpainting-gallery/{channel}.tif" for channel in CHANNELS}
+    lazy_image = xr.DataArray(
+        np.zeros((5, 4, 3), dtype=np.uint16),
+        dims=("channel", "y", "x"),
+        coords={"channel": list(CHANNELS)},
+    )
+    manifest = SimpleNamespace(manifest=[], nbytes_virtual=0)
+    downloads: list[tuple[str | Path, str | None]] = []
+    scan_origins: list[str | Path] = []
+
+    def fake_get_index_file(
+        index_origin: str | Path,
+        known_hash: str | None,
+    ) -> Path:
+        downloads.append((index_origin, known_hash))
+        return image_index
+
+    def fake_get_site_urls(index_origin: str | Path, *args: object) -> dict[str, str]:
+        scan_origins.append(index_origin)
+        return urls
+
+    monkeypatch.setattr(virtual, "get_index_file", fake_get_index_file)
+    monkeypatch.setattr(virtual, "_get_site_urls", fake_get_site_urls)
+    monkeypatch.setattr(
+        virtual,
+        "_open_virtual_site",
+        lambda source, channel_urls, trace: (lazy_image, manifest),
+    )
+
+    get_jump_image_site(
+        "source_8",
+        "J3",
+        "A1166127",
+        "A01",
+        index_origin=origin,
+        index_hash=index_hash,
+    )
+
+    assert downloads == [(origin, index_hash)]
+    assert scan_origins == [str(image_index)]

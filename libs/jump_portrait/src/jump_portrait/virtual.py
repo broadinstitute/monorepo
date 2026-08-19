@@ -27,8 +27,8 @@ from zarr.core.dtype import parse_data_type
 from zarr.core.metadata.v3 import ArrayV3Metadata
 
 from jump_portrait.fetch import (
-    DEFAULT_INDEX_HASH,
     DEFAULT_INDEX_ORIGIN,
+    _get_index_scan_origin,
     get_index_file,
 )
 
@@ -213,7 +213,7 @@ class _BoundedTIFFParser:
 
 
 def _get_site_urls(
-    index_path: Path,
+    index_origin: str | Path,
     source: str,
     batch: str,
     plate: str,
@@ -233,7 +233,7 @@ def _get_site_urls(
     with duckdb.connect() as connection:
         rows = connection.execute(
             statement,
-            [str(index_path), source, batch, plate, well, site],
+            [str(index_origin), source, batch, plate, well, site],
         ).fetchall()
 
     location = (
@@ -325,16 +325,16 @@ def get_jump_image_site(
     site: int | str = 1,
     *,
     index_origin: str | Path = DEFAULT_INDEX_ORIGIN,
-    index_hash: str | None = DEFAULT_INDEX_HASH,
+    index_hash: str | None = None,
     trace: RequestTrace | None = None,
 ) -> xr.DataArray:
     """
     Expose one five-channel JUMP site as a lazy labeled array.
 
-    TIFF metadata and selected pixels are read using byte-range requests.
-    Constructing the array creates no local TIFF files and does not download
-    complete TIFF objects. Pixel reads remain lazy until the returned array is
-    indexed and materialized.
+    The image index, TIFF metadata, and selected pixels are read using byte-range
+    requests by default. Constructing the array creates no local index or TIFF
+    files and does not download complete remote objects. Pixel reads remain lazy
+    until the returned array is indexed and materialized.
 
     Parameters
     ----------
@@ -343,7 +343,9 @@ def get_jump_image_site(
     index_origin
         URL or local path for ``jump_index.parquet``.
     index_hash
-        Pooch-compatible content hash for a remote image index.
+        Optional Pooch-compatible content hash. Supplying a hash explicitly
+        downloads and verifies the complete remote image index instead of using
+        the default partial Range-scan path.
     trace
         Optional request trace that records TIFF metadata and pixel byte ranges.
 
@@ -361,9 +363,13 @@ def get_jump_image_site(
 
     """
     site_number = int(site)
-    index_path = get_index_file(index_origin, index_hash)
+    index_scan_origin = (
+        str(get_index_file(index_origin, index_hash))
+        if index_hash is not None
+        else _get_index_scan_origin(index_origin)
+    )
     channel_urls = _get_site_urls(
-        index_path,
+        index_scan_origin,
         source,
         batch,
         plate,
