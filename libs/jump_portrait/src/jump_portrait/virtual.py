@@ -2,17 +2,29 @@
 
 from __future__ import annotations
 
+import io
 from dataclasses import replace
 from pathlib import Path
+from typing import BinaryIO, cast
 
 import duckdb
+import numpy as np
 import xarray as xr
+from obspec_utils.protocols import ReadableStore
 from obspec_utils.registry import ObjectStoreRegistry
 from obspec_utils.wrappers import RequestTrace, TracingReadableStore
 from obstore.store import from_url
-from virtual_tiff import VirtualTIFF
+from tifffile import TiffFile, TiffFileError, TiffPage
 from virtualizarr import open_virtual_mfdataset
-from virtualizarr.manifests import ManifestArray, ManifestGroup, ManifestStore
+from virtualizarr.manifests import (
+    ChunkManifest,
+    ManifestArray,
+    ManifestGroup,
+    ManifestStore,
+)
+from zarr.codecs import BytesCodec
+from zarr.core.dtype import parse_data_type
+from zarr.core.metadata.v3 import ArrayV3Metadata
 
 from jump_portrait.fetch import (
     DEFAULT_INDEX_HASH,
@@ -29,10 +41,175 @@ __all__ = [
 
 CHANNELS: tuple[str, ...] = ("AGP", "DNA", "ER", "Mito", "RNA")
 GALLERY_ORIGIN = "s3://cellpainting-gallery/"
+MAX_TIFF_METADATA_BYTES = 1024 * 1024
 
 
 class UnsupportedTIFFLayoutError(ValueError):
     """Report a TIFF layout that cannot be represented by the lazy loader."""
+
+
+class _BoundedRangeReader(io.RawIOBase):
+    """Expose random-access object ranges without allowing a complete TIFF read."""
+
+    def __init__(self, store: ReadableStore, path: str) -> None:
+        self._store = store
+        self._path = path
+        self._position = 0
+        self._size = int(store.head(path)["size"])
+        self._requested_bytes = 0
+        self.name = path
+
+    def readable(self) -> bool:
+        """Report that the reader supports reads."""
+        return True
+
+    def seekable(self) -> bool:
+        """Report that the reader supports random access."""
+        return True
+
+    def tell(self) -> int:
+        """Return the current byte position."""
+        return self._position
+
+    def seek(self, offset: int, whence: int = io.SEEK_SET) -> int:
+        """Move to an absolute, relative, or end-relative byte position."""
+        if whence == io.SEEK_SET:
+            position = offset
+        elif whence == io.SEEK_CUR:
+            position = self._position + offset
+        elif whence == io.SEEK_END:
+            position = self._size + offset
+        else:
+            raise ValueError(f"Unsupported seek mode: {whence}")
+        if position < 0:
+            raise ValueError(f"Cannot seek to negative TIFF offset {position}")
+        self._position = position
+        return position
+
+    def read(self, size: int = -1) -> bytes:
+        """Read one bounded range at the current position."""
+        if size < 0:
+            raise ValueError("Unbounded TIFF reads are not supported")
+        length = min(size, max(0, self._size - self._position))
+        if length == 0:
+            return b""
+
+        budget = min(MAX_TIFF_METADATA_BYTES, max(0, self._size - 1))
+        if self._requested_bytes + length > budget:
+            raise ValueError(
+                "TIFF metadata parsing exceeded the bounded range budget: "
+                f"requested more than {budget} bytes from a {self._size}-byte object"
+            )
+
+        data = bytes(
+            self._store.get_range(
+                self._path,
+                start=self._position,
+                length=length,
+            )
+        )
+        self._position += len(data)
+        self._requested_bytes += len(data)
+        return data
+
+
+def _manifest_from_page(page: TiffPage, url: str, byteorder: str) -> ManifestArray:
+    shape = tuple(int(length) for length in page.shape)
+    if len(shape) != 2 or int(page.samplesperpixel) != 1:
+        raise NotImplementedError(
+            f"expected one two-dimensional sample plane, got shape={shape} "
+            f"and samples_per_pixel={page.samplesperpixel}"
+        )
+    if page.is_tiled:
+        raise NotImplementedError("tiled TIFFs are not yet supported")
+    if int(page.compression) != 1:
+        raise NotImplementedError(
+            f"TIFF compression {int(page.compression)} is not yet supported"
+        )
+    if int(page.predictor) != 1:
+        raise NotImplementedError(
+            f"TIFF predictor {int(page.predictor)} is not yet supported"
+        )
+
+    image_height, image_width = shape
+    rows_per_strip = int(page.rowsperstrip)
+    if rows_per_strip <= 0 or image_height % rows_per_strip:
+        raise NotImplementedError(
+            f"partial TIFF strips are not supported: height={image_height}, "
+            f"rows_per_strip={rows_per_strip}"
+        )
+
+    dtype = np.dtype(page.dtype).newbyteorder("=")
+    offsets = np.asarray(page.dataoffsets, dtype=np.uint64)
+    byte_counts = np.asarray(page.databytecounts, dtype=np.uint64)
+    expected_strips = image_height // rows_per_strip
+    expected_strip_bytes = rows_per_strip * image_width * dtype.itemsize
+    if offsets.size != expected_strips or byte_counts.size != expected_strips:
+        raise ValueError(
+            f"expected {expected_strips} TIFF strips, got "
+            f"{offsets.size} offsets and {byte_counts.size} byte counts"
+        )
+    if not np.all(byte_counts == expected_strip_bytes):
+        raise NotImplementedError(
+            "variable or padded TIFF strip byte counts are not yet supported"
+        )
+
+    manifest_shape = (expected_strips, 1)
+    offsets = offsets.reshape(manifest_shape)
+    byte_counts = byte_counts.reshape(manifest_shape)
+    paths = np.full(offsets.shape, url, dtype=np.dtypes.StringDType())
+    chunk_manifest = ChunkManifest.from_arrays(
+        paths=paths,
+        offsets=offsets,
+        lengths=byte_counts,
+    )
+    zarr_dtype = parse_data_type(dtype, zarr_format=3)
+    endian = "little" if byteorder == "<" else "big"
+    metadata = ArrayV3Metadata(
+        shape=shape,
+        data_type=zarr_dtype,
+        chunk_grid={
+            "name": "regular",
+            "configuration": {"chunk_shape": (rows_per_strip, image_width)},
+        },
+        chunk_key_encoding={"name": "default"},
+        fill_value=zarr_dtype.default_scalar(),
+        codecs=[BytesCodec(endian=endian)],
+        attributes={},
+        dimension_names=("y", "x"),
+        storage_transformers=None,
+    )
+    return ManifestArray(metadata=metadata, chunkmanifest=chunk_manifest)
+
+
+def _manifest_from_tiff(
+    url: str,
+    registry: ObjectStoreRegistry,
+) -> ManifestArray:
+    store, path = registry.resolve(url)
+    reader = _BoundedRangeReader(store, path)
+    with TiffFile(cast("BinaryIO", reader)) as tiff:
+        if len(tiff.pages) != 1:
+            raise NotImplementedError(
+                f"multi-page TIFFs are not yet supported; found {len(tiff.pages)} pages"
+            )
+        page = cast("TiffPage", tiff.pages[0])
+        return _manifest_from_page(page, url, tiff.byteorder)
+
+
+class _BoundedTIFFParser:
+    """Build a VirtualiZarr store from bounded TIFF metadata ranges."""
+
+    def __call__(
+        self,
+        url: str,
+        registry: ObjectStoreRegistry,
+    ) -> ManifestStore:
+        manifest_array = _manifest_from_tiff(url, registry)
+        return ManifestStore(
+            group=ManifestGroup(arrays={"0": manifest_array}),
+            registry=registry,
+        )
 
 
 def _get_site_urls(
@@ -99,13 +276,13 @@ def _open_virtual_site(
         virtual_dataset = open_virtual_mfdataset(
             [channel_urls[channel] for channel in CHANNELS],
             registry=registry,
-            parser=VirtualTIFF(ifd=0),
+            parser=_BoundedTIFFParser(),
             concat_dim=channel_coordinate,
             combine="nested",
             coords="minimal",
             compat="override",
         )
-    except (NotImplementedError, ValueError) as error:
+    except (NotImplementedError, TiffFileError, ValueError) as error:
         raise UnsupportedTIFFLayoutError(
             f"Unsupported TIFF layout for source {source!r}: "
             f"{type(error).__name__}: {error}"
@@ -114,7 +291,7 @@ def _open_virtual_site(
     manifest_array = virtual_dataset["0"].data
     if not isinstance(manifest_array, ManifestArray):
         raise TypeError(
-            "VirtualTIFF did not produce a VirtualiZarr ManifestArray for "
+            "The bounded TIFF parser did not produce a VirtualiZarr ManifestArray for "
             f"source {source!r}; got {type(manifest_array).__name__}"
         )
 

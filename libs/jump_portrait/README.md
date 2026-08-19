@@ -44,6 +44,7 @@ On Python 3.11 or newer, `get_jump_image_site` exposes one complete site as a la
 The dimensions are `(channel, y, x)`, and the channel coordinate is ordered as `AGP`, `DNA`, `ER`, `Mito`, and `RNA`.
 Construction reads TIFF metadata with byte-range requests, while indexing reads only the TIFF chunks needed for the selected pixels.
 It does not download or create local TIFF files.
+The bounded path supports the uncompressed, single-page strip layout used by source_8 and raises `UnsupportedTIFFLayoutError` with the source and cause for other layouts.
 
 The optional trace provides public evidence for the TIFF URLs, logical and virtual-reference byte counts, selected indexer, and transferred bytes.
 
@@ -70,12 +71,13 @@ evidence = {
     "selected_indexer": indexer,
     "request_summary": trace.summary(),
     "request_methods": sorted({request.method for request in trace.requests}),
-    "transferred_bytes": trace.total_bytes,
+    "requested_image_bytes": trace.total_bytes,
 }
 ```
 
 Each `trace.requests` record exposes the object path, byte start, length and end, timestamp, duration, method, and range style.
 A bounded read should contain `get_range` or `get_ranges` methods and no full-object `get` method.
+`trace.total_bytes` is the sum of requested range lengths, not a wire-level transfer counter.
 Pass `index_origin` as either an image-index URL or a local Parquet path to use a managed mirror or frozen index.
 Pass the matching Pooch-compatible checksum as `index_hash` for a remote origin.
 

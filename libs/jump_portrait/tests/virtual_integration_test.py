@@ -9,6 +9,7 @@ if sys.version_info < (3, 11):
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
+from obspec_utils.wrappers import RequestRecord
 
 from jump_portrait import CHANNELS, RequestTrace, get_jump_image_site
 from jump_portrait.fetch import get_jump_image
@@ -36,6 +37,32 @@ SOURCE_8_URLS = {
         "A1166127/Images/HTS_A01_s1_w30A163325-7B23-4E3C-BC17-E995BCF8818D.tif"
     ),
 }
+SOURCE_8_OBJECT_SIZES = {
+    "AGP": 2_105_554,
+    "DNA": 2_105_524,
+    "ER": 2_105_532,
+    "Mito": 2_106_046,
+    "RNA": 2_105_530,
+}
+
+
+def _covered_bytes(requests: list[RequestRecord], object_size: int) -> int:
+    intervals = sorted(
+        (max(0, request.start), min(object_size, request.end))
+        for request in requests
+        if request.length
+    )
+    covered = 0
+    left = right = 0
+    for start, end in intervals:
+        if end <= start:
+            continue
+        if start > right:
+            covered += right - left
+            left, right = start, end
+        else:
+            right = max(right, end)
+    return covered + right - left
 
 
 @pytest.fixture
@@ -93,7 +120,16 @@ def test_get_jump_image_site_crop_uses_ranges_without_local_tiffs(
     )
 
     assert trace.requests
-    assert all(request.method != "get" for request in trace.requests)
+    assert all(request.method in {"get_range", "head"} for request in trace.requests)
+    for channel, url in SOURCE_8_URLS.items():
+        object_size = SOURCE_8_OBJECT_SIZES[channel]
+        object_path = url.removeprefix("s3://cellpainting-gallery/")
+        object_requests = [
+            request for request in trace.requests if request.path == object_path
+        ]
+        assert object_requests
+        assert _covered_bytes(object_requests, object_size) < object_size
+    assert trace.total_bytes < sum(SOURCE_8_OBJECT_SIZES.values()) // 10
     trace.clear()
 
     crop = image.isel(y=slice(0, 8), x=slice(0, 8)).values

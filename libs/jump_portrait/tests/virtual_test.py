@@ -1,6 +1,7 @@
 import sys
 from pathlib import Path
 from types import SimpleNamespace
+from typing import cast
 
 import pytest
 
@@ -11,10 +12,28 @@ import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import xarray as xr
+from obspec_utils.protocols import ReadableStore
 
 import jump_portrait.fetch as fetch
 import jump_portrait.virtual as virtual
 from jump_portrait import CHANNELS, UnsupportedTIFFLayoutError, get_jump_image_site
+
+
+class MemoryStore:
+    def __init__(self, data: bytes) -> None:
+        self.data = data
+
+    def head(self, path: str) -> dict[str, int]:
+        return {"size": len(self.data)}
+
+    def get_range(
+        self,
+        path: str,
+        *,
+        start: int,
+        length: int,
+    ) -> bytes:
+        return self.data[start : start + length]
 
 
 @pytest.fixture
@@ -57,6 +76,23 @@ def test_get_index_file_uses_configured_remote_origin(
     origin = "https://example.org/jump_index.parquet"
     assert fetch.get_index_file(origin, "sha256:abc") == image_index
     assert calls == [(origin, "sha256:abc")]
+
+
+def test_bounded_range_reader_cannot_cover_complete_object() -> None:
+    store = cast("ReadableStore", MemoryStore(b"12345678"))
+    reader = virtual._BoundedRangeReader(store, "image.tif")
+
+    assert reader.read(7) == b"1234567"
+    with pytest.raises(ValueError, match="bounded range budget"):
+        reader.read(1)
+
+
+def test_bounded_range_reader_rejects_unbounded_read() -> None:
+    store = cast("ReadableStore", MemoryStore(b"12345678"))
+    reader = virtual._BoundedRangeReader(store, "image.tif")
+
+    with pytest.raises(ValueError, match="Unbounded TIFF reads"):
+        reader.read()
 
 
 def test_get_site_urls_returns_notebook_channel_order(image_index: Path) -> None:
