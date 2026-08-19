@@ -363,7 +363,9 @@ def _(default_index, is_script_mode, location_form, records):
     mo.vstack(
         [
             mo.md("### Selected original images"),
-            mo.ui.table(channel_url_rows(selected_row), pagination=False),
+            mo.ui.table(
+                channel_url_rows(selected_row), pagination=False, selection=None
+            ),
         ]
     )
     return (selected_row,)
@@ -578,16 +580,18 @@ def _(
                 ),
                 kind="success",
             ),
-            mo.ui.table(evidence, pagination=False),
+            mo.ui.table(evidence, pagination=False, selection=None),
             mo.accordion(
                 {
                     "Image index identity": mo.ui.table(
                         index_identity,
                         pagination=False,
+                        selection=None,
                     ),
                     "Original TIFF URLs": mo.ui.table(
                         channel_url_rows(selected_row),
                         pagination=False,
+                        selection=None,
                     ),
                 }
             ),
