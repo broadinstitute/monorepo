@@ -2,11 +2,13 @@
 # requires-python = ">=3.11,<3.15"
 # dependencies = [
 #     "altair>=6,<7",
+#     "anywidget>=0.9.18,<1",
 #     "jump-portrait @ git+https://github.com/broadinstitute/monorepo.git@5b65c46243925949a0a49e0afcd6d49566d5bce7#subdirectory=libs/jump_portrait",
 #     "marimo==0.23.16",
 #     "numpy>=2.1.2,<3",
 #     "pillow>=11,<13",
 #     "pyarrow>=23,<26",
+#     "traitlets>=5.14,<6",
 # ]
 # ///
 
@@ -18,15 +20,20 @@ __generated_with = "0.23.16"
 app = marimo.App(width="full")
 
 with app.setup:
+    import base64
     from contextlib import chdir
     from functools import lru_cache
+    from io import BytesIO
     from pathlib import Path
     from tempfile import TemporaryDirectory
 
     import altair as alt
+    import anywidget
     import marimo as mo
     import numpy as np
     import pyarrow as pa
+    import traitlets
+    from PIL import Image
 
     from jump_portrait import (
         CHANNELS,
@@ -138,6 +145,16 @@ def normalize_channel(channel: object, percentile: float) -> np.ndarray:
 
 
 @app.function
+def image_data_url(image: np.ndarray) -> str:
+    """Encode a rendered image for the client-side viewer."""
+    buffer = BytesIO()
+    pixels = (np.clip(image, 0.0, 1.0) * 255).astype(np.uint8)
+    Image.fromarray(pixels).save(buffer, format="PNG")
+    encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
+    return f"data:image/png;base64,{encoded}"
+
+
+@app.function
 def rendered_images(
     pixels: object,
     view: str,
@@ -155,6 +172,186 @@ def rendered_images(
     if view == "Small multiples":
         return [(channel, colorized[channel]) for channel in CHANNELS]
     return [(view, colorized[view])]
+
+
+@app.cell
+def _():
+    class _PanZoomImage(anywidget.AnyWidget):
+        _esm = r"""
+        function render({ model, el }) {
+          const root = document.createElement("div");
+          root.className = "panzoom-root";
+          const viewport = document.createElement("div");
+          viewport.className = "panzoom-viewport";
+          viewport.tabIndex = 0;
+          const image = document.createElement("img");
+          image.className = "panzoom-image";
+          image.draggable = false;
+          const reset = document.createElement("button");
+          reset.className = "panzoom-reset";
+          reset.type = "button";
+          reset.title = "Reset zoom and position";
+          viewport.append(image, reset);
+          root.append(viewport);
+          el.replaceChildren(root);
+
+          let scale = 1;
+          let x = 0;
+          let y = 0;
+          let dragging = false;
+          let lastX = 0;
+          let lastY = 0;
+
+          function clampPosition() {
+            x = Math.min(0, Math.max(viewport.clientWidth * (1 - scale), x));
+            y = Math.min(0, Math.max(viewport.clientHeight * (1 - scale), y));
+          }
+
+          function draw() {
+            clampPosition();
+            image.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+            reset.textContent = `${scale.toFixed(1)}x`;
+            viewport.style.cursor = scale > 1 ? (dragging ? "grabbing" : "grab") : "zoom-in";
+          }
+
+          function resetView() {
+            scale = 1;
+            x = 0;
+            y = 0;
+            draw();
+          }
+
+          function updateImage() {
+            image.src = model.get("src");
+            image.alt = model.get("alt");
+            viewport.setAttribute(
+              "aria-label",
+              `${image.alt}. Wheel to zoom, drag to pan, double-click to reset.`
+            );
+            resetView();
+          }
+
+          function zoom(event) {
+            event.preventDefault();
+            const rect = viewport.getBoundingClientRect();
+            const pointX = event.clientX - rect.left;
+            const pointY = event.clientY - rect.top;
+            const next = Math.min(8, Math.max(1, scale * Math.exp(-event.deltaY * 0.0015)));
+            if (next === 1) {
+              resetView();
+              return;
+            }
+            const ratio = next / scale;
+            x = pointX - (pointX - x) * ratio;
+            y = pointY - (pointY - y) * ratio;
+            scale = next;
+            draw();
+          }
+
+          function startPan(event) {
+            if (scale === 1) return;
+            dragging = true;
+            lastX = event.clientX;
+            lastY = event.clientY;
+            viewport.setPointerCapture(event.pointerId);
+            draw();
+          }
+
+          function pan(event) {
+            if (!dragging) return;
+            x += event.clientX - lastX;
+            y += event.clientY - lastY;
+            lastX = event.clientX;
+            lastY = event.clientY;
+            draw();
+          }
+
+          function stopPan() {
+            dragging = false;
+            draw();
+          }
+
+          viewport.addEventListener("wheel", zoom, { passive: false });
+          viewport.addEventListener("pointerdown", startPan);
+          viewport.addEventListener("pointermove", pan);
+          viewport.addEventListener("pointerup", stopPan);
+          viewport.addEventListener("pointercancel", stopPan);
+          viewport.addEventListener("dblclick", resetView);
+          reset.addEventListener("click", resetView);
+          model.on("change:src", updateImage);
+          model.on("change:alt", updateImage);
+          updateImage();
+
+          return () => {
+            model.off("change:src", updateImage);
+            model.off("change:alt", updateImage);
+          };
+        }
+
+        export default { render };
+        """
+        _css = r"""
+        .panzoom-root {
+          position: relative;
+          width: 100%;
+          max-width: 920px;
+          margin: 0 auto;
+        }
+        .panzoom-viewport {
+          position: relative;
+          width: 100%;
+          aspect-ratio: 2 / 1;
+          overflow: hidden;
+          border-radius: 4px;
+          background: #f3f4f6;
+          touch-action: none;
+          user-select: none;
+        }
+        .panzoom-image {
+          display: block;
+          width: 100%;
+          height: 100%;
+          object-fit: contain;
+          transform-origin: 0 0;
+          will-change: transform;
+          pointer-events: none;
+        }
+        .panzoom-reset {
+          position: absolute;
+          top: 8px;
+          right: 8px;
+          min-width: 44px;
+          padding: 3px 8px;
+          border: 1px solid rgb(255 255 255 / 70%);
+          border-radius: 999px;
+          color: #111827;
+          background: rgb(255 255 255 / 85%);
+          font: 12px ui-monospace, monospace;
+          cursor: pointer;
+        }
+        .panzoom-reset:hover {
+          background: white;
+        }
+        @media (prefers-color-scheme: dark) {
+          .panzoom-viewport {
+            background: #111827;
+          }
+          .panzoom-reset {
+            border-color: rgb(17 24 39 / 70%);
+            color: #f9fafb;
+            background: rgb(17 24 39 / 85%);
+          }
+          .panzoom-reset:hover {
+            background: #111827;
+          }
+        }
+        """
+
+        src = traitlets.Unicode().tag(sync=True)
+        alt = traitlets.Unicode().tag(sync=True)
+
+    pan_zoom_image = _PanZoomImage
+    return (pan_zoom_image,)
 
 
 @app.cell
@@ -558,32 +755,34 @@ def _(
     selected_plate,
     selected_site,
     selected_well,
+    pan_zoom_image,
     view_control,
 ):
     view = str(view_control.value)
     percentile = float(contrast_control.value)
     images = rendered_images(pixels, view, percentile)
     rendered = [
-        mo.image(
-            image,
-            alt=f"{label} for {selected_well} site {selected_site}",
-            width="100%",
-            rounded=True,
-            caption=label,
+        mo.vstack(
+            [
+                mo.ui.anywidget(
+                    pan_zoom_image(
+                        src=image_data_url(image),
+                        alt=f"{label} for {selected_well} site {selected_site}",
+                    )
+                ),
+                mo.Html(f"<div style='text-align:center'>{label}</div>"),
+            ],
+            gap=0,
         )
         for label, image in images
     ]
     if len(rendered) == 1:
-        image_surface = mo.Html(
-            f"<div style='max-width: 920px; margin: auto'>{rendered[0].text}</div>"
-        )
+        image_surface = rendered[0]
     else:
         image_surface = mo.vstack(
             [
                 mo.hstack(rendered[:3], widths=[1, 1, 1]),
-                mo.hstack(
-                    [*rendered[3:], mo.Html("<div></div>")], widths=[1, 1, 1]
-                ),
+                mo.hstack([*rendered[3:], mo.Html("<div></div>")], widths=[1, 1, 1]),
             ],
             gap=1,
         )
@@ -600,7 +799,11 @@ def _(
     location = " / ".join([*selected_plate, selected_well, f"site {selected_site}"])
     mo.vstack(
         [
-            mo.md(f"## {location}\n\n**{view} at percentile {percentile:.1f}**"),
+            mo.md(
+                f"## {location}\n\n"
+                f"**{view} at percentile {percentile:.1f}**\n\n"
+                "Wheel to zoom, drag to pan, or double-click to reset."
+            ),
             image_surface,
             mo.callout(mo.md(status), kind="info"),
         ],
