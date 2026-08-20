@@ -283,6 +283,14 @@ def rendered_images(
 def _():
     class _PanZoomGallery(anywidget.AnyWidget):
         _esm = r"""
+        // Preserve view state across reactive widget replacements without server state.
+        const viewStateSymbol = Symbol.for("jump-portrait-panzoom-view-states");
+        const existingViewStates = globalThis[viewStateSymbol];
+        const viewStates = existingViewStates instanceof Map
+          ? existingViewStates
+          : new Map();
+        globalThis[viewStateSymbol] = viewStates;
+
         function render({ model, el }) {
           const root = document.createElement("div");
           root.className = "panzoom-root";
@@ -305,6 +313,7 @@ def _():
           let dragging = false;
           let lastX = 0;
           let lastY = 0;
+          let stateKey = "";
 
           function clampPosition() {
             const viewport = viewports[0];
@@ -313,8 +322,13 @@ def _():
             y = Math.min(0, Math.max(viewport.clientHeight * (1 - scale), y));
           }
 
-          function draw() {
-            clampPosition();
+          function draw(shouldClamp = true) {
+            if (shouldClamp) clampPosition();
+            viewStates.delete(stateKey);
+            viewStates.set(stateKey, { scale, x, y });
+            while (viewStates.size > 16) {
+              viewStates.delete(viewStates.keys().next().value);
+            }
             const transform = `translate(${x}px, ${y}px) scale(${scale})`;
             const cursor = scale > 1 ? (dragging ? "grabbing" : "grab") : "zoom-in";
             images.forEach((image) => { image.style.transform = transform; });
@@ -333,13 +347,17 @@ def _():
             const srcs = model.get("srcs");
             const labels = model.get("labels");
             const context = model.get("context");
+            const columns = model.get("columns");
+            const aspect = model.get("aspect");
+            stateKey = JSON.stringify([context, labels, columns, aspect]);
+            const savedState = viewStates.get(stateKey);
             grid.replaceChildren();
-            grid.style.setProperty("--columns", model.get("columns"));
-            grid.style.setProperty("--aspect", model.get("aspect"));
+            grid.style.setProperty("--columns", columns);
+            grid.style.setProperty("--aspect", aspect);
             root.classList.toggle("single", srcs.length === 1);
             root.style.maxWidth = srcs.length === 1 ? "920px" : "";
             grid.style.gridTemplateColumns =
-              `repeat(${model.get("columns")}, minmax(0, 1fr))`;
+              `repeat(${columns}, minmax(0, 1fr))`;
             viewports = [];
             images = [];
             resets = [];
@@ -351,7 +369,7 @@ def _():
               viewport.className = "panzoom-viewport";
               viewport.style.position = "relative";
               viewport.style.width = "100%";
-              viewport.style.aspectRatio = model.get("aspect");
+              viewport.style.aspectRatio = aspect;
               viewport.style.overflow = "hidden";
               viewport.tabIndex = 0;
               const image = document.createElement("img");
@@ -385,6 +403,7 @@ def _():
               viewport.addEventListener("pointerup", stopPan);
               viewport.addEventListener("pointercancel", stopPan);
               viewport.addEventListener("dblclick", resetView);
+              reset.addEventListener("pointerdown", (event) => event.stopPropagation());
               reset.addEventListener("click", resetView);
               viewport.append(image, reset);
               tile.append(viewport, label);
@@ -393,7 +412,14 @@ def _():
               images.push(image);
               resets.push(reset);
             });
-            resetView();
+            if (savedState !== undefined) {
+              ({ scale, x, y } = savedState);
+              // Wait for the final viewport width before clamping restored coordinates.
+              draw(false);
+              requestAnimationFrame(() => draw());
+            } else {
+              resetView();
+            }
           }
 
           function zoom(event) {
@@ -1402,6 +1428,7 @@ def _(
     image_attrs,
     pixel_trace,
     pixels,
+    selected_plate,
     selected_site,
     selected_well,
     pan_zoom_gallery,
@@ -1417,7 +1444,9 @@ def _(
             labels=[label for label, _ in images],
             columns=3 if len(images) > 1 else 1,
             aspect=width / height,
-            context=f"{selected_well} site {selected_site}",
+            context=" / ".join(
+                [*selected_plate, selected_well, f"site {selected_site}"]
+            ),
         )
     )
     full_height = int(image_attrs["logical_shape"][1])
