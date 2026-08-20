@@ -176,25 +176,19 @@ def rendered_images(
 
 @app.cell
 def _():
-    class _PanZoomImage(anywidget.AnyWidget):
+    class _PanZoomGallery(anywidget.AnyWidget):
         _esm = r"""
         function render({ model, el }) {
           const root = document.createElement("div");
           root.className = "panzoom-root";
-          const viewport = document.createElement("div");
-          viewport.className = "panzoom-viewport";
-          viewport.tabIndex = 0;
-          const image = document.createElement("img");
-          image.className = "panzoom-image";
-          image.draggable = false;
-          const reset = document.createElement("button");
-          reset.className = "panzoom-reset";
-          reset.type = "button";
-          reset.title = "Reset zoom and position";
-          viewport.append(image, reset);
-          root.append(viewport);
+          const grid = document.createElement("div");
+          grid.className = "panzoom-grid";
+          root.append(grid);
           el.replaceChildren(root);
 
+          let viewports = [];
+          let images = [];
+          let resets = [];
           let scale = 1;
           let x = 0;
           let y = 0;
@@ -203,15 +197,19 @@ def _():
           let lastY = 0;
 
           function clampPosition() {
+            const viewport = viewports[0];
+            if (!viewport) return;
             x = Math.min(0, Math.max(viewport.clientWidth * (1 - scale), x));
             y = Math.min(0, Math.max(viewport.clientHeight * (1 - scale), y));
           }
 
           function draw() {
             clampPosition();
-            image.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
-            reset.textContent = `${scale.toFixed(1)}x`;
-            viewport.style.cursor = scale > 1 ? (dragging ? "grabbing" : "grab") : "zoom-in";
+            const transform = `translate(${x}px, ${y}px) scale(${scale})`;
+            const cursor = scale > 1 ? (dragging ? "grabbing" : "grab") : "zoom-in";
+            images.forEach((image) => { image.style.transform = transform; });
+            resets.forEach((reset) => { reset.textContent = `${scale.toFixed(1)}x`; });
+            viewports.forEach((viewport) => { viewport.style.cursor = cursor; });
           }
 
           function resetView() {
@@ -221,19 +219,60 @@ def _():
             draw();
           }
 
-          function updateImage() {
-            image.src = model.get("src");
-            image.alt = model.get("alt");
-            viewport.setAttribute(
-              "aria-label",
-              `${image.alt}. Wheel to zoom, drag to pan, double-click to reset.`
-            );
+          function rebuild() {
+            const srcs = model.get("srcs");
+            const labels = model.get("labels");
+            const context = model.get("context");
+            grid.replaceChildren();
+            grid.style.setProperty("--columns", model.get("columns"));
+            grid.style.setProperty("--aspect", model.get("aspect"));
+            root.classList.toggle("single", srcs.length === 1);
+            viewports = [];
+            images = [];
+            resets = [];
+
+            srcs.forEach((src, index) => {
+              const tile = document.createElement("div");
+              tile.className = "panzoom-tile";
+              const viewport = document.createElement("div");
+              viewport.className = "panzoom-viewport";
+              viewport.tabIndex = 0;
+              const image = document.createElement("img");
+              image.className = "panzoom-image";
+              image.src = src;
+              image.alt = `${labels[index]} for ${context}`;
+              image.draggable = false;
+              const reset = document.createElement("button");
+              reset.className = "panzoom-reset";
+              reset.type = "button";
+              reset.title = "Reset zoom and position";
+              const label = document.createElement("div");
+              label.className = "panzoom-label";
+              label.textContent = labels[index];
+              viewport.setAttribute(
+                "aria-label",
+                `${image.alt}. Wheel to zoom, drag to pan, double-click to reset.`
+              );
+              viewport.addEventListener("wheel", zoom, { passive: false });
+              viewport.addEventListener("pointerdown", startPan);
+              viewport.addEventListener("pointermove", pan);
+              viewport.addEventListener("pointerup", stopPan);
+              viewport.addEventListener("pointercancel", stopPan);
+              viewport.addEventListener("dblclick", resetView);
+              reset.addEventListener("click", resetView);
+              viewport.append(image, reset);
+              tile.append(viewport, label);
+              grid.append(tile);
+              viewports.push(viewport);
+              images.push(image);
+              resets.push(reset);
+            });
             resetView();
           }
 
           function zoom(event) {
             event.preventDefault();
-            const rect = viewport.getBoundingClientRect();
+            const rect = event.currentTarget.getBoundingClientRect();
             const pointX = event.clientX - rect.left;
             const pointY = event.clientY - rect.top;
             const next = Math.min(8, Math.max(1, scale * Math.exp(-event.deltaY * 0.0015)));
@@ -253,7 +292,7 @@ def _():
             dragging = true;
             lastX = event.clientX;
             lastY = event.clientY;
-            viewport.setPointerCapture(event.pointerId);
+            event.currentTarget.setPointerCapture(event.pointerId);
             draw();
           }
 
@@ -271,20 +310,15 @@ def _():
             draw();
           }
 
-          viewport.addEventListener("wheel", zoom, { passive: false });
-          viewport.addEventListener("pointerdown", startPan);
-          viewport.addEventListener("pointermove", pan);
-          viewport.addEventListener("pointerup", stopPan);
-          viewport.addEventListener("pointercancel", stopPan);
-          viewport.addEventListener("dblclick", resetView);
-          reset.addEventListener("click", resetView);
-          model.on("change:src", updateImage);
-          model.on("change:alt", updateImage);
-          updateImage();
+          ["srcs", "labels", "columns", "aspect", "context"].forEach((name) => {
+            model.on(`change:${name}`, rebuild);
+          });
+          rebuild();
 
           return () => {
-            model.off("change:src", updateImage);
-            model.off("change:alt", updateImage);
+            ["srcs", "labels", "columns", "aspect", "context"].forEach((name) => {
+              model.off(`change:${name}`, rebuild);
+            });
           };
         }
 
@@ -292,15 +326,21 @@ def _():
         """
         _css = r"""
         .panzoom-root {
-          position: relative;
           width: 100%;
-          max-width: 920px;
           margin: 0 auto;
+        }
+        .panzoom-root.single {
+          max-width: 920px;
+        }
+        .panzoom-grid {
+          display: grid;
+          grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+          gap: 8px;
         }
         .panzoom-viewport {
           position: relative;
           width: 100%;
-          aspect-ratio: 2 / 1;
+          aspect-ratio: var(--aspect);
           overflow: hidden;
           border-radius: 4px;
           background: #f3f4f6;
@@ -315,6 +355,11 @@ def _():
           transform-origin: 0 0;
           will-change: transform;
           pointer-events: none;
+        }
+        .panzoom-label {
+          padding-top: 4px;
+          color: #64748b;
+          text-align: center;
         }
         .panzoom-reset {
           position: absolute;
@@ -347,11 +392,14 @@ def _():
         }
         """
 
-        src = traitlets.Unicode().tag(sync=True)
-        alt = traitlets.Unicode().tag(sync=True)
+        srcs = traitlets.List(traitlets.Unicode()).tag(sync=True)
+        labels = traitlets.List(traitlets.Unicode()).tag(sync=True)
+        columns = traitlets.Int(1).tag(sync=True)
+        aspect = traitlets.Float(2.0).tag(sync=True)
+        context = traitlets.Unicode().tag(sync=True)
 
-    pan_zoom_image = _PanZoomImage
-    return (pan_zoom_image,)
+    pan_zoom_gallery = _PanZoomGallery
+    return (pan_zoom_gallery,)
 
 
 @app.cell
@@ -360,6 +408,7 @@ def _():
     def load_field(
         key: tuple[tuple[str, str], ...],
         audit_directory: str,
+        row_limit: int | None,
     ) -> tuple[object, dict[str, object], dict[str, object], dict[str, object]]:
         record = dict(key)
         trace = RequestTrace()
@@ -367,7 +416,7 @@ def _():
             image = get_jump_image_site_from_metadata(record, trace=trace)
         construction = trace_snapshot(trace)
         pixel_start = len(trace.requests)
-        y_stop = min(512, int(image.sizes["y"]))
+        y_stop = min(row_limit or int(image.sizes["y"]), int(image.sizes["y"]))
         with chdir(audit_directory):
             pixels = image.isel(y=slice(0, y_stop)).compute()
         selected_read = trace_snapshot(trace, start=pixel_start)
@@ -708,16 +757,25 @@ def _():
         show_value=True,
         full_width=True,
     )
-    mo.hstack([view_control, contrast_control], widths=[1, 3], align="center")
-    return contrast_control, view_control
+    full_frame_control = mo.ui.switch(
+        value=False,
+        label="Full square (2x pixel bytes)",
+    )
+    mo.hstack(
+        [view_control, full_frame_control, contrast_control],
+        widths=[1, 1, 3],
+        align="center",
+    )
+    return contrast_control, full_frame_control, view_control
 
 
 @app.cell
-def _(audit_directory, load_field, selected_row):
+def _(audit_directory, full_frame_control, load_field, selected_row):
     key = record_key(selected_row)
+    row_limit = None if full_frame_control.value else 512
     cache_before = load_field.cache_info()
     try:
-        field_result = load_field(key, str(audit_directory))
+        field_result = load_field(key, str(audit_directory), row_limit)
         load_error = None
     except UnsupportedTIFFLayoutError as error:
         field_result = None
@@ -755,38 +813,22 @@ def _(
     selected_plate,
     selected_site,
     selected_well,
-    pan_zoom_image,
+    pan_zoom_gallery,
     view_control,
 ):
     view = str(view_control.value)
     percentile = float(contrast_control.value)
     images = rendered_images(pixels, view, percentile)
-    rendered = [
-        mo.vstack(
-            [
-                mo.ui.anywidget(
-                    pan_zoom_image(
-                        src=image_data_url(image),
-                        alt=f"{label} for {selected_well} site {selected_site}",
-                    )
-                ),
-                mo.Html(f"<div style='text-align:center'>{label}</div>"),
-            ],
-            gap=0,
-        )
-        for label, image in images
-    ]
-    if len(rendered) == 1:
-        image_surface = rendered[0]
-    else:
-        image_surface = mo.vstack(
-            [
-                mo.hstack(rendered[:3], widths=[1, 1, 1]),
-                mo.hstack([*rendered[3:], mo.Html("<div></div>")], widths=[1, 1, 1]),
-            ],
-            gap=1,
-        )
     height, width = (int(pixels.sizes[axis]) for axis in ("y", "x"))
+    image_surface = mo.ui.anywidget(
+        pan_zoom_gallery(
+            srcs=[image_data_url(image) for _, image in images],
+            labels=[label for label, _ in images],
+            columns=3 if len(images) > 1 else 1,
+            aspect=width / height,
+            context=f"{selected_well} site {selected_site}",
+        )
+    )
     full_height = int(image_attrs["logical_shape"][1])
     status = (
         f"{int(pixel_trace['requests'])} pixel ranges - "
@@ -801,8 +843,10 @@ def _(
         [
             mo.md(
                 f"## {location}\n\n"
-                f"**{view} at percentile {percentile:.1f}**\n\n"
-                "Wheel to zoom, drag to pan, or double-click to reset."
+                f"**{view} at percentile {percentile:.1f} - "
+                f"{width} x {height} pixels**\n\n"
+                "Wheel to zoom, drag to pan, or double-click to reset. "
+                "Small multiples stay synchronized."
             ),
             image_surface,
             mo.callout(mo.md(status), kind="info"),
