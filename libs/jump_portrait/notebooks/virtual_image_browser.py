@@ -579,7 +579,12 @@ def _(
         )
     else:
         image_surface = mo.vstack(
-            [mo.hstack(rendered[:3]), mo.hstack(rendered[3:])],
+            [
+                mo.hstack(rendered[:3], widths=[1, 1, 1]),
+                mo.hstack(
+                    [*rendered[3:], mo.Html("<div></div>")], widths=[1, 1, 1]
+                ),
+            ],
             gap=1,
         )
     height, width = (int(pixels.sizes[axis]) for axis in ("y", "x"))
