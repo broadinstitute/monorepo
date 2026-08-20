@@ -3,6 +3,8 @@
 # dependencies = [
 #     "altair>=6,<7",
 #     "anywidget>=0.9.18,<1",
+#     "broad-babel>=0.1.31",
+#     "duckdb>=1.4.4,<2",
 #     "jump-portrait @ git+https://github.com/broadinstitute/monorepo.git@5b65c46243925949a0a49e0afcd6d49566d5bce7#subdirectory=libs/jump_portrait",
 #     "marimo==0.23.16",
 #     "numpy>=2.1.2,<3",
@@ -26,13 +28,16 @@ with app.setup:
     from io import BytesIO
     from pathlib import Path
     from tempfile import TemporaryDirectory
+    from time import perf_counter
 
     import altair as alt
     import anywidget
+    import duckdb
     import marimo as mo
     import numpy as np
     import pyarrow as pa
     import traitlets
+    from broad_babel.data import get_table
     from PIL import Image
 
     from jump_portrait import (
@@ -40,6 +45,7 @@ with app.setup:
         RequestTrace,
         UnsupportedTIFFLayoutError,
         get_item_location_metadata,
+        get_jump_image_site,
         get_jump_image_site_from_metadata,
     )
 
@@ -63,6 +69,17 @@ with app.setup:
     INDEX_HASH = (
         "sha256:f45ea1a5de091e43caf35358370abf843bd2be47b2810283fd76db472b5acc6a"
     )
+    VERIFIED_NEGATIVE_CONTROLS = {
+        # Canonical Metadata_pert_type=negcon rows from perturbation_control.csv
+        # at jump-cellpainting/datasets commit 016e865fa0691244e0860943e41c7d6a88ed2580.
+        "JCP2022_033924": "DMSO",
+        "JCP2022_800001": "no-guide",
+        "JCP2022_800002": "non-targeting",
+        "JCP2022_915128": "BFP",
+        "JCP2022_915129": "HcRed",
+        "JCP2022_915130": "LUCIFERASE",
+        "JCP2022_915131": "LacZ",
+    }
 
 
 @app.function
@@ -80,7 +97,95 @@ def metadata_records(metadata: object) -> list[dict[str, object]]:
 @app.function
 def record_key(record: dict[str, object]) -> tuple[tuple[str, str], ...]:
     """Make a selected metadata row hashable for the field cache."""
-    return tuple((field, str(record[field])) for field in RECORD_FIELDS)
+    return tuple(
+        (field, str(record[field]))
+        for field in RECORD_FIELDS
+        if record.get(field) is not None
+    )
+
+
+@app.function
+def well_coordinates(well: str) -> tuple[int, int]:
+    """Return zero-based row and column coordinates for a plate well label."""
+    normalized = well.strip().upper()
+    split = next(
+        (index for index, character in enumerate(normalized) if character.isdigit()),
+        len(normalized),
+    )
+    letters, digits = normalized[:split], normalized[split:]
+    if not letters or not letters.isalpha() or not digits or not digits.isdigit():
+        raise ValueError(f"Invalid plate-well coordinate: {well!r}")
+    row = 0
+    for letter in letters:
+        row = row * 26 + ord(letter) - ord("A") + 1
+    row -= 1
+    column = int(digits) - 1
+    if column < 0:
+        raise ValueError(f"Invalid plate-well coordinate: {well!r}")
+    return row, column
+
+
+@app.function
+def plate_row_label(index: int) -> str:
+    """Convert a zero-based plate row index to A, ..., Z, AA, ...."""
+    if index < 0:
+        raise ValueError(f"Plate row index must be non-negative: {index}")
+    label = ""
+    value = index + 1
+    while value:
+        value, remainder = divmod(value - 1, 26)
+        label = chr(ord("A") + remainder) + label
+    return label
+
+
+@app.function
+def row_major_wells(wells: object) -> list[str]:
+    """Return unique well labels in deterministic row-major order."""
+    return sorted({str(well) for well in wells}, key=well_coordinates)
+
+
+@app.function
+def nearest_well(current: str, candidates: object) -> str | None:
+    """Choose the nearest well by Manhattan distance, then row-major order."""
+    ordered = row_major_wells(candidates)
+    if not ordered:
+        return None
+    current_row, current_column = well_coordinates(current)
+    return min(
+        ordered,
+        key=lambda well: (
+            abs(well_coordinates(well)[0] - current_row)
+            + abs(well_coordinates(well)[1] - current_column),
+            well_coordinates(well),
+        ),
+    )
+
+
+@app.function
+def adjacent_well(current: str, wells: object, offset: int) -> str | None:
+    """Return a previous or next populated well without wrapping row edges."""
+    ordered = row_major_wells(wells)
+    if current not in ordered:
+        return None
+    index = ordered.index(current) + offset
+    return ordered[index] if 0 <= index < len(ordered) else None
+
+
+@app.function
+def closest_site(sites: object, preferred: int) -> int:
+    """Keep a site number when available, otherwise use its nearest neighbor."""
+    available = sorted({int(site) for site in sites})
+    if not available:
+        raise ValueError("A populated well must have at least one site")
+    return min(available, key=lambda site: (abs(site - preferred), site))
+
+
+@app.function
+def chart_selected_well(selection: object) -> str | None:
+    """Extract the last selected well from a marimo Altair selection."""
+    if selection is None or selection.num_rows == 0:
+        return None
+    return str(selection["well"][-1].as_py())
 
 
 @app.function
@@ -405,6 +510,110 @@ def _():
 @app.cell
 def _():
     @lru_cache(maxsize=8)
+    def load_plate_context(
+        source: str,
+        batch: str,
+        plate: str,
+    ) -> tuple[list[dict[str, object]], dict[str, object]]:
+        start = perf_counter()
+        well_metadata_path = get_table("well")
+        with duckdb.connect() as connection:
+            connection.execute("SET enable_external_file_cache=false")
+            connection.execute(
+                "CALL enable_logging('HTTP', storage_config={'buffer_size': 0})"
+            )
+            table = connection.execute(
+                """
+                WITH plate_sites AS (
+                    SELECT
+                        Metadata_Source,
+                        Metadata_Batch,
+                        Metadata_Plate,
+                        Metadata_Well,
+                        Metadata_Site
+                    FROM read_parquet(?)
+                    WHERE Metadata_Source = ?
+                      AND Metadata_Batch = ?
+                      AND Metadata_Plate = ?
+                ),
+                plate_wells AS (
+                    SELECT
+                        Metadata_Source,
+                        Metadata_Plate,
+                        Metadata_Well,
+                        Metadata_JCP2022
+                    FROM read_csv_auto(?)
+                    WHERE Metadata_Source = ?
+                      AND Metadata_Plate = ?
+                )
+                SELECT
+                    sites.Metadata_Source,
+                    sites.Metadata_Batch,
+                    sites.Metadata_Plate,
+                    sites.Metadata_Well,
+                    sites.Metadata_Site,
+                    wells.Metadata_JCP2022
+                FROM plate_sites AS sites
+                LEFT JOIN plate_wells AS wells
+                    USING (Metadata_Source, Metadata_Plate, Metadata_Well)
+                ORDER BY sites.Metadata_Well, sites.Metadata_Site
+                """,
+                [
+                    INDEX_ORIGIN,
+                    source,
+                    batch,
+                    plate,
+                    well_metadata_path,
+                    source,
+                    plate,
+                ],
+            ).to_arrow_table()
+            logs = connection.execute(
+                """
+                SELECT
+                    request.type,
+                    map_extract_value(request.headers, 'Range'),
+                    map_extract_value(response.headers, 'Content-Length')
+                FROM duckdb_logs_parsed('HTTP')
+                """
+            ).fetchall()
+
+        records = table.to_pylist()
+        for record in records:
+            identifier = str(record.get("Metadata_JCP2022") or "")
+            control_name = VERIFIED_NEGATIVE_CONTROLS.get(identifier)
+            record["Metadata_ControlType"] = (
+                "negcon" if control_name is not None else None
+            )
+            record["Metadata_ControlName"] = control_name
+
+        get_lengths = [
+            int(length)
+            for method, _byte_range, length in logs
+            if method == "GET" and length is not None
+        ]
+        trace = {
+            "requests": len(logs),
+            "range_gets": sum(
+                method == "GET" and byte_range is not None
+                for method, byte_range, _length in logs
+            ),
+            "requested_bytes": sum(get_lengths),
+            "full_gets": sum(
+                method == "GET" and byte_range is None
+                for method, byte_range, _length in logs
+            ),
+            "elapsed_seconds": perf_counter() - start,
+            "index_size": INDEX_SIZE,
+        }
+        return records, trace
+
+    return (load_plate_context,)
+
+
+@app.cell
+def _():
+    @lru_cache(maxsize=8)
     def load_field(
         key: tuple[tuple[str, str], ...],
         audit_directory: str,
@@ -413,7 +622,17 @@ def _():
         record = dict(key)
         trace = RequestTrace()
         with chdir(audit_directory):
-            image = get_jump_image_site_from_metadata(record, trace=trace)
+            if all(record.get(f"URL_Orig{channel}") for channel in CHANNELS):
+                image = get_jump_image_site_from_metadata(record, trace=trace)
+            else:
+                image = get_jump_image_site(
+                    source=record["Metadata_Source"],
+                    batch=record["Metadata_Batch"],
+                    plate=record["Metadata_Plate"],
+                    well=record["Metadata_Well"],
+                    site=int(record["Metadata_Site"]),
+                    trace=trace,
+                )
         construction = trace_snapshot(trace)
         pixel_start = len(trace.requests)
         y_stop = min(row_limit or int(image.sizes["y"]), int(image.sizes["y"]))
@@ -428,14 +647,30 @@ def _():
     return (load_field,)
 
 
+@app.cell
+def _():
+    get_selected_location, set_selected_location = mo.state(("", "", "", ""))
+    get_preferred_site, set_preferred_site = mo.state(VERIFIED_LOCATION[4])
+    get_unsupported_wells, set_unsupported_wells = mo.state(frozenset())
+    return (
+        get_preferred_site,
+        get_selected_location,
+        get_unsupported_wells,
+        set_preferred_site,
+        set_selected_location,
+        set_unsupported_wells,
+    )
+
+
 @app.cell(hide_code=True)
 def _():
     mo.md(r"""
     # Browse original JUMP images
 
-    Search a gene, InChIKey, or JCP2022 identifier, choose a plate and well,
-    and inspect one field at a time. The default is a five-channel Cell Painting
-    composite. Pixels stay remote until the selected field is opened.
+    Search a gene, InChIKey, or JCP2022 identifier and inspect one field at a
+    time. A sole matching well opens automatically. **Explore plate** adds
+    same-plate metadata and navigation without prefetching pixels. The default
+    view is a five-channel Cell Painting composite.
     """)
     return
 
@@ -521,10 +756,12 @@ def _(audit_directory, input_column, is_script_mode, item_name):
             mo.md(f"No image fields were returned for `{item_name}`."), kind="warn"
         ),
     )
-    if inchi_metadata is not None:
-        inchi_records = metadata_records(inchi_metadata)
+    inchi_records = (
+        metadata_records(inchi_metadata) if inchi_metadata is not None else []
+    )
+    if inchi_records:
         assert any(row["Metadata_Source"] == "source_8" for row in inchi_records)
-    return (records,)
+    return inchi_records, records
 
 
 @app.cell(hide_code=True)
@@ -606,115 +843,438 @@ def _(plate_control, plates, records):
         )
         == selected_plate
     ]
-    available_wells = sorted({str(row["Metadata_Well"]) for row in plate_records})
-    default_well = (
-        VERIFIED_LOCATION[3]
-        if selected_plate == VERIFIED_LOCATION[:3]
-        else available_wells[0]
+    query_wells = row_major_wells(row["Metadata_Well"] for row in plate_records)
+    automatic_well = query_wells[0] if len(query_wells) == 1 else None
+    return automatic_well, plate_records, query_wells, selected_plate
+
+
+@app.cell
+def _(is_script_mode, selected_plate):
+    explore_plate_control = mo.ui.button(
+        value=is_script_mode,
+        on_click=lambda _value: True,
+        label="Explore plate",
+        tooltip=(
+            f"Load well and site metadata for {' / '.join(selected_plate)} only; "
+            "no image pixels are prefetched."
+        ),
     )
-    return available_wells, default_well, plate_records, selected_plate
+    return (explore_plate_control,)
+
+
+@app.cell
+def _(explore_plate_control, is_script_mode, load_plate_context, selected_plate):
+    explore_enabled = is_script_mode or bool(explore_plate_control.value)
+    if explore_enabled:
+        plate_cache_before = load_plate_context.cache_info()
+        plate_context_records, plate_context_trace = load_plate_context(*selected_plate)
+        plate_cache_after = load_plate_context.cache_info()
+        plate_cache_hit = plate_cache_after.hits > plate_cache_before.hits
+    else:
+        plate_context_records = []
+        plate_context_trace = {
+            "requests": 0,
+            "range_gets": 0,
+            "requested_bytes": 0,
+            "full_gets": 0,
+            "elapsed_seconds": 0.0,
+            "index_size": INDEX_SIZE,
+        }
+        plate_cache_hit = False
+    return (
+        explore_enabled,
+        plate_cache_hit,
+        plate_context_records,
+        plate_context_trace,
+    )
+
+
+@app.cell
+def _(
+    automatic_well,
+    explore_enabled,
+    get_selected_location,
+    plate_context_records,
+    query_wells,
+    selected_plate,
+):
+    populated_wells = row_major_wells(
+        row["Metadata_Well"] for row in plate_context_records
+    )
+    selectable_wells = populated_wells if explore_enabled else query_wells
+    selected_location = get_selected_location()
+    state_well = (
+        str(selected_location[3])
+        if tuple(selected_location[:3]) == selected_plate
+        and str(selected_location[3]) in selectable_wells
+        else None
+    )
+    selected_well = state_well or automatic_well
+    return populated_wells, selectable_wells, selected_well
+
+
+@app.cell
+def _(
+    automatic_well,
+    inchi_records,
+    is_script_mode,
+    load_plate_context,
+    plate_context_records,
+    plate_context_trace,
+    selected_plate,
+):
+    if is_script_mode:
+        assert selected_plate == VERIFIED_LOCATION[:3]
+        assert automatic_well == VERIFIED_LOCATION[3]
+        assert len({row["Metadata_Well"] for row in plate_context_records}) == 384
+        assert len(plate_context_records) == 3_456
+        assert int(plate_context_trace["full_gets"]) == 0
+        assert int(plate_context_trace["requested_bytes"]) < INDEX_SIZE
+        _negative_wells = {
+            str(row["Metadata_Well"])
+            for row in plate_context_records
+            if row["Metadata_ControlType"] == "negcon"
+        }
+        assert nearest_well("A01", _negative_wells) == "A05"
+        assert adjacent_well("A24", ["A24", "B01"], 1) == "B01"
+        assert adjacent_well("B01", ["A24", "B01"], -1) == "A24"
+        assert closest_site([1, 3], 2) == 1
+        assert well_coordinates("Y48") == (24, 47)
+        assert plate_row_label(26) == "AA"
+
+        _multi_hit_plates: dict[tuple[str, str, str], set[str]] = {}
+        for _record in inchi_records:
+            _plate_key = tuple(
+                str(_record[f"Metadata_{field}"])
+                for field in ("Source", "Batch", "Plate")
+            )
+            _multi_hit_plates.setdefault(_plate_key, set()).add(
+                str(_record["Metadata_Well"])
+            )
+        assert any(len(_wells) > 1 for _wells in _multi_hit_plates.values())
+
+        _cache_before = load_plate_context.cache_info()
+        load_plate_context(*selected_plate)
+        _cache_after = load_plate_context.cache_info()
+        assert _cache_after.hits == _cache_before.hits + 1
+
+        _no_control_records, _no_control_trace = load_plate_context(
+            "source_10",
+            "2021_06_28_U2OS_48_hr_run9",
+            "Dest210628-162003",
+        )
+        assert _no_control_records
+        assert not any(
+            _row["Metadata_ControlType"] == "negcon" for _row in _no_control_records
+        )
+        assert int(_no_control_trace["full_gets"]) == 0
+    return
 
 
 @app.cell(hide_code=True)
-def _(available_wells, default_well, plate_records, selected_plate):
-    field_counts: dict[str, int] = {}
-    for row in plate_records:
-        well = str(row["Metadata_Well"])
-        field_counts[well] = field_counts.get(well, 0) + 1
-    plate_frame = pa.Table.from_pylist(
-        [
-            {
-                "row": row,
-                "column": column,
-                "well": f"{row}{column:02d}",
-                "fields": field_counts.get(f"{row}{column:02d}", 0),
-            }
-            for row in "ABCDEFGHIJKLMNOP"
-            for column in range(1, 25)
-        ]
+def _(  # noqa: C901
+    explore_enabled,
+    explore_plate_control,
+    get_unsupported_wells,
+    plate_cache_hit,
+    plate_context_records,
+    plate_context_trace,
+    populated_wells,
+    query_wells,
+    selectable_wells,
+    selected_plate,
+    selected_well,
+    set_selected_location,
+):
+    context_by_well: dict[str, dict[str, object]] = {}
+    for record in plate_context_records:
+        context_by_well.setdefault(str(record["Metadata_Well"]), record)
+    unsupported_wells = {
+        location[3]
+        for location in get_unsupported_wells()
+        if tuple(location[:3]) == selected_plate
+    }
+
+    known_wells = populated_wells if explore_enabled else query_wells
+    known_coordinates = [well_coordinates(well) for well in known_wells]
+    row_count = max(
+        16, max((row for row, _column in known_coordinates), default=15) + 1
     )
+    column_count = max(
+        24,
+        max((column for _row, column in known_coordinates), default=23) + 1,
+    )
+    row_labels = [plate_row_label(index) for index in range(row_count)]
+    plate_rows = []
+    for row in row_labels:
+        for column in range(1, column_count + 1):
+            well = f"{row}{column:02d}"
+            context = context_by_well.get(well, {})
+            _control_name = context.get("Metadata_ControlName")
+            if well in unsupported_wells:
+                category = "Unsupported"
+            elif well in query_wells:
+                category = "Query"
+            elif _control_name is not None:
+                category = "Negative control"
+            elif well in populated_wells:
+                category = "Other populated"
+            else:
+                category = "Not loaded" if not explore_enabled else "No indexed field"
+            plate_rows.append(
+                {
+                    "row": row,
+                    "column": column,
+                    "well": well,
+                    "category": category,
+                    "current": well == selected_well,
+                    "control": _control_name or "",
+                    "JCP2022": context.get("Metadata_JCP2022") or "",
+                }
+            )
+
+    category_order = [
+        "Query",
+        "Negative control",
+        "Other populated",
+        "Unsupported",
+        "Not loaded",
+        "No indexed field",
+    ]
+    category_colors = [
+        "#2563eb",
+        "#7c3aed",
+        "#94a3b8",
+        "#dc2626",
+        "#e2e8f0",
+        "#f1f5f9",
+    ]
+    plate_frame = pa.Table.from_pylist(plate_rows)
     chart = (
         alt.Chart(plate_frame)
-        .mark_rect(cornerRadius=3, stroke="white")
+        .mark_rect(cornerRadius=2)
         .encode(
             x=alt.X("column:O", title=None, axis=alt.Axis(labelAngle=0)),
-            y=alt.Y(
-                "row:O",
-                title=None,
-                sort=list("ABCDEFGHIJKLMNOP"),
-            ),
+            y=alt.Y("row:O", title=None, sort=row_labels),
             color=alt.Color(
-                "fields:Q",
-                title="Fields",
-                scale=alt.Scale(domain=[0, max(field_counts.values())]),
+                "category:N",
+                title=None,
+                scale=alt.Scale(domain=category_order, range=category_colors),
+                legend=None,
             ),
-            tooltip=["well:N", "fields:Q"],
+            stroke=alt.condition(
+                "datum.current",
+                alt.value("#111827"),
+                alt.value("#ffffff"),
+            ),
+            strokeWidth=alt.condition(
+                "datum.current",
+                alt.value(3),
+                alt.value(1),
+            ),
+            tooltip=[
+                alt.Tooltip("well:N", title="Well"),
+                alt.Tooltip("category:N", title="Status"),
+                alt.Tooltip("control:N", title="Control"),
+                alt.Tooltip("JCP2022:N", title="JCP2022"),
+            ],
         )
-        .properties(width=720, height=360)
+        .properties(width="container", height=190)
     )
+
+    def select_chart_well(selection: object) -> None:
+        well = chart_selected_well(selection)
+        if well in selectable_wells:
+            set_selected_location((*selected_plate, well))
+
     plate_map = mo.ui.altair_chart(
         chart,
         chart_selection="point",
-        label="Click a well",
+        legend_selection=False,
+        label="Plate map",
+        on_change=select_chart_well,
     )
-    mo.hstack(
+
+    def navigation_button(
+        label: str,
+        target: str | None,
+        tooltip: str,
+    ) -> object:
+        return mo.ui.button(
+            value=0,
+            on_click=lambda value: int(value) + 1,
+            on_change=(
+                (lambda _value: set_selected_location((*selected_plate, target)))
+                if target is not None
+                else None
+            ),
+            label=label,
+            tooltip=tooltip,
+            disabled=target is None or target == selected_well,
+        )
+
+    query_target = (
+        selected_well
+        if selected_well in query_wells
+        else (query_wells[0] if query_wells else None)
+    )
+    negative_wells = row_major_wells(
+        well
+        for well, context in context_by_well.items()
+        if context.get("Metadata_ControlType") == "negcon"
+    )
+    negative_target = (
+        nearest_well(selected_well, negative_wells)
+        if selected_well is not None and explore_enabled
+        else None
+    )
+    previous_target = (
+        adjacent_well(selected_well, populated_wells, -1)
+        if selected_well is not None and explore_enabled
+        else None
+    )
+    next_target = (
+        adjacent_well(selected_well, populated_wells, 1)
+        if selected_well is not None and explore_enabled
+        else None
+    )
+    negative_label = (
+        f"Nearest {context_by_well[negative_target]['Metadata_ControlName']} "
+        f"{negative_target}"
+        if negative_target is not None
+        else "No verified negative control"
+    )
+    navigation = mo.hstack(
+        [
+            navigation_button(
+                f"Query well {query_target or ''}".strip(),
+                query_target,
+                "Return to a query-matching well.",
+            ),
+            navigation_button(
+                negative_label,
+                negative_target,
+                "Nearest by Manhattan plate distance, then row-major order.",
+            ),
+            navigation_button(
+                f"Previous {previous_target or ''}".strip(),
+                previous_target,
+                "Previous populated well in row-major order.",
+            ),
+            navigation_button(
+                f"Next {next_target or ''}".strip(),
+                next_target,
+                "Next populated well in row-major order.",
+            ),
+        ],
+        justify="start",
+        gap=0.5,
+        wrap=True,
+    )
+    if explore_enabled:
+        metadata_status = (
+            f"{len(populated_wells):,} populated wells - "
+            f"{int(plate_context_trace['range_gets']):,} metadata ranges - "
+            f"{format_bytes(int(plate_context_trace['requested_bytes']))} - "
+            f"{float(plate_context_trace['elapsed_seconds']):.2f} s - "
+            f"{int(plate_context_trace['full_gets'])} full-index GETs - "
+            f"plate cache {'hit' if plate_cache_hit else 'miss'} - "
+            "0 prefetched image pixel reads"
+        )
+    else:
+        metadata_status = (
+            f"{len(query_wells):,} query wells only - 0 plate metadata requests - "
+            "0 prefetched image pixel reads"
+        )
+    plate_layout = mo.hstack(
         [
             plate_map,
             mo.vstack(
                 [
                     mo.md(
-                        "### Choose a well\n\n"
-                        "Blue wells contain the query. Click one to list its "
-                        "available sites."
+                        f"### Plate context\n\n**Plate:** `{' / '.join(selected_plate)}`\n\n"
+                        f"**Current well:** `{selected_well or 'Choose a query well'}`"
                     ),
+                    explore_plate_control,
                     mo.md(
-                        f"**Plate:** `{' / '.join(selected_plate)}`\n\n"
-                        f"**Default well:** `{default_well}`\n\n"
-                        f"**Wells with fields:** {len(available_wells):,}"
+                        "**Legend:** blue Query; black outline Current; purple "
+                        "verified negative control; gray Other populated; red "
+                        "Unsupported; pale wells not loaded or unindexed."
                     ),
                 ]
             ),
         ],
-        widths=[3, 1],
+        widths=[4, 2],
         align="center",
     )
-    return (plate_map,)
+    mo.vstack(
+        [
+            plate_layout,
+            navigation,
+            mo.callout(mo.md(metadata_status), kind="info"),
+        ]
+    )
+    return metadata_status, plate_map
 
 
 @app.cell
-def _(available_wells, default_well, is_script_mode, plate_map, plate_records):
-    selection = plate_map.value
-    selected_well = (
-        default_well
-        if is_script_mode or selection.num_rows == 0
-        else str(selection["well"][-1].as_py())
-    )
+def _(plate_context_records, plate_records, selected_well):
     mo.stop(
-        selected_well not in available_wells,
+        selected_well is None,
         mo.callout(
-            mo.md(f"`{selected_well}` has no fields for this query."), kind="info"
+            mo.md("Choose one of the query wells to open a field."), kind="info"
         ),
     )
     well_records = [
         row for row in plate_records if str(row["Metadata_Well"]) == selected_well
     ]
-    return selected_well, well_records
+    if not well_records:
+        well_records = [
+            row
+            for row in plate_context_records
+            if str(row["Metadata_Well"]) == selected_well
+        ]
+    mo.stop(
+        not well_records,
+        mo.callout(mo.md(f"`{selected_well}` has no indexed fields."), kind="warn"),
+    )
+    return (well_records,)
 
 
 @app.cell(hide_code=True)
-def _(selected_well, well_records):
+def _(
+    get_preferred_site,
+    item_name,
+    selected_well,
+    set_preferred_site,
+    well_records,
+):
     sites = sorted(int(row["Metadata_Site"]) for row in well_records)
+    selected_site_default = closest_site(sites, get_preferred_site())
     site_control = mo.ui.number(
         start=min(sites),
         stop=max(sites),
         step=1,
-        value=sites[0],
+        value=selected_site_default,
         label="Site - type a number or use the previous/next arrows",
+        on_change=lambda value: set_preferred_site(int(value)),
+    )
+    identifier = str(well_records[0].get("Metadata_JCP2022") or "unknown")
+    _control_name = VERIFIED_NEGATIVE_CONTROLS.get(identifier)
+    identity = (
+        f"{_control_name} negative control (`{identifier}`)"
+        if _control_name is not None
+        else (
+            f"query `{item_name}` (`{identifier}`)"
+            if any(row.get("standard_key") == item_name for row in well_records)
+            else f"perturbation `{identifier}`"
+        )
     )
     mo.hstack(
         [
             mo.md(
                 f"### `{selected_well}`\n\n"
+                f"**Identity:** {identity}\n\n"
                 f"Available sites: {', '.join(str(site) for site in sites)}"
             ),
             site_control,
@@ -722,7 +1282,7 @@ def _(selected_well, well_records):
         widths=[3, 2],
         align="center",
     )
-    return site_control, sites
+    return identity, site_control, sites
 
 
 @app.cell
@@ -770,7 +1330,15 @@ def _():
 
 
 @app.cell
-def _(audit_directory, full_frame_control, load_field, selected_row):
+def _(
+    audit_directory,
+    full_frame_control,
+    load_field,
+    selected_plate,
+    selected_row,
+    selected_well,
+    set_unsupported_wells,
+):
     key = record_key(selected_row)
     row_limit = None if full_frame_control.value else 512
     cache_before = load_field.cache_info()
@@ -780,6 +1348,9 @@ def _(audit_directory, full_frame_control, load_field, selected_row):
     except UnsupportedTIFFLayoutError as error:
         field_result = None
         load_error = str(error)
+        set_unsupported_wells(
+            lambda locations: locations | {(*selected_plate, selected_well)}
+        )
     cache_after = load_field.cache_info()
     cache_hit = cache_after.hits > cache_before.hits
     return cache_after, cache_hit, field_result, load_error
@@ -808,6 +1379,7 @@ def _(
     cache_hit,
     contrast_control,
     image_attrs,
+    identity,
     pixel_trace,
     pixels,
     selected_plate,
@@ -830,19 +1402,28 @@ def _(
         )
     )
     full_height = int(image_attrs["logical_shape"][1])
+    original_read = (
+        f"{int(pixel_trace['requests'])} ranges / "
+        f"{format_bytes(int(pixel_trace['requested_bytes']))}"
+    )
     status = (
-        f"{int(pixel_trace['requests'])} pixel ranges - "
-        f"{format_bytes(int(pixel_trace['requested_bytes']))} - "
+        f"0 new pixel ranges - cache hit; original read {original_read} - "
         f"actual envelope rows 0:{height} of {full_height}, columns 0:{width} - "
         f"{int(pixel_trace['full_gets'])} full-object GETs - "
-        f"cache {'hit' if cache_hit else 'miss'} "
-        f"({cache_after.currsize}/8 fields)"
+        f"{cache_after.currsize}/8 fields cached"
+        if cache_hit
+        else (
+            f"{original_read} - actual envelope rows 0:{height} of {full_height}, "
+            f"columns 0:{width} - {int(pixel_trace['full_gets'])} full-object GETs - "
+            f"cache miss ({cache_after.currsize}/8 fields)"
+        )
     )
     location = " / ".join([*selected_plate, selected_well, f"site {selected_site}"])
     mo.vstack(
         [
             mo.md(
                 f"## {location}\n\n"
+                f"**Identity:** {identity}\n\n"
                 f"**{view} at percentile {percentile:.1f} - "
                 f"{width} x {height} pixels**\n\n"
                 "Wheel to zoom, drag to pan, or double-click to reset. "
@@ -868,7 +1449,10 @@ def _(
 ):
     artifacts = audit_artifacts(audit_directory)
     channel_urls = [
-        {"channel": channel, "original TIFF": selected_row[f"URL_Orig{channel}"]}
+        {
+            "channel": channel,
+            "original TIFF": image_attrs["source_urls"][channel],
+        }
         for channel in CHANNELS
     ]
     request_rows = [
@@ -952,8 +1536,12 @@ def _(
     assert not artifacts["image_indexes"]
     assert not artifacts["tiffs"]
     assert not artifacts["large_files"]
-    assert image_attrs["image_index_origin"] is None
-    assert tuple(image_attrs["virtual_chunk_shape"]) == (1, 128, 1024)
+    assert image_attrs["image_index_origin"] in {None, INDEX_ORIGIN}
+    _chunk_shape = tuple(image_attrs["virtual_chunk_shape"])
+    _logical_shape = tuple(image_attrs["logical_shape"])
+    assert _chunk_shape[0] == 1
+    assert 0 < _chunk_shape[1] <= _logical_shape[1]
+    assert _chunk_shape[2] == _logical_shape[2]
     assert len(rendered_images(pixels, "Composite", 99.5)) == 1
     assert len(rendered_images(pixels, "DNA", 99.5)) == 1
     assert len(rendered_images(pixels, "Small multiples", 99.5)) == 5
