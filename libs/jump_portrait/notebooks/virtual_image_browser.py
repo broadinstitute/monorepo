@@ -1379,10 +1379,8 @@ def _(
     cache_hit,
     contrast_control,
     image_attrs,
-    identity,
     pixel_trace,
     pixels,
-    selected_plate,
     selected_site,
     selected_well,
     pan_zoom_gallery,
@@ -1418,18 +1416,13 @@ def _(
             f"cache miss ({cache_after.currsize}/8 fields)"
         )
     )
-    location = " / ".join([*selected_plate, selected_well, f"site {selected_site}"])
     mo.vstack(
         [
+            image_surface,
             mo.md(
-                f"## {location}\n\n"
-                f"**Identity:** {identity}\n\n"
-                f"**{view} at percentile {percentile:.1f} - "
-                f"{width} x {height} pixels**\n\n"
                 "Wheel to zoom, drag to pan, or double-click to reset. "
                 "Small multiples stay synchronized."
             ),
-            image_surface,
             mo.callout(mo.md(status), kind="info"),
         ],
         align="center",
