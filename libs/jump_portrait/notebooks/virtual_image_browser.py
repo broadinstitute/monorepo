@@ -286,8 +286,13 @@ def _():
         function render({ model, el }) {
           const root = document.createElement("div");
           root.className = "panzoom-root";
+          // Preserve geometry while anywidget replaces its stylesheet on reruns.
+          root.style.width = "100%";
+          root.style.margin = "0 auto";
           const grid = document.createElement("div");
           grid.className = "panzoom-grid";
+          grid.style.display = "grid";
+          grid.style.gap = "8px";
           root.append(grid);
           el.replaceChildren(root);
 
@@ -332,6 +337,9 @@ def _():
             grid.style.setProperty("--columns", model.get("columns"));
             grid.style.setProperty("--aspect", model.get("aspect"));
             root.classList.toggle("single", srcs.length === 1);
+            root.style.maxWidth = srcs.length === 1 ? "920px" : "";
+            grid.style.gridTemplateColumns =
+              `repeat(${model.get("columns")}, minmax(0, 1fr))`;
             viewports = [];
             images = [];
             resets = [];
@@ -341,18 +349,31 @@ def _():
               tile.className = "panzoom-tile";
               const viewport = document.createElement("div");
               viewport.className = "panzoom-viewport";
+              viewport.style.position = "relative";
+              viewport.style.width = "100%";
+              viewport.style.aspectRatio = model.get("aspect");
+              viewport.style.overflow = "hidden";
               viewport.tabIndex = 0;
               const image = document.createElement("img");
               image.className = "panzoom-image";
+              image.style.display = "block";
+              image.style.width = "100%";
+              image.style.height = "100%";
+              image.style.objectFit = "contain";
               image.src = src;
               image.alt = `${labels[index]} for ${context}`;
               image.draggable = false;
               const reset = document.createElement("button");
               reset.className = "panzoom-reset";
+              reset.style.position = "absolute";
+              reset.style.top = "8px";
+              reset.style.right = "8px";
               reset.type = "button";
               reset.title = "Reset zoom and position";
               const label = document.createElement("div");
               label.className = "panzoom-label";
+              label.style.paddingTop = "4px";
+              label.style.textAlign = "center";
               label.textContent = labels[index];
               viewport.setAttribute(
                 "aria-label",
