@@ -44,6 +44,8 @@ Use the following datasets to explore morphological similarities between gene an
 
 Note that the feature databases are based on interpretable features. The perturbation databases use non-interpretable features, which have been processed to attenuate batch effects.
 
+When generating ORF and CRISPR tables, the `Resources` column (`Match resources` in Matches tables) includes a [Human Protein Atlas (HPA)](https://www.proteinatlas.org/) link wherever an Ensembl gene ID is available. Links open the gene's HPA overview, which provides access to expression and subcellular localization information. Matches tables link to the matched gene; compound tables are unchanged. Existing published parquet files need to be updated before these links appear online.
+
 In the rare case where you experience a problem before data is loaded, it may be transient - try reloading the webpage. 
 
 <a id="Overview"></a>

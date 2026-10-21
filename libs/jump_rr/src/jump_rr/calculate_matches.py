@@ -226,6 +226,7 @@ for dset, n_vals_used in datasets_nvals:
                 dict(zip(jcp_to_std.values(), jcp_to_std.values())),
             ),
             ("ensembl", match_col, std_to_ensembl),
+            ("hpa", match_col, std_to_ensembl),
         )
     else:
         key_source_mapper = [(k, match_jcp_col, v) for k, v in get_compound_mappers()]

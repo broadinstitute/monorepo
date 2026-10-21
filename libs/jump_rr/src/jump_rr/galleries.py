@@ -93,6 +93,7 @@ for dset in ("orf", "crispr", "compound"):
                 dict(zip(jcp_to_std.values(), jcp_to_std.values())),
             ),
             ("ensembl", std_outname, std_to_ensembl),
+            ("hpa", std_outname, std_to_ensembl),
         )
     else:
         key_source_mapper = [(k, jcp_col, v) for k, v in get_compound_mappers()]
