@@ -30,6 +30,7 @@ def get_url_label(key: str) -> tuple[str, str]:
     - genecards: GeneCards entry. Requires a gene symbol.
     - omim: OMIM entry. Requires an OMIM id.
     - ensembl: Ensembl entry. Requires an Ensmbl id.
+    - hpa: Human Protein Atlas entry. Requires an Ensembl gene id.
     - phenaid: Images from the Phenaid platform.
 
     Raises
@@ -46,6 +47,7 @@ def get_url_label(key: str) -> tuple[str, str]:
         ),
         omim=("https://www.omim.org/entry/{}", "OMIM"),
         ensembl=("https://useast.ensembl.org/Homo_sapiens/Gene/Splice?g={}", "Ensembl"),
+        hpa=("https://www.proteinatlas.org/{}", "HPA"),
         phenaid=(
             "https://phenaid.ardigen.com/static-jumpcpexplorer/images/{}/{}/{}_{}.jpg",
             None,

@@ -237,6 +237,7 @@ for dset, n_feat_per_compound, n_compounds_per_feat in datasets_nvals:
                 dict(zip(jcp_to_std.values(), jcp_to_std.values())),
             ),
             ("ensembl", std_outname, std_to_ensembl),
+            ("hpa", std_outname, std_to_ensembl),
         )
     else:
         key_source_mapper = [(k, jcp_short, v) for k, v in get_compound_mappers()]
